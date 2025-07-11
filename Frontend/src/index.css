@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -67,3 +68,6 @@ button:focus-visible {
   }
 }
 
+=======
+@import "tailwindcss";
+>>>>>>> edb6cd67235768d2604cad1de8232046e7b66c5f
