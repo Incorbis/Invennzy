@@ -1,10 +1,15 @@
 import React from "react";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import AboutUs from "./Pages/AboutUs/AboutUs.jsx";
+import ContactUs from "./Pages/ContactUs/ContactUs.jsx";
 
 function App() {
   return (
-    <div className="App">
-      <h1 className="text-center text-2xl my-4">User Management</h1>
-    </div>
+    <Routes>
+      <Route path="/" element={<div>Home Page</div>} />
+      <Route path="/aboutus" element={<AboutUs />} />
+      <Route path="/contactus" element={<ContactUs />} />
+    </Routes>
   );
 }
 
