@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Send, CheckCircle } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, CheckCircle, ArrowLeft } from 'lucide-react';
 
 const ContactUs = () => {
   const [formData, setFormData] = useState({
@@ -24,6 +24,11 @@ const ContactUs = () => {
     setTimeout(() => setIsSubmitted(false), 3000);
   };
 
+  const handleGoBack = () => {
+    // You can customize this behavior based on your routing setup
+    window.history.back();
+  };
+
   const contactInfo = [
     {
       icon: Mail,
@@ -46,9 +51,20 @@ const ContactUs = () => {
   ];
 
   return (
-    <div id="contact-us" className="py-20 bg-white">
+    <div id="contact-us" className="py-8 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
+        {/* Back Button */}
+        <div className="mb-6">
+          <button
+            onClick={handleGoBack}
+            className="inline-flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200 group"
+          >
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-200" />
+            <span className="font-medium">Back</span>
+          </button>
+        </div>
+
+        <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">Get In Touch</h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Have questions about Invennzy? We're here to help. Reach out to us and we'll get back to you as soon as possible.
@@ -96,7 +112,7 @@ const ContactUs = () => {
                 <p className="text-gray-600">Thank you for contacting us. We'll get back to you soon.</p>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -165,7 +181,7 @@ const ContactUs = () => {
                   <Send className="w-5 h-5" />
                   Send Message
                 </button>
-              </form>
+              </div>
             )}
           </div>
         </div>

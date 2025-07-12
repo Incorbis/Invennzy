@@ -1,7 +1,12 @@
 import React from 'react';
-import { Target, Users, Award, Lightbulb } from 'lucide-react';
+import { Target, Users, Award, Lightbulb, ArrowLeft } from 'lucide-react';
 
 const AboutUs = () => {
+  const handleGoBack = () => {
+    // You can customize this behavior based on your routing setup
+    window.history.back();
+  };
+
   const stats = [
     { number: '500+', label: 'Institutions Served' },
     { number: '10K+', label: 'Inventory Items Managed' },
@@ -33,10 +38,21 @@ const AboutUs = () => {
   ];
 
   return (
-    <div id="about-us" className="py-20 bg-gray-50">
+    <div id="about-us" className="py-8 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Back Button */}
+        <div className="mb-6">
+          <button
+            onClick={handleGoBack}
+            className="inline-flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200 group"
+          >
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-200" />
+            <span className="font-medium">Back</span>
+          </button>
+        </div>
+
         {/* Header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">About Invennzy</h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             We're passionate about revolutionizing inventory management for educational institutions, 
