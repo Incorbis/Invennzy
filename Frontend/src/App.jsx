@@ -14,7 +14,6 @@ function App() {
       <Route path="/contactus" element={<ContactUs />} />
       <Route path="/faq" element={<FAQ />} />
       <Route path="/services" element={<Services />} />
-
     </Routes>
   );
 }

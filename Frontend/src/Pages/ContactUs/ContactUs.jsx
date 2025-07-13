@@ -1,12 +1,21 @@
-import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Send, CheckCircle, ArrowLeft, AlertCircle } from 'lucide-react';
+import React, { useState } from "react";
+import {
+  Mail,
+  Phone,
+  MapPin,
+  Send,
+  CheckCircle,
+  ArrowLeft,
+  AlertCircle,
+} from "lucide-react";
+import Footer from "../../components/Footer/Footer";
 
 const ContactUs = () => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: ''
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errors, setErrors] = useState({});
@@ -14,25 +23,29 @@ const ContactUs = () => {
 
   const validateField = (name, value) => {
     switch (name) {
-      case 'name':
-        if (!value.trim()) return 'Full name is required';
-        if (value.trim().length < 2) return 'Name must be at least 2 characters';
-        return '';
-      case 'email':
-        if (!value.trim()) return 'Email address is required';
+      case "name":
+        if (!value.trim()) return "Full name is required";
+        if (value.trim().length < 2)
+          return "Name must be at least 2 characters";
+        return "";
+      case "email":
+        if (!value.trim()) return "Email address is required";
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(value)) return 'Please enter a valid email address';
-        return '';
-      case 'subject':
-        if (!value.trim()) return 'Subject is required';
-        if (value.trim().length < 5) return 'Subject must be at least 5 characters';
-        return '';
-      case 'message':
-        if (!value.trim()) return 'Message is required';
-        if (value.trim().length < 10) return 'Message must be at least 10 characters';
-        return '';
+        if (!emailRegex.test(value))
+          return "Please enter a valid email address";
+        return "";
+      case "subject":
+        if (!value.trim()) return "Subject is required";
+        if (value.trim().length < 5)
+          return "Subject must be at least 5 characters";
+        return "";
+      case "message":
+        if (!value.trim()) return "Message is required";
+        if (value.trim().length < 10)
+          return "Message must be at least 10 characters";
+        return "";
       default:
-        return '';
+        return "";
     }
   };
 
@@ -40,14 +53,14 @@ const ContactUs = () => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: value
+      [name]: value,
     });
 
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors({
         ...errors,
-        [name]: ''
+        [name]: "",
       });
     }
   };
@@ -56,19 +69,19 @@ const ContactUs = () => {
     const { name, value } = e.target;
     setTouched({
       ...touched,
-      [name]: true
+      [name]: true,
     });
 
     const error = validateField(name, value);
     setErrors({
       ...errors,
-      [name]: error
+      [name]: error,
     });
   };
 
   const validateForm = () => {
     const newErrors = {};
-    Object.keys(formData).forEach(key => {
+    Object.keys(formData).forEach((key) => {
       const error = validateField(key, formData[key]);
       if (error) newErrors[key] = error;
     });
@@ -77,38 +90,32 @@ const ContactUs = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    // Mark all fields as touched
+
     const allTouched = Object.keys(formData).reduce((acc, key) => {
       acc[key] = true;
       return acc;
     }, {});
     setTouched(allTouched);
 
-    // Validate all fields
     const formErrors = validateForm();
     setErrors(formErrors);
 
-    // Check if form is valid
     if (Object.keys(formErrors).length === 0) {
-      // Form is valid, proceed with submission
       setIsSubmitted(true);
-      
-      // Reset form after successful submission and hide success message
+
       setTimeout(() => {
         setFormData({
-          name: '',
-          email: '',
-          subject: '',
-          message: ''
+          name: "",
+          email: "",
+          subject: "",
+          message: "",
         });
         setTouched({});
         setErrors({});
         setIsSubmitted(false);
       }, 3000);
     } else {
-      // Show validation errors
-      console.log('Form has errors:', formErrors);
+      console.log("Form has errors:", formErrors);
     }
   };
 
@@ -116,8 +123,9 @@ const ContactUs = () => {
     window.history.back();
   };
 
-  const isFormValid = Object.keys(validateForm()).length === 0 && 
-                     Object.values(formData).every(value => value.trim() !== '');
+  const isFormValid =
+    Object.keys(validateForm()).length === 0 &&
+    Object.values(formData).every((value) => value.trim() !== "");
 
   return (
     <div id="contact-us" className="bg-white">
@@ -137,7 +145,8 @@ const ContactUs = () => {
           <div className="text-center">
             <h2 className="text-4xl font-bold mb-4">Get In Touch</h2>
             <p className="text-xl text-white/90 max-w-3xl mx-auto">
-              Have questions about Invennzy? We're here to help. Reach out to us and we'll get back to you as soon as possible.
+              Have questions about Invennzy? We're here to help. Reach out to us
+              and we'll get back to you as soon as possible.
             </p>
           </div>
         </div>
@@ -149,64 +158,83 @@ const ContactUs = () => {
           {/* Social Media and Image Section */}
           <div>
             <div className="p-6 bg-gradient-to-r from-blue-50 to-teal-50 rounded-xl">
-              <h4 className="text-lg font-semibold text-gray-900 mb-4">Connect With Us</h4>
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                Connect With Us
+              </h4>
               <p className="text-gray-600 mb-6">
                 Follow us on social media for updates and support
               </p>
-              
+
               <div className="flex flex-wrap gap-4 mb-6">
-                <a href="#" className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <a
+                  href="#"
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
                   <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
                     <span className="text-blue-600 text-xs font-bold">f</span>
                   </div>
                   Facebook
                 </a>
-                <a href="#" className="flex items-center gap-2 px-4 py-2 bg-blue-400 text-white rounded-lg hover:bg-blue-500 transition-colors">
+                <a
+                  href="#"
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-400 text-white rounded-lg hover:bg-blue-500 transition-colors"
+                >
                   <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                    <span className="text-blue-400 text-xs font-bold">t</span>
+                    <span className="text-blue-400 text-xs font-bold">Y</span>
                   </div>
-                  Twitter
+                  Youtube
                 </a>
-                <a href="#" className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-lg hover:from-pink-600 hover:to-orange-600 transition-colors">
+                <a
+                  href="#"
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-lg hover:from-pink-600 hover:to-orange-600 transition-colors"
+                >
                   <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
                     <span className="text-pink-500 text-xs font-bold">ig</span>
                   </div>
                   Instagram
                 </a>
-                <a href="#" className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors">
+                <a
+                  href="#"
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors"
+                >
                   <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
                     <span className="text-blue-700 text-xs font-bold">in</span>
                   </div>
                   LinkedIn
                 </a>
               </div>
-              
+
               <div className="bg-white rounded-xl p-6 border shadow-sm">
-                <h5 className="text-lg font-semibold text-gray-800 mb-4">Our Team</h5>
+                <h5 className="text-lg font-semibold text-gray-800 mb-4">
+                  Our Team
+                </h5>
                 <div className="relative group">
                   <div className="w-full h-40 bg-gradient-to-br from-blue-100 via-teal-50 to-blue-100 rounded-lg flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:scale-105">
-                    <img 
-                      src="./public/img.png"
+                    <img
+                      src="./img.png"
                       alt="Invennzy Team"
                       className="w-full h-full object-cover rounded-lg"
                       onError={(e) => {
                         // Fallback if image doesn't load
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'flex';
+                        e.target.style.display = "none";
+                        e.target.nextSibling.style.display = "flex";
                       }}
                     />
-                    <div className="text-center" style={{ display: 'none' }}>
+                    <div className="text-center" style={{ display: "none" }}>
                       <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-teal-600 rounded-full flex items-center justify-center mx-auto mb-3">
                         <span className="text-white text-xl font-bold">I</span>
                       </div>
-                      <span className="text-gray-600 text-sm font-medium">Invennzy Team</span>
+                      <span className="text-gray-600 text-sm font-medium">
+                        Invennzy Team
+                      </span>
                     </div>
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-teal-600/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </div>
                 <div className="mt-4 text-center">
                   <p className="text-gray-600 text-sm">
-                    Meet our dedicated team ready to help you streamline your inventory management
+                    Meet our dedicated team ready to help you streamline your
+                    inventory management
                   </p>
                   <button className="mt-3 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors">
                     Learn More About Us →
@@ -218,13 +246,19 @@ const ContactUs = () => {
 
           {/* Contact Form */}
           <div className="bg-gray-50 rounded-xl p-8">
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">Send Us a Message</h3>
-            
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">
+              Send Us a Message
+            </h3>
+
             {isSubmitted ? (
               <div className="text-center py-8">
                 <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                <h4 className="text-xl font-semibold text-gray-900 mb-2">Message Sent!</h4>
-                <p className="text-gray-600">Thank you for contacting us. We'll get back to you soon.</p>
+                <h4 className="text-xl font-semibold text-gray-900 mb-2">
+                  Message Sent!
+                </h4>
+                <p className="text-gray-600">
+                  Thank you for contacting us. We'll get back to you soon.
+                </p>
               </div>
             ) : (
               <div className="space-y-6">
@@ -241,8 +275,8 @@ const ContactUs = () => {
                       onBlur={handleBlur}
                       className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 ${
                         errors.name && touched.name
-                          ? 'border-red-500 bg-red-50'
-                          : 'border-gray-300'
+                          ? "border-red-500 bg-red-50"
+                          : "border-gray-300"
                       }`}
                       placeholder="Your full name"
                     />
@@ -265,8 +299,8 @@ const ContactUs = () => {
                       onBlur={handleBlur}
                       className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 ${
                         errors.email && touched.email
-                          ? 'border-red-500 bg-red-50'
-                          : 'border-gray-300'
+                          ? "border-red-500 bg-red-50"
+                          : "border-gray-300"
                       }`}
                       placeholder="your.email@example.com"
                     />
@@ -291,8 +325,8 @@ const ContactUs = () => {
                     onBlur={handleBlur}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 ${
                       errors.subject && touched.subject
-                        ? 'border-red-500 bg-red-50'
-                        : 'border-gray-300'
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-300"
                     }`}
                     placeholder="What's this about?"
                   />
@@ -316,8 +350,8 @@ const ContactUs = () => {
                     rows={6}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 resize-none ${
                       errors.message && touched.message
-                        ? 'border-red-500 bg-red-50'
-                        : 'border-gray-300'
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-300"
                     }`}
                     placeholder="Tell us more about your inquiry..."
                   />
@@ -334,14 +368,14 @@ const ContactUs = () => {
                   onClick={handleSubmit}
                   className={`w-full py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg flex items-center justify-center gap-2 ${
                     isFormValid
-                      ? 'bg-gradient-to-r from-blue-600 to-teal-600 text-white hover:from-blue-700 hover:to-teal-700 transform hover:scale-105 hover:shadow-xl'
-                      : 'bg-gradient-to-r from-gray-400 to-gray-500 text-white hover:from-gray-500 hover:to-gray-600'
+                      ? "bg-gradient-to-r from-blue-600 to-teal-600 text-white hover:from-blue-700 hover:to-teal-700 transform hover:scale-105 hover:shadow-xl"
+                      : "bg-gradient-to-r from-gray-400 to-gray-500 text-white hover:from-gray-500 hover:to-gray-600"
                   }`}
                 >
                   <Send className="w-5 h-5" />
                   Send Message
                 </button>
-                
+
                 {!isFormValid && (
                   <p className="text-sm text-gray-500 text-center">
                     Please fill in all required fields to send your message
@@ -354,56 +388,7 @@ const ContactUs = () => {
       </div>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div className="col-span-2">
-              <h3 className="text-2xl font-bold mb-4">Invennzy</h3>
-              <p className="text-gray-300 mb-4">
-                Streamlining inventory management for institutions with innovative solutions and reliable support.
-              </p>
-              <div className="flex space-x-4">
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors cursor-pointer">
-                  <span className="text-sm font-bold">f</span>
-                </div>
-                <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center hover:bg-blue-500 transition-colors cursor-pointer">
-                  <span className="text-sm font-bold">t</span>
-                </div>
-                <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-orange-500 rounded-full flex items-center justify-center hover:from-pink-600 hover:to-orange-600 transition-colors cursor-pointer">
-                  <span className="text-sm font-bold text-white">ig</span>
-                </div>
-                <div className="w-8 h-8 bg-blue-700 rounded-full flex items-center justify-center hover:bg-blue-800 transition-colors cursor-pointer">
-                  <span className="text-sm font-bold">in</span>
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
-              <ul className="space-y-2 text-gray-300">
-                <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Features</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Pricing</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Support</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="text-lg font-semibold mb-4">Contact</h4>
-              <ul className="space-y-2 text-gray-300">
-                <li>support@invennzy.com</li>
-                <li>+1 (555) 123-4567</li>
-                <li>123 Tech Street</li>
-                <li>Innovation City</li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-300">
-            <p>&copy; 2025 Invennzy. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
