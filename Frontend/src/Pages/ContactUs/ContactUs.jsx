@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import { Mail, Phone, MapPin, Send, CheckCircle } from 'lucide-react';
 
 const ContactUs = () => {
@@ -9,21 +10,32 @@ const ContactUs = () => {
     message: ''
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Handle input changes
   const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  // Handle form submission
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle form submission here
-    setIsSubmitted(true);
-    setTimeout(() => setIsSubmitted(false), 3000);
+    setIsSubmitting(true);
+    try {
+      await axios.post('/api/googlesheet', formData); // 
+      setIsSubmitted(true);
+      setFormData({ name: '', email: '', subject: '', message: '' });
+      setTimeout(() => setIsSubmitted(false), 3000);
+    } catch (error) {
+      console.error('Error submitting contact form:', error);
+      alert('Failed to send message. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
+  // Contact info tiles
   const contactInfo = [
     {
       icon: Mail,
@@ -35,7 +47,7 @@ const ContactUs = () => {
       icon: Phone,
       title: 'Call Us',
       details: '+1 (555) 123-4567',
-      subDetails: 'Mon-Fri 9AM-6PM EST'
+      subDetails: 'Mon–Fri, 9AM–6PM EST'
     },
     {
       icon: MapPin,

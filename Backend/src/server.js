@@ -1,22 +1,14 @@
-const dotenv = require('dotenv');
-const connectDB = require('./config/db');
-const app = require('./app');
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors'); 
+const contactusRoute = require('./routes/contactusRoute');
+const app = express();
 
-// Load environment variables
-dotenv.config();
+app.use(cors());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-// Connect to MongoDB and Start Server
-const startServer = async () => {
-  try {
-    await connectDB(); // Connect to DB
+app.use('/api', contactusRoute);
 
-    const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-    });
-  } catch (error) {
-    console.error('❌ Failed to start server:', error);
-  }
-};
-
-startServer();
+app.listen(3000, () => {
+  console.log('Server is running on http://localhost:3000');});
