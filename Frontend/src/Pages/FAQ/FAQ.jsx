@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, HelpCircle, Search, Book, Users, Shield, Settings } from 'lucide-react';
+import { ChevronDown, ChevronUp, HelpCircle, Search, Book, Users, Shield, Settings, ArrowLeft } from 'lucide-react';
 
 const FAQ = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -145,13 +145,26 @@ const FAQ = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-900 to-teal-700 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Frequently Asked Questions
-          </h1>
-          <p className="text-xl text-blue-100 max-w-3xl mx-auto">
-            Find answers to common questions about Invennzy and how it can help manage your institution's inventory
-          </p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Back Button */}
+          <div className="mb-8">
+            <button
+              onClick={() => window.history.back()}
+              className="flex items-center space-x-2 text-white hover:text-blue-100 transition-colors duration-200 group"
+            >
+              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-200" />
+              <span className="font-medium">Back</span>
+            </button>
+          </div>
+          
+          <div className="text-center">
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              Frequently Asked Questions
+            </h1>
+            <p className="text-xl text-blue-100 max-w-3xl mx-auto">
+              Find answers to common questions about Invennzy and how it can help manage your institution's inventory
+            </p>
+          </div>
         </div>
       </div>
 
