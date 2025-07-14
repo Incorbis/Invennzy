@@ -19,9 +19,12 @@ const ContactUs = () => {
     message: "",
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+
+  const handleLearnMoreClick = () => {
+  window.location.href = '/aboutus';
+  };
 
   const validateField = (name, value) => {
     switch (name) {
@@ -90,8 +93,7 @@ const ContactUs = () => {
     return newErrors;
   };
 
-  // Handle form submission with backend integration
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
     const allTouched = Object.keys(formData).reduce((acc, key) => {
@@ -239,7 +241,9 @@ const ContactUs = () => {
                     Meet our dedicated team ready to help you streamline your
                     inventory management
                   </p>
-                  <button className="mt-3 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors">
+                  <button 
+                    onClick={handleLearnMoreClick}
+                    className="mt-3 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors cursor-pointer">
                     Learn More About Us →
                   </button>
                 </div>
@@ -264,7 +268,7 @@ const ContactUs = () => {
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -368,11 +372,11 @@ const ContactUs = () => {
 
                 <button
                   type="submit"
-                  disabled={isSubmitting || !isFormValid}
+                  onClick={handleSubmit}
                   className={`w-full py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg flex items-center justify-center gap-2 ${
-                    isFormValid && !isSubmitting
+                    isFormValid
                       ? "bg-gradient-to-r from-blue-600 to-teal-600 text-white hover:from-blue-700 hover:to-teal-700 transform hover:scale-105 hover:shadow-xl"
-                      : "bg-gradient-to-r from-gray-400 to-gray-500 text-white cursor-not-allowed"
+                      : "bg-gradient-to-r from-gray-400 to-gray-500 text-white hover:from-gray-500 hover:to-gray-600"
                   }`}
                 >
                   <Send className="w-5 h-5" />
