@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import axios from 'axios';
 import {
   Mail,
   Phone,
@@ -9,6 +8,7 @@ import {
   ArrowLeft,
   AlertCircle,
 } from "lucide-react";
+import Footer from "../../components/Footer/Footer";
 
 const ContactUs = () => {
   const [formData, setFormData] = useState({
@@ -18,9 +18,12 @@ const ContactUs = () => {
     message: "",
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+
+  const handleLearnMoreClick = () => {
+  window.location.href = '/aboutus';
+  };
 
   const validateField = (name, value) => {
     switch (name) {
@@ -89,8 +92,7 @@ const ContactUs = () => {
     return newErrors;
   };
 
-  // Handle form submission with backend integration
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
     const allTouched = Object.keys(formData).reduce((acc, key) => {
@@ -103,20 +105,19 @@ const ContactUs = () => {
     setErrors(formErrors);
 
     if (Object.keys(formErrors).length === 0) {
-      setIsSubmitting(true);
-      try {
-        await axios.post('/api/googlesheet', formData);
-        setIsSubmitted(true);
-        setFormData({ name: '', email: '', subject: '', message: '' });
+      setIsSubmitted(true);
+
+      setTimeout(() => {
+        setFormData({
+          name: "",
+          email: "",
+          subject: "",
+          message: "",
+        });
         setTouched({});
         setErrors({});
-        setTimeout(() => setIsSubmitted(false), 3000);
-      } catch (error) {
-        console.error('Error submitting contact form:', error);
-        alert('Failed to send message. Please try again.');
-      } finally {
-        setIsSubmitting(false);
-      }
+        setIsSubmitted(false);
+      }, 3000);
     } else {
       console.log("Form has errors:", formErrors);
     }
@@ -175,9 +176,7 @@ const ContactUs = () => {
                 >
                   <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
                     <span className="text-blue-600 text-xs font-bold">f</span>
-                  
                   </div>
-                  
                   Facebook
                 </a>
                 <a
@@ -215,7 +214,17 @@ const ContactUs = () => {
                 </h5>
                 <div className="relative group">
                   <div className="w-full h-40 bg-gradient-to-br from-blue-100 via-teal-50 to-blue-100 rounded-lg flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:scale-105">
-                    <div className="text-center">
+                    <img
+                      src="./img.png"
+                      alt="Invennzy Team"
+                      className="w-full h-full object-cover rounded-lg"
+                      onError={(e) => {
+                        // Fallback if image doesn't load
+                        e.target.style.display = "none";
+                        e.target.nextSibling.style.display = "flex";
+                      }}
+                    />
+                    <div className="text-center" style={{ display: "none" }}>
                       <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-teal-600 rounded-full flex items-center justify-center mx-auto mb-3">
                         <span className="text-white text-xl font-bold">I</span>
                       </div>
@@ -231,7 +240,9 @@ const ContactUs = () => {
                     Meet our dedicated team ready to help you streamline your
                     inventory management
                   </p>
-                  <button className="mt-3 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors">
+                  <button 
+                    onClick={handleLearnMoreClick}
+                    className="mt-3 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors cursor-pointer">
                     Learn More About Us →
                   </button>
                 </div>
@@ -256,7 +267,7 @@ const ContactUs = () => {
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -360,15 +371,15 @@ const ContactUs = () => {
 
                 <button
                   type="submit"
-                  disabled={isSubmitting || !isFormValid}
+                  onClick={handleSubmit}
                   className={`w-full py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg flex items-center justify-center gap-2 ${
-                    isFormValid && !isSubmitting
+                    isFormValid
                       ? "bg-gradient-to-r from-blue-600 to-teal-600 text-white hover:from-blue-700 hover:to-teal-700 transform hover:scale-105 hover:shadow-xl"
-                      : "bg-gradient-to-r from-gray-400 to-gray-500 text-white cursor-not-allowed"
+                      : "bg-gradient-to-r from-gray-400 to-gray-500 text-white hover:from-gray-500 hover:to-gray-600"
                   }`}
                 >
                   <Send className="w-5 h-5" />
-                  {isSubmitting ? 'Sending...' : 'Send Message'}
+                  Send Message
                 </button>
 
                 {!isFormValid && (
@@ -376,14 +387,14 @@ const ContactUs = () => {
                     Please fill in all required fields to send your message
                   </p>
                 )}
-                
-                
-              </form>
-              
+              </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };
