@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Menu, X, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import logo2 from "../../assets/logo2.png";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -16,7 +17,7 @@ const Navbar = () => {
   }, []);
 
   const navItems = [
-    { name: "ABOUT US", path: "/aboutus" },
+    { name: "ABOUTUS", path: "/aboutus" },
     { name: "SERVICES", path: "/services" },
     { name: "CONTACT", path: "/contactus" },
     { name: "DOCS", path: "/docs" },
@@ -41,7 +42,9 @@ const Navbar = () => {
           {/* Logo */}
           <div className="flex items-center space-x-3 group cursor-pointer">
             <div className="relative">
-              <Package className="h-8 w-8 text-blue-600 transition-transform duration-300 group-hover:scale-110" />
+              <div className="h-9 w-13 text-blue-600 transition-transform duration-300 group-hover:scale-110">
+                <img src={logo2}></img>
+              </div>
               <div className="absolute -inset-1 bg-blue-600/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur"></div>
             </div>
             <span className="text-2xl font-bold text-gray-900 tracking-tight">
@@ -64,7 +67,14 @@ const Navbar = () => {
               </button>
             ))}
             {/* CTA Button */}
-            <button className="ml-6 px-6 py-2 bg-blue-600 text-white rounded-lg font-medium transition-all duration-300 hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/25 transform hover:-translate-y-0.5">
+            <button
+              onClick={() =>
+                document
+                  .getElementById("get-started")
+                  ?.scrollIntoView({ behavior: "smooth" })
+              }
+              className="ml-6 px-6 py-2 bg-blue-600 text-white rounded-lg font-medium transition-all duration-300 hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/25 transform hover:-translate-y-0.5"
+            >
               Get Started
             </button>
           </div>
@@ -113,6 +123,11 @@ const Navbar = () => {
             {/* Mobile CTA Button */}
             <div className="pt-4 border-t border-gray-100">
               <button
+                onClick={() =>
+                  document
+                    .getElementById("get-started")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
                 className={`w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-medium transition-all duration-300 hover:bg-blue-700 hover:shadow-lg transform hover:-translate-y-0.5 ${
                   isOpen
                     ? "translate-y-0 opacity-100"

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import axios from "axios";
 import {
   Mail,
   Phone,
@@ -105,19 +106,20 @@ const ContactUs = () => {
     setErrors(formErrors);
 
     if (Object.keys(formErrors).length === 0) {
-      setIsSubmitted(true);
-
-      setTimeout(() => {
-        setFormData({
-          name: "",
-          email: "",
-          subject: "",
-          message: "",
-        });
+      setIsSubmitting(true);
+      try {
+        await axios.post("/api/googlesheet", formData);
+        setIsSubmitted(true);
+        setFormData({ name: "", email: "", subject: "", message: "" });
         setTouched({});
         setErrors({});
-        setIsSubmitted(false);
-      }, 3000);
+        setTimeout(() => setIsSubmitted(false), 3000);
+      } catch (error) {
+        console.error("Error submitting contact form:", error);
+        alert("Failed to send message. Please try again.");
+      } finally {
+        setIsSubmitting(false);
+      }
     } else {
       console.log("Form has errors:", formErrors);
     }
@@ -168,10 +170,11 @@ const ContactUs = () => {
               <p className="text-gray-600 mb-6">
                 Follow us on social media for updates and support
               </p>
-
               <div className="flex flex-wrap gap-4 mb-6">
                 <a
-                  href="#"
+                  href="https://www.facebook.com/profile.php?id=61570261174985&mibextid=ZbWKwL"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
@@ -180,7 +183,9 @@ const ContactUs = () => {
                   Facebook
                 </a>
                 <a
-                  href="#"
+                  href="https://youtube.com/@incorbis?si=vAdigR3lav8NpXFB"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="flex items-center gap-2 px-4 py-2 bg-blue-400 text-white rounded-lg hover:bg-blue-500 transition-colors"
                 >
                   <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
@@ -189,7 +194,9 @@ const ContactUs = () => {
                   Youtube
                 </a>
                 <a
-                  href="#"
+                  href="https://www.instagram.com/incorbis.official?igsh=OTlyb2VmZWVpdWly"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-lg hover:from-pink-600 hover:to-orange-600 transition-colors"
                 >
                   <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
@@ -198,7 +205,9 @@ const ContactUs = () => {
                   Instagram
                 </a>
                 <a
-                  href="#"
+                  href="https://www.linkedin.com/company/incorbis"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors"
                 >
                   <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
@@ -224,14 +233,6 @@ const ContactUs = () => {
                         e.target.nextSibling.style.display = "flex";
                       }}
                     />
-                    <div className="text-center" style={{ display: "none" }}>
-                      <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-teal-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <span className="text-white text-xl font-bold">I</span>
-                      </div>
-                      <span className="text-gray-600 text-sm font-medium">
-                        Invennzy Team
-                      </span>
-                    </div>
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-teal-600/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </div>
@@ -379,7 +380,7 @@ const ContactUs = () => {
                   }`}
                 >
                   <Send className="w-5 h-5" />
-                  Send Message
+                  {isSubmitting ? "Sending..." : "Send Message"}
                 </button>
 
                 {!isFormValid && (
@@ -387,13 +388,11 @@ const ContactUs = () => {
                     Please fill in all required fields to send your message
                   </p>
                 )}
-              </div>
+              </form>
             )}
           </div>
         </div>
       </div>
-
-      {/* Footer */}
       <Footer />
     </div>
   );
