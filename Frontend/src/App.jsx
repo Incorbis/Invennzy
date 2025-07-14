@@ -5,6 +5,9 @@ import ContactUs from "./Pages/ContactUs/ContactUs.jsx";
 import MainPage from "./Pages/MainPage/MainPage.jsx";
 import FAQ from "./Pages/FAQ/FAQ.jsx";
 import Services from "./Pages/ServicesPage/Services.jsx";
+import AdminDash from "./Pages/admindash/admindash.jsx";
+import LabIncharge from "./Pages/LabInchargedash/LabInchargedash.jsx";
+import LabAssistant from "./Pages/LabAssistentDash/LabAssistent.jsx";
 
 function App() {
   return (
@@ -14,6 +17,12 @@ function App() {
       <Route path="/contactus" element={<ContactUs />} />
       <Route path="/faq" element={<FAQ />} />
       <Route path="/services" element={<Services />} />
+
+      <Route path="/admindash" element={<AdminDash />} />
+
+      <Route path="/labinchargedash" element={<LabIncharge />} />
+
+      <Route path="/labassistantdash" element={<LabAssistant />} />
     </Routes>
   );
 }
