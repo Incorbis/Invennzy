@@ -19,8 +19,6 @@ router.post('/googlesheet', async (req, res) => {
     formData.append('subject', subject);
     formData.append('message', message);
     
-    console.log('📤 Sending data to Google Apps Script:', { name, email, subject, message });
-    
     const response = await axios.post(scriptURL, formData, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -28,7 +26,6 @@ router.post('/googlesheet', async (req, res) => {
       timeout: 10000, // 10 second timeout
     });
     
-    console.log('✅ Response from Google Apps Script:', response.data);
     res.status(200).json({ 
       message: 'Contact form submitted successfully',
       data: response.data 

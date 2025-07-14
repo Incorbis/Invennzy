@@ -7,14 +7,15 @@ import {
 } from "react-icons/fa";
 import { Package, Mail, Phone, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import logo2 from "../../assets/logo2.png";
 
 const Footer = () => {
   const footerSections = [
     {
       title: "Company",
       links: [
-        { name: "About Us", href: "/aboutus" },
-        { name: "Contact Us", href: "/contactus" },
+        { name: "AboutUs", href: "/aboutus" },
+        { name: "ContactUs", href: "/contactus" },
         { name: "Services", href: "/services" },
         { name: "Features", href: "/features" },
       ],
@@ -33,10 +34,26 @@ const Footer = () => {
   const navigate = useNavigate();
 
   const socialLinks = [
-    { icon: FaTwitter, href: "#", label: "Twitter" },
-    { icon: FaFacebookF, href: "#", label: "Facebook" },
-    { icon: FaLinkedinIn, href: "#", label: "LinkedIn" },
-    { icon: FaInstagram, href: "#", label: "Instagram" },
+    {
+      icon: FaTwitter,
+      href: "https://x.com/incorbis?t=yRcNnKknmtATHWpOXWnA6w&s=09",
+      label: "Twitter",
+    },
+    {
+      icon: FaFacebookF,
+      href: "https://www.facebook.com/profile.php?id=61570261174985&mibextid=ZbWKwL",
+      label: "Facebook",
+    },
+    {
+      icon: FaLinkedinIn,
+      href: "https://www.linkedin.com/company/incorbis",
+      label: "LinkedIn",
+    },
+    {
+      icon: FaInstagram,
+      href: "https://www.instagram.com/incorbis.official?igsh=OTlyb2VmZWVpdWly",
+      label: "Instagram",
+    },
   ];
 
   const handleLinkClick = (href) => {
@@ -52,8 +69,9 @@ const Footer = () => {
           <div>
             <div className="flex items-center space-x-3 mb-6 group">
               <div className="relative">
-                <Package className="h-8 w-8 text-blue-600 transition-transform duration-300 group-hover:scale-110" />
-                <div className="absolute -inset-1 bg-blue-600/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur"></div>
+                <div className="h-9 w-13 text-blue-600 transition-transform duration-300 group-hover:scale-110">
+                  <img src={logo2}></img>
+                </div>
               </div>
               <span className="text-2xl font-bold text-gray-900 tracking-tight">
                 Invennzy
@@ -106,6 +124,8 @@ const Footer = () => {
                   href={social.href}
                   className="group bg-gray-200 hover:bg-blue-600 p-3 rounded-lg transition-all duration-300 hover:shadow-lg hover:shadow-blue-600/25 transform hover:-translate-y-1"
                   aria-label={social.label}
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
                   <social.icon className="h-5 w-5 text-gray-600 group-hover:text-white transition-colors duration-300" />
                 </a>

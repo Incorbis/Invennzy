@@ -55,7 +55,7 @@ const Services = () => {
         {/* Back Button */}
         <button
           onClick={() => navigate(-1)}
-          className="absolute top-8 left-8 flex items-center gap-2 text-white/90 hover:text-white transition-all duration-300 hover:-translate-x-1 z-10"
+          className="absolute top-8 left-8 flex items-center gap-2 text-white/90 hover:text-white transition-all duration-300 hover:-translate-x-1 z-10 invisible lg:visible "
         >
           <ArrowLeft className="w-5 h-5" />
           <span className="font-medium">Back</span>
@@ -79,7 +79,7 @@ const Services = () => {
       <section className="relative py-20 md:py-32 bg-slate-50">
         {/* Decorative top shape - Updated to match theme */}
         <div
-          className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-r from-blue-500 via-blue-600 to-cyan-400"
+          className="absolute top-0 left-0 right-0 h-12 md:h-24 bg-gradient-to-r from-blue-500 via-blue-600 to-cyan-400"
           style={{ clipPath: "polygon(0 0, 100% 0, 100% 50%, 0 100%)" }}
         ></div>
 
