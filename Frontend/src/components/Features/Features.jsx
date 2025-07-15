@@ -109,19 +109,6 @@ const Features = () => {
             </div>
           ))}
         </div>
-
-        <div className="mt-16 bg-gradient-to-r from-blue-900 to-teal-700 rounded-2xl p-8 md:p-12 text-center">
-          <h3 className="text-3xl font-bold text-white mb-4">
-            Ready to Transform Your Inventory Management?
-          </h3>
-          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-            Join hundreds of educational institutions already using Invennzy to
-            streamline their operations.
-          </p>
-          <button className="bg-white text-blue-900 px-8 py-4 rounded-lg font-semibold hover:bg-blue-50 transition-colors duration-300 transform hover:scale-105 shadow-lg">
-            Start Your Free Trial
-          </button>
-        </div>
       </div>
     </div>
   );

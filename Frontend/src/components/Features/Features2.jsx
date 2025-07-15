@@ -4,56 +4,54 @@ import React from "react";
 const FeaturesMiddleSectionInventory = () => {
   const containerRef = useRef(null);
 
-  // Define features data for inventory management system
   const features = [
     {
-      title: "Real-Time Stock Monitoring",
+      title: "Smart Inventory Management in Real Time",
       description:
-        "Monitor inventory levels as they change. Our system provides real-time updates so you can make immediate decisions to avoid overstocking or shortages.",
-      icon: "📊",
+        "Track hardware components like PCs, keyboards, and fans with real-time updates. Monitor stock levels, usage, and condition instantly across all labs, enabling precise and timely decisions.",
+      icon: "📦",
       badge: "Core",
     },
     {
-      title: "Automated Reordering",
+      title: "Issue Reporting & Resolution Workflow",
       description:
-        "Set thresholds for your inventory and let our automated system generate purchase orders when items run low—minimizing manual tasks.",
-      icon: "🔄",
+        "Streamline issue resolution with a clear 3-level workflow: Lab Incharge reports issues, Lab Assistant verifies and resolves or escalates to Admin. Ensure no hardware problems go unnoticed.",
+      icon: "🛠️",
+      badge: "Workflow",
+    },
+    {
+      title: "Lab-Wise Asset Tracking",
+      description:
+        "Maintain separate inventories per lab. Get detailed overviews of assets, status, and pending issues for each lab, improving organization and accountability across locations.",
+      icon: "🏷️",
+      badge: "Lab",
+    },
+    {
+      title: "Automated Low Stock Alerts",
+      description:
+        "Receive automated alerts when essential items like mice, cables, or keyboards run low. Lab Assistants or Incharges can take immediate action to prevent downtime.",
+      icon: "🔔",
       badge: "Smart",
     },
     {
-      title: "Supplier Integration",
+      title: "Role-Based Dashboards",
       description:
-        "Connect seamlessly with multiple suppliers. Our platform ensures your order management and delivery tracking are efficient and transparent.",
-      icon: "🤝",
-      badge: "Pro",
+        "Three customized dashboards for Lab Incharges, Lab Assistants, and Admins. Each user gets access to role-specific features, such as issue reporting, verification, or final approvals.",
+      icon: "👤",
+      badge: "Access",
     },
     {
-      title: "Comprehensive Analytics",
+      title: "Detailed Reports & Maintenance Logs",
       description:
-        "Gain deep insights into stock trends and performance metrics with interactive dashboards and tailored reports for data-driven decision-making.",
-      icon: "📈",
+        "Track hardware usage patterns and repair history with detailed reports. Make informed purchasing and maintenance decisions based on real data.",
+      icon: "📄",
       badge: "Insight",
-    },
-    {
-      title: "Multi-Warehouse Management",
-      description:
-        "Manage inventory across different warehouses under one roof. Coordinate stock transfers and maintain real-time visibility across your locations.",
-      icon: "🏭",
-      badge: "Advanced",
-    },
-    {
-      title: "Real-Time Alerts & Notifications",
-      description:
-        "Never miss a beat. Our system sends instant alerts for critical inventory events, ensuring you stay ahead of potential issues.",
-      icon: "🔔",
-      badge: "Alert",
     },
   ];
 
-  // FeatureCard Component displays an individual feature in a card layout.
   const FeatureCard = ({ feature }) => (
-    <div className="rounded-2xl overflow-hidden shadow-lg relative group bg-white border border-gray-200">
-      <div className="p-4 sm:p-6 bg-gray-50 rounded-2xl relative z-10">
+    <div className="rounded-2xl overflow-hidden shadow-lg relative group bg-white border border-gray-200 h-full">
+      <div className="p-4 sm:p-6 bg-gray-50 rounded-2xl relative z-10 h-full flex flex-col">
         <div className="absolute top-2 right-2 px-2 py-1 text-xs sm:text-sm bg-blue-100 text-blue-700 rounded-full border border-blue-200">
           {feature.badge}
         </div>
@@ -61,7 +59,7 @@ const FeaturesMiddleSectionInventory = () => {
         <h3 className="text-gray-800 text-lg sm:text-2xl font-bold mb-1 sm:mb-2">
           {feature.title}
         </h3>
-        <p className="text-gray-600 text-sm sm:text-base leading-snug">
+        <p className="text-gray-600 text-sm sm:text-base leading-snug flex-grow">
           {feature.description}
         </p>
       </div>
@@ -90,13 +88,12 @@ const FeaturesMiddleSectionInventory = () => {
             Experience real-time stock monitoring and automated reordering.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
-            <FeatureCard feature={features[0]} />
-            <FeatureCard feature={features[1]} />
-            <FeatureCard feature={features[2]} />
+            {features.slice(0, 3).map((feature, index) => (
+              <FeatureCard key={index} feature={feature} />
+            ))}
           </div>
         </div>
       </div>
-
       {/* Slide 2: Advanced Analytics & Multi-Warehouse */}
       <div className="sticky top-0 h-screen flex items-center justify-center bg-white text-gray-800 px-4">
         <div className="text-center w-full max-w-6xl">
@@ -108,13 +105,12 @@ const FeaturesMiddleSectionInventory = () => {
             effortlessly.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
-            <FeatureCard feature={features[3]} />
-            <FeatureCard feature={features[4]} />
-            <FeatureCard feature={features[5]} />
+            {features.slice(3, 6).map((feature, index) => (
+              <FeatureCard key={index} feature={feature} />
+            ))}
           </div>
         </div>
       </div>
-
       {/* Slide 3: Call to Action */}
       <div className="sticky top-0 h-screen flex items-center justify-center bg-white text-gray-800 px-4">
         <div className="text-center w-full max-w-md sm:max-w-2xl">

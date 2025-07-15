@@ -23,7 +23,7 @@ const ContactUs = () => {
   const [touched, setTouched] = useState({});
 
   const handleLearnMoreClick = () => {
-  window.location.href = '/aboutus';
+    window.location.href = "/aboutus";
   };
 
   const validateField = (name, value) => {
@@ -93,26 +93,36 @@ const ContactUs = () => {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Mark all fields as touched
     const allTouched = Object.keys(formData).reduce((acc, key) => {
       acc[key] = true;
       return acc;
     }, {});
     setTouched(allTouched);
 
+    // Validate the form
     const formErrors = validateForm();
     setErrors(formErrors);
 
+    // Submit only if there are no validation errors
     if (Object.keys(formErrors).length === 0) {
       setIsSubmitting(true);
+
       try {
         await axios.post("/api/googlesheet", formData);
+
+        // Show success state
         setIsSubmitted(true);
+
+        // Reset form
         setFormData({ name: "", email: "", subject: "", message: "" });
         setTouched({});
         setErrors({});
+
+        // Hide success message after 3 seconds
         setTimeout(() => setIsSubmitted(false), 3000);
       } catch (error) {
         console.error("Error submitting contact form:", error);
@@ -241,9 +251,10 @@ const ContactUs = () => {
                     Meet our dedicated team ready to help you streamline your
                     inventory management
                   </p>
-                  <button 
+                  <button
                     onClick={handleLearnMoreClick}
-                    className="mt-3 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors cursor-pointer">
+                    className="mt-3 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors cursor-pointer"
+                  >
                     Learn More About Us →
                   </button>
                 </div>
@@ -388,7 +399,7 @@ const ContactUs = () => {
                     Please fill in all required fields to send your message
                   </p>
                 )}
-              </form>
+              </div>
             )}
           </div>
         </div>

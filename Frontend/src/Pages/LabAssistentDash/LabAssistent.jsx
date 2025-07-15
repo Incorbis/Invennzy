@@ -15,6 +15,7 @@ import {
   LogOut,
   HelpCircle,
 } from "lucide-react";
+import logo2 from "../../assets/logo2.png";
 
 const SkeletonLoader = () => {
   return (
@@ -178,8 +179,10 @@ const Dashboard = () => {
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center">
-                <Package className="text-white" size={20} />
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+                <div className="h-9 w-13 text-blue-600 transition-transform duration-300 group-hover:scale-110">
+                  <img src={logo2}></img>
+                </div>
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-800">
