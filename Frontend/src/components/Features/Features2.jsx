@@ -52,11 +52,11 @@ const FeaturesMiddleSectionInventory = () => {
   const FeatureCard = ({ feature }) => (
     <div className="rounded-2xl overflow-hidden shadow-lg relative group bg-white border border-gray-200 h-full">
       <div className="p-4 sm:p-6 bg-gray-50 rounded-2xl relative z-10 h-full flex flex-col">
-        <div className="absolute top-2 right-2 px-2 py-1 text-xs sm:text-sm bg-blue-100 text-blue-700 rounded-full border border-blue-200">
+        <div className="absolute top-2 right-2 px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full border border-blue-200">
           {feature.badge}
         </div>
         <div className="text-3xl sm:text-4xl mb-3">{feature.icon}</div>
-        <h3 className="text-gray-800 text-lg sm:text-2xl font-bold mb-1 sm:mb-2">
+        <h3 className="text-gray-800 text-lg sm:text-xl font-bold mb-2">
           {feature.title}
         </h3>
         <p className="text-gray-600 text-sm sm:text-base leading-snug flex-grow">
@@ -87,13 +87,14 @@ const FeaturesMiddleSectionInventory = () => {
           <p className="text-sm sm:text-lg text-blue-500 mb-4 sm:mb-6">
             Experience real-time stock monitoring and automated reordering.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {features.slice(0, 3).map((feature, index) => (
               <FeatureCard key={index} feature={feature} />
             ))}
           </div>
         </div>
       </div>
+
       {/* Slide 2: Advanced Analytics & Multi-Warehouse */}
       <div className="sticky top-0 h-screen flex items-center justify-center bg-white text-gray-800 px-4">
         <div className="text-center w-full max-w-6xl">
@@ -104,13 +105,14 @@ const FeaturesMiddleSectionInventory = () => {
             Leverage comprehensive analytics and manage multiple warehouses
             effortlessly.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {features.slice(3, 6).map((feature, index) => (
               <FeatureCard key={index} feature={feature} />
             ))}
           </div>
         </div>
       </div>
+
       {/* Slide 3: Call to Action */}
       <div className="sticky top-0 h-screen flex items-center justify-center bg-white text-gray-800 px-4">
         <div className="text-center w-full max-w-md sm:max-w-2xl">
