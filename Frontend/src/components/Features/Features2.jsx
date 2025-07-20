@@ -6,49 +6,54 @@ const FeaturesMiddleSectionInventory = () => {
 
   const features = [
     {
-      title: "Smart Inventory",
-      description: "Track PCs, keyboards, fans in real-time across all labs.",
+      title: "Smart Inventory Management",
+      description:
+        "Monitor devices like PCs, keyboards, and fans with instant updates. Real-time visibility into stock levels and conditions across all labs.",
       icon: "📦",
       badge: "Core",
       color: "from-blue-600 to-cyan-500",
     },
     {
-      title: "Issue Management",
-      description: "3-step workflow: Report → Verify → Resolve issues.",
+      title: "Issue Reporting & Resolution",
+      description:
+        "Streamlined 3-step workflow: Incharges report problems, Lab Assistants verify fixes, Admins resolve escalations efficiently.",
       icon: "🛠️",
       badge: "Workflow",
       color: "from-indigo-600 to-purple-500",
     },
     {
-      title: "Lab Asset Tracking",
-      description: "Monitor equipment status and stock by department.",
+      title: "Lab-Wise Asset Tracking",
+      description:
+        "Manage assets by lab for better control. View real-time status, stock levels, and pending issues per department.",
       icon: "🏷️",
       badge: "Lab",
       color: "from-teal-600 to-green-500",
     },
     {
-      title: "Stock Alerts",
-      description: "Get notified when items run low to prevent shortages.",
+      title: "Automated Stock Alerts",
+      description:
+        "Instant notifications when items like mice, cables, or keyboards run low—helping teams restock quickly and avoid downtime.",
       icon: "🔔",
       badge: "Smart",
       color: "from-orange-600 to-red-500",
     },
     {
-      title: "Role Dashboards",
-      description: "Custom views for Incharges, Assistants, and Admins.",
+      title: "Role-Based Dashboards",
+      description:
+        "Dedicated dashboards for Incharges, Lab Assistants, and Admins with tools tailored for reporting, approvals, and tracking.",
       icon: "👤",
       badge: "Access",
       color: "from-violet-600 to-pink-500",
     },
     {
-      title: "Reports & Analytics",
-      description: "Data-driven insights for better decision making.",
+      title: "Detailed Reports & Analytics",
+      description:
+        "Clear insights into usage patterns and repairs. Make smarter purchase and maintenance decisions with comprehensive data.",
       icon: "📄",
       badge: "Insight",
       color: "from-emerald-600 to-blue-500",
     },
   ];
-
   const FeatureCard = ({ feature }) => (
     <div className="rounded-xl overflow-hidden shadow-md relative group bg-white border border-gray-200 h-full transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
       <div className="p-4 sm:p-5 bg-white rounded-xl relative z-10 h-full flex flex-col">
