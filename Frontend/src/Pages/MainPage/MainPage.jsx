@@ -13,8 +13,8 @@ function MainPage() {
       <Navbar />
       <HeroSection />
       <LoginSection />
-      <FeatureSection />
       <Features />
+      <FeatureSection />
       <Testimonials />
       <Footer />
     </>
