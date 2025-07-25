@@ -29,13 +29,13 @@ function App() {
       <Route path="/privacy" element={<PPsection />} />
       <Route path="/terms" element={<Terms />} />
 
-      <Route path="/admindash" element={<AdminDash />} />
-      <Route path="/admindash/inventory" element={<Inventory />} />
-      <Route path="/admindash/reports" element={<Reports />} />
-      <Route path="/admindash/overview" element={<Overview />} />
-      <Route path="/admindash/settings" element={<Settings />} />
-      <Route path="/admindash/notifications" element={<Notifications />}/>
-
+      <Route path="/admindash" element={<AdminDash />}>
+        <Route path="inventory" element={<Inventory />} />
+        <Route path="reports" element={<Reports />} />
+        <Route path="" element={<Overview />} />
+        <Route path="settings" element={<Settings />} />
+        <Route path="notifications" element={<Notifications />} />
+      </Route>
 
       <Route path="/labinchargedash" element={<LabIncharge />} />
 
