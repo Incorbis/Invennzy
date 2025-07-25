@@ -39,9 +39,11 @@ function App() {
       </Route>
 
       <Route path="/labinchargedash" element={<LabIncharge />} />
-      <Route path="/notification" element={<Notification />}/>
+      <Route path="notification" element={<Notification />}/>
+      
 
       <Route path="/labassistantdash" element={<LabAssistant />} />
+
     </Routes>
   );
 }
