@@ -16,6 +16,7 @@ import Reports from "./components/admincomponents/Reports.jsx";
 import Settings from "./components/admincomponents/settings.jsx";
 import Overview from "./components/admincomponents/overview.jsx";
 import Notifications from "./components/admincomponents/Notification.jsx";
+import Notification from "./components/Inchargecomponents/Notification.jsx";
 
 function App() {
   return (
@@ -38,6 +39,7 @@ function App() {
       </Route>
 
       <Route path="/labinchargedash" element={<LabIncharge />} />
+      <Route path="/notification" element={<Notification />}/>
 
       <Route path="/labassistantdash" element={<LabAssistant />} />
     </Routes>
