@@ -118,7 +118,7 @@ const Dashboard = () => {
 
   const menuItems = [
     { id: "overview", label: "Overview", icon: Home, path: "/admindash" },
-    
+
     {
       id: "notifications",
       label: "Notifications",
