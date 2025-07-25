@@ -117,31 +117,31 @@ const Dashboard = () => {
   }, []);
 
   const menuItems = [
-    { id: "overview", label: "Overview", icon: Home, path: "/dashboard" },
+    { id: "overview", label: "Overview", icon: Home, path: "/admindash" },
     
     {
       id: "notifications",
       label: "Notifications",
       icon: Bell,
-      path: "/notifications",
+      path: "/admindash/notifications",
     },
     {
       id: "inventory",
       label: "Inventory",
       icon: Package,
-      path: "/inventory",
+      path: "/admindash/inventory",
     },
     {
       id: "reports",
       label: "Reports",
       icon: BarChart3,
-      path: "/reports",
+      path: "/admindash/reports",
     },
     {
       id: "settings",
       label: "Settings",
       icon: Settings,
-      path: "/settings",
+      path: "/admindash/settings",
     },
   ];
 

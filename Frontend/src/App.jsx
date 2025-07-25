@@ -15,6 +15,7 @@ import Inventory from "./components/admincomponents/Inventory.jsx";
 import Reports from "./components/admincomponents/Reports.jsx";
 import Settings from "./components/admincomponents/settings.jsx";
 import Overview from "./components/admincomponents/overview.jsx";
+import Notifications from "./components/admincomponents/Notification.jsx";
 
 function App() {
   return (
@@ -29,10 +30,11 @@ function App() {
       <Route path="/terms" element={<Terms />} />
 
       <Route path="/admindash" element={<AdminDash />} />
-      <Route path="/inventory" element={<Inventory />} />
-      <Route path="/reports" element={<Reports />} />
-      <Route path="/overview" element={<Overview />} />
-      <Route path="/settings" element={<Settings />} />
+      <Route path="/admindash/inventory" element={<Inventory />} />
+      <Route path="/admindash/reports" element={<Reports />} />
+      <Route path="/admindash/overview" element={<Overview />} />
+      <Route path="/admindash/settings" element={<Settings />} />
+      <Route path="/admindash/notifications" element={<Notifications />}/>
 
 
       <Route path="/labinchargedash" element={<LabIncharge />} />

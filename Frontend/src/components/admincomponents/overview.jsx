@@ -90,7 +90,7 @@ const Overview = () => {
       change: '+12 this month',
       trend: 'up',
       icon: Package,
-      color: 'bg-primary'
+      color: 'bg-blue-500'
     },
     {
       title: 'Active Devices',
@@ -98,7 +98,7 @@ const Overview = () => {
       change: '87.3% operational',
       trend: 'up',
       icon: CheckCircle,
-      color: 'bg-accent'
+      color: 'bg-green-500'
     },
     {
       title: 'Maintenance Required',
@@ -106,7 +106,7 @@ const Overview = () => {
       change: '-5 from last week',
       trend: 'down',
       icon: AlertTriangle,
-      color: 'bg-secondary'
+      color: 'bg-yellow-500'
     },
     {
       title: 'Critical Issues',
@@ -114,7 +114,7 @@ const Overview = () => {
       change: '+2 urgent',
       trend: 'up',
       icon: AlertTriangle,
-      color: 'bg-destructive'
+      color: 'bg-red-500'
     }
   ];
 
@@ -131,11 +131,11 @@ const Overview = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'active': return 'bg-accent/10 text-accent-foreground';
-      case 'maintenance': return 'bg-secondary/20 text-secondary-foreground';
-      case 'inactive': return 'bg-muted text-muted-foreground';
-      case 'critical': return 'bg-destructive/10 text-destructive';
-      default: return 'bg-muted text-muted-foreground';
+      case 'active': return 'bg-green-100 text-green-800';
+      case 'maintenance': return 'bg-yellow-100 text-yellow-800';
+      case 'inactive': return 'bg-gray-100 text-gray-800';
+      case 'critical': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -147,7 +147,7 @@ const Overview = () => {
     }, 2000);
   };
 
-  const filteredDevices = devices.filter(device => 
+  const filteredDevices = devices.filter(device =>
     selectedFilter === 'all' || device.status === selectedFilter
   );
 
@@ -191,12 +191,12 @@ const Overview = () => {
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-card p-6 rounded-xl border border-border">
+            <div key={i} className="bg-white p-6 rounded-xl border border-gray-200">
               <div className="animate-pulse">
-                <div className="w-12 h-12 bg-muted rounded-lg mb-4"></div>
-                <div className="h-4 bg-muted rounded mb-2"></div>
-                <div className="h-6 bg-muted rounded mb-2"></div>
-                <div className="h-3 bg-muted rounded w-2/3"></div>
+                <div className="w-12 h-12 bg-gray-300 rounded-lg mb-4"></div>
+                <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                <div className="h-6 bg-gray-300 rounded mb-2"></div>
+                <div className="h-3 bg-gray-300 rounded w-2/3"></div>
               </div>
             </div>
           ))}
@@ -210,23 +210,23 @@ const Overview = () => {
       {/* Header Actions */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Inventory Overview</h2>
-          <p className="text-muted-foreground">Monitor and manage all college devices and equipment</p>
+          <h2 className="text-2xl font-bold text-gray-900">Inventory Overview</h2>
+          <p className="text-gray-600">Monitor and manage all college devices and equipment</p>
         </div>
         <div className="flex items-center space-x-3">
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="flex items-center px-4 py-2 bg-card border border-border rounded-lg hover:bg-accent transition-colors"
+            className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             Refresh
           </button>
-          <button className="flex items-center px-4 py-2 bg-card border border-border rounded-lg hover:bg-accent transition-colors">
+          <button className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
             <Download className="mr-2 h-4 w-4" />
             Export
           </button>
-          <button className="flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
+          <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
             <Plus className="mr-2 h-4 w-4" />
             Add Device
           </button>
@@ -238,14 +238,14 @@ const Overview = () => {
         {metrics.map((metric, index) => (
           <div key={index} className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between">
-              <div className={`w-12 h-12 ${metric.color} rounded-lg flex items-center justify-center`}>
+              <div className={`${metric.color} w-12 h-12 rounded-lg flex items-center justify-center`}>
                 <metric.icon className="text-white" size={24} />
               </div>
               <div className={`flex items-center text-sm ${
-                metric.trend === 'up' ? 'text-green-600' : 
+                metric.trend === 'up' ? 'text-green-600' :
                 metric.trend === 'down' ? 'text-red-600' : 'text-gray-600'
               }`}>
-                {metric.trend === 'up' ? <TrendingUp size={16} /> : 
+                {metric.trend === 'up' ? <TrendingUp size={16} /> :
                  metric.trend === 'down' ? <TrendingDown size={16} /> : null}
               </div>
             </div>
@@ -407,7 +407,6 @@ const Overview = () => {
             </div>
           </div>
         </div>
-
         <div className="bg-white p-6 rounded-xl border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
@@ -431,7 +430,6 @@ const Overview = () => {
             </div>
           </div>
         </div>
-
         <div className="bg-white p-6 rounded-xl border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
