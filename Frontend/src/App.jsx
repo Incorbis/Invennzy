@@ -11,6 +11,10 @@ import LabAssistant from "./Pages/LabAssistentDash/LabAssistent.jsx";
 import DocsPage from "./Pages/DocsPage/DocsPage.jsx";
 import PPsection from "./Pages/PrivacyPolicy/PPsection.jsx";
 import Terms from "./Pages/Terms&Condition/Terms.jsx";
+import Inventory from "./components/admincomponents/Inventory.jsx";
+import Reports from "./components/admincomponents/Reports.jsx";
+import Settings from "./components/admincomponents/settings.jsx";
+import Overview from "./components/admincomponents/overview.jsx";
 
 function App() {
   return (
@@ -25,6 +29,11 @@ function App() {
       <Route path="/terms" element={<Terms />} />
 
       <Route path="/admindash" element={<AdminDash />} />
+      <Route path="/inventory" element={<Inventory />} />
+      <Route path="/reports" element={<Reports />} />
+      <Route path="/overview" element={<Overview />} />
+      <Route path="/settings" element={<Settings />} />
+
 
       <Route path="/labinchargedash" element={<LabIncharge />} />
 

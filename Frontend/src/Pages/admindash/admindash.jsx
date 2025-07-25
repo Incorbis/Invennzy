@@ -118,35 +118,30 @@ const Dashboard = () => {
 
   const menuItems = [
     { id: "overview", label: "Overview", icon: Home, path: "/dashboard" },
-    {
-      id: "requests",
-      label: "Requests",
-      icon: ClipboardList,
-      path: "/dashboard/requests",
-    },
+    
     {
       id: "notifications",
       label: "Notifications",
       icon: Bell,
-      path: "/dashboard/notifications",
+      path: "/notifications",
     },
     {
       id: "inventory",
       label: "Inventory",
       icon: Package,
-      path: "/dashboard/inventory",
+      path: "/inventory",
     },
     {
       id: "reports",
       label: "Reports",
       icon: BarChart3,
-      path: "/dashboard/reports",
+      path: "/reports",
     },
     {
       id: "settings",
       label: "Settings",
       icon: Settings,
-      path: "/dashboard/settings",
+      path: "/settings",
     },
   ];
 
