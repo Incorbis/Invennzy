@@ -3,9 +3,9 @@ require('dotenv').config();
 const bodyParser = require('body-parser');
 const cors = require('cors'); 
 require('./db'); 
-const contactusRoute = require('./routes/contactusRoute');
-const sampleroutes = require('./routes/sampleroutes');
+const contactusRoute = require('./routes/Contactus/contactusRoute');
 const app = express();
+const authRoutes = require('./routes/auth/authRoutes');
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -16,6 +16,6 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api', contactusRoute);
-app.use('/api', sampleroutes);
+app.use('/api/auth', authRoutes);
 
 app.listen(3000, () => console.log('Server running on http://localhost:3000'));

@@ -1,20 +1,28 @@
-require('dotenv').config();
-const mysql = require('mysql2');
-
-const connection = mysql.createConnection({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+const mysql = require('mysql2/promise'); // Using promise-based API
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'invennzy',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
-connection.connect((err) => {
-  if (err) {
+// Function to test the connection and log a message
+async function testConnection() {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    console.log('Connected to the MySQL database.');
+  } catch (err) {
     console.error('Error connecting to the database:', err);
-    return;
+  } finally {
+    if (connection) connection.release(); // Release the connection back to the pool
   }
-  console.log('Connected to the MySQL database.');
-});
+}
 
-module.exports = connection;
+// Call the function to test the connection
+testConnection();
+
+module.exports = pool;
