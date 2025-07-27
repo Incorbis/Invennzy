@@ -17,6 +17,7 @@ import Settings from "./components/admincomponents/settings.jsx";
 import Overview from "./components/admincomponents/overview.jsx";
 import Notifications from "./components/admincomponents/Notification.jsx";
 import Notification from "./components/Inchargecomponents/Notification.jsx";
+import PrivateRoute from "./Utils/PrivateRoute.jsx";
 
 function App() {
   return (
@@ -30,7 +31,15 @@ function App() {
       <Route path="/privacy" element={<PPsection />} />
       <Route path="/terms" element={<Terms />} />
 
-      <Route path="/admindash" element={<AdminDash />}>
+      {/* ✅ Admin Routes */}
+      <Route
+        path="/admindash"
+        element={
+          <PrivateRoute allowedRoles={["admin"]}>
+            <AdminDash />
+          </PrivateRoute>
+        }
+      >
         <Route path="inventory" element={<Inventory />} />
         <Route path="reports" element={<Reports />} />
         <Route path="" element={<Overview />} />
@@ -38,12 +47,37 @@ function App() {
         <Route path="notifications" element={<Notifications />} />
       </Route>
 
-      <Route path="/labinchargedash" element={<LabIncharge />} />
-      <Route path="notification" element={<Notification />}/>
-      
+      {/* ✅ Lab Incharge Routes */}
+      <Route
+        path="/labinchargedash"
+        element={
+          <PrivateRoute allowedRoles={["labincharge"]}>
+            <LabIncharge />
+          </PrivateRoute>
+        }
+      >
+        <Route path="notification" element={<Notification />} />
+        <Route path="inventory" element={<Inventory />} />
+        <Route path="reports" element={<Reports />} />
+        <Route path="" element={<Overview />} />
+        <Route path="settings" element={<Settings />} />
+      </Route>
 
-      <Route path="/labassistantdash" element={<LabAssistant />} />
-
+      {/* ✅ Lab Assistant Routes */}
+      <Route
+        path="/labassistantdash"
+        element={
+          <PrivateRoute allowedRoles={["labassistant"]}>
+            <LabAssistant />
+          </PrivateRoute>
+        }
+      >
+        <Route path="notification" element={<Notification />} />
+        <Route path="inventory" element={<Inventory />} />
+        <Route path="reports" element={<Reports />} />
+        <Route path="" element={<Overview />} />
+        <Route path="settings" element={<Settings />} />
+      </Route>
     </Routes>
   );
 }

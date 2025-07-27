@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { User, Shield, Settings, Eye, EyeOff } from "lucide-react";
 
 const LoginSection = () => {
@@ -13,9 +13,11 @@ const LoginSection = () => {
     confirmPassword: "",
   });
   const [isSignUp, setIsSignUp] = useState(false);
-
+  const [message, setMessage] = useState({ text: "", type: "" });
+  const googleButtonRef = useRef(null);
+  const googleInitialized = useRef(false);
+  const activeTabRef = useRef(activeTab);
   const client_id = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-  console.log("Google Client ID:", client_id);
 
   const userTypes = [
     {
@@ -60,6 +62,13 @@ const LoginSection = () => {
     return userTypes.find((type) => type.id === activeTab);
   };
 
+  const handleInputChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
   const makeApiCall = async (endpoint, data) => {
     setIsLoading(true);
     try {
@@ -70,21 +79,15 @@ const LoginSection = () => {
         },
         body: JSON.stringify(data),
       });
-
       const result = await response.json();
-
       if (response.ok) {
         if (result.token) {
-          // This is a login response
-          localStorage.setItem(`${activeTab}_token`, result.token);
+          localStorage.setItem(`token`, result.token);
           localStorage.setItem("userRole", activeTab);
           localStorage.setItem("userName", result.user.name);
-
-          // Redirect based on the redirectUrl from backend
           if (result.redirectUrl) {
             window.location.href = result.redirectUrl;
           } else {
-            // Fallback redirect logic
             const redirectUrls = {
               admin: "/admindash",
               labincharge: "/labinchargedash",
@@ -93,52 +96,40 @@ const LoginSection = () => {
             window.location.href = redirectUrls[activeTab] || "/";
           }
         } else if (result.redirectUrl) {
-          // This is a signup response - show success message and redirect
-          alert(result.message);
+          setMessage({ text: result.message, type: "success" });
           window.location.href = result.redirectUrl;
         } else {
-          // Generic success message
-          alert(result.message);
+          setMessage({ text: result.message, type: "success" });
         }
       } else {
-        // Handle error response
-        console.error("Error:", result.message);
-        alert(result.message || "An error occurred");
+        setMessage({
+          text: result.message || "An error occurred",
+          type: "error",
+        });
       }
     } catch (error) {
-      console.error("Network error:", error);
-      alert("Network error. Please try again.");
+      setMessage({ text: "Network error. Please try again.", type: "error" });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     const currentUserType = getCurrentUserType();
-
     if (isSignUp) {
-      // Only allow admin signup
       if (activeTab !== "admin") {
         alert(
           "Only admin accounts can be created through signup. Lab Incharge and Lab Assistant accounts are created by administrators."
         );
         return;
       }
-
       if (formData.password !== formData.confirmPassword) {
-        alert("Passwords don't match!");
+        setMessage({ text: "Passwords don't match!", type: "error" });
         return;
       }
       await makeApiCall(currentUserType.endpoints.signup, {
-        name: formData.name, // You'll need to add name field
+        name: formData.name,
         email: formData.email,
         password: formData.password,
         role: activeTab,
@@ -161,23 +152,15 @@ const LoginSection = () => {
     });
   };
 
-  const handleGoogleSignIn = async () => {
-    // This will be handled by Google GSI
-    if (window.google && window.google.accounts) {
-      window.google.accounts.id.prompt();
-    } else {
-      console.error("Google GSI not loaded");
-      alert("Google Sign-In is not available. Please try again.");
-    }
-  };
-
-  // Handle Google credential response
   const handleGoogleCredentialResponse = async (response) => {
     try {
       setIsLoading(true);
       const googleToken = response.credential;
-
-      // Send the Google token to your backend for verification
+      const currentRole = activeTabRef.current;
+      const requestPayload = {
+        token: googleToken,
+        role: currentRole,
+      };
       const apiResponse = await fetch(
         `http://localhost:3000/api/auth/google-signin`,
         {
@@ -185,63 +168,104 @@ const LoginSection = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            token: googleToken,
-            role: activeTab,
-          }),
+          body: JSON.stringify(requestPayload),
         }
       );
-
       const result = await apiResponse.json();
-
       if (apiResponse.ok) {
-        // Handle successful Google sign-in
-        localStorage.setItem(`${activeTab}_token`, result.token);
-        localStorage.setItem("userRole", activeTab);
+        localStorage.setItem(`token`, result.token);
+        localStorage.setItem("userRole", result.user.role);
         localStorage.setItem("userName", result.user.name);
-
         if (result.redirectUrl) {
           window.location.href = result.redirectUrl;
         }
       } else {
-        alert(result.message || "Google Sign-In failed");
+        setMessage({
+          text: result.message || "Google Sign-In failed",
+          type: "error",
+        });
       }
     } catch (error) {
-      console.error("Google Sign-In error:", error);
-      alert("Google Sign-In failed. Please try again.");
+      setMessage({
+        text: "Google Sign-In failed. Please try again.",
+        type: "error",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Initialize Google Sign-In when component mounts
+  const initializeGoogleSignIn = React.useCallback(() => {
+    if (window.google && window.google.accounts) {
+      window.google.accounts.id.initialize({
+        client_id: client_id,
+        callback: handleGoogleCredentialResponse,
+        ux_mode: "popup",
+        auto_select: false,
+        cancel_on_tap_outside: true,
+      });
+      googleInitialized.current = true;
+    }
+  }, [activeTab]);
+
+  const renderGoogleButton = () => {
+    if (window.google && window.google.accounts && googleButtonRef.current) {
+      googleButtonRef.current.innerHTML = "";
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: "outline",
+        size: "large",
+        text: "signin_with",
+        shape: "pill",
+        width: "100%",
+      });
+    }
+  };
+
+  const handleGoogleSignIn = () => {
+    if (window.google && window.google.accounts) {
+      window.google.accounts.id.prompt();
+    } else {
+      setMessage({
+        text: "Google Sign-In is not available. Please try again.",
+        type: "error",
+      });
+    }
+  };
+
   React.useEffect(() => {
-    // Load Google GSI script
+    if (message.text) {
+      const timer = setTimeout(() => {
+        setMessage({ text: "", type: "" });
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
+
+  React.useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://accounts.google.com/gsi/client";
     script.async = true;
     script.defer = true;
-
     script.onload = () => {
-      if (window.google && window.google.accounts) {
-        window.google.accounts.id.initialize({
-          client_id: client_id, // Replace with your actual Google Client ID
-          callback: handleGoogleCredentialResponse,
-          auto_select: false,
-          cancel_on_tap_outside: true,
-        });
-      }
+      initializeGoogleSignIn();
+      renderGoogleButton();
     };
-
     document.head.appendChild(script);
-
     return () => {
-      // Cleanup
       if (document.head.contains(script)) {
         document.head.removeChild(script);
       }
     };
   }, []);
+
+  React.useEffect(() => {
+    activeTabRef.current = activeTab;
+    const timer = setTimeout(() => {
+      initializeGoogleSignIn();
+      renderGoogleButton();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [activeTab, initializeGoogleSignIn]);
 
   return (
     <div id="get-started" className="py-20 bg-gray-50">
@@ -266,6 +290,7 @@ const LoginSection = () => {
                     key={type.id}
                     onClick={() => {
                       setActiveTab(type.id);
+                      activeTabRef.current = type.id;
                       setIsSignUp(false);
                       setIsForgotPassword(false);
                       setFormData({
@@ -316,6 +341,17 @@ const LoginSection = () => {
                   </div>
                 )}
                 <div className="space-y-6">
+                  {message.text && (
+                    <div
+                      className={`p-4 mb-4 text-sm rounded-lg ${
+                        message.type === "error"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-green-100 text-green-700"
+                      }`}
+                    >
+                      {message.text}
+                    </div>
+                  )}
                   {isForgotPassword ? (
                     <>
                       <div>
@@ -432,41 +468,17 @@ const LoginSection = () => {
                           />
                         </div>
                       )}
-                      <button
-                        type="button"
-                        onClick={handleGoogleSignIn}
-                        disabled={isLoading}
-                        className="w-full bg-white border border-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 shadow-sm hover:shadow-md flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <svg className="w-5 h-5" viewBox="0 0 24 24">
-                          <path
-                            fill="#4285F4"
-                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                          />
-                          <path
-                            fill="#34A853"
-                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                          />
-                          <path
-                            fill="#FBBC05"
-                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                          />
-                          <path
-                            fill="#EA4335"
-                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                          />
-                        </svg>
-                        {isSignUp
-                          ? "Sign up with Google"
-                          : "Sign in with Google"}
-                      </button>
+                      <div
+                        ref={googleButtonRef}
+                        className="w-full flex justify-center"
+                      ></div>
                       <div className="relative">
                         <div className="absolute inset-0 flex items-center">
                           <div className="w-full border-t border-gray-300"></div>
                         </div>
                         <div className="relative flex justify-center text-sm">
                           <span className="px-2 bg-white text-gray-500">
-                            or
+                            or continue with email
                           </span>
                         </div>
                       </div>

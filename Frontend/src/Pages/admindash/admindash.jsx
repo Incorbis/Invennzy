@@ -47,40 +47,6 @@ const SkeletonLoader = () => {
               <div className="w-10 h-10 rounded-full bg-gray-300 animate-pulse"></div>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-6">
-            {[...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="bg-white p-5 rounded-xl border border-gray-200"
-              >
-                <div className="flex justify-between">
-                  <div className="w-12 h-12 rounded-lg bg-gray-300 animate-pulse"></div>
-                  <div className="h-6 w-16 rounded bg-gray-300 animate-pulse"></div>
-                </div>
-                <div className="mt-4">
-                  <div className="h-6 w-24 rounded bg-gray-300 animate-pulse"></div>
-                  <div className="h-8 w-32 mt-2 rounded bg-gray-300 animate-pulse"></div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-6 pb-6">
-            <div className="lg:col-span-2 bg-white p-5 rounded-xl border border-gray-200">
-              <div className="h-6 w-32 mb-6 rounded bg-gray-300 animate-pulse"></div>
-              <div className="h-64 rounded-lg bg-gray-300 animate-pulse"></div>
-            </div>
-            <div className="bg-white p-5 rounded-xl border border-gray-200">
-              <div className="h-6 w-32 mb-6 rounded bg-gray-300 animate-pulse"></div>
-              <div className="space-y-4">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i}>
-                    <div className="h-4 w-full rounded bg-gray-300 animate-pulse"></div>
-                    <div className="h-3 w-16 mt-2 rounded bg-gray-300 animate-pulse"></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

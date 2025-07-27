@@ -132,85 +132,93 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
-// Google Sign-In handler
 exports.googleSignIn = async (req, res) => {
   const { token, role } = req.body;
-  const table = getTableByRole(role);
-  if (!table) return res.status(400).json({ message: "Invalid role" });
+  
+  // Validate role
+  if (!getTableByRole(role)) {
+    return res.status(400).json({ message: "Invalid role specified" });
+  }
 
   try {
-    // You'll need to install google-auth-library
-    // npm install google-auth-library
     const { OAuth2Client } = require('google-auth-library');
     const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-    
-    // Verify the Google token
+
     const ticket = await client.verifyIdToken({
       idToken: token,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
-    
+
     const payload = ticket.getPayload();
     const { email, name, picture } = payload;
 
-    // Check if user exists in the appropriate table
-    const [rows] = await db.query(`SELECT * FROM ${table} WHERE email = ?`, [email]);
-    
-    let user;
-    if (rows.length === 0) {
-      // For Google Sign-In, we can create new users for any role
-      // But you might want to restrict this based on your business logic
-      if (role !== 'admin') {
-        return res.status(403).json({ 
-          message: `${role} accounts must be created by administrators. Please contact your admin.` 
-        });
-      }
-      
-      // Create new user (for admin only in this example)
-      const [result] = await db.query(
-        `INSERT INTO ${table} (name, email, password, google_id, profile_picture) VALUES (?, ?, ?, ?, ?)`,
-        [name, email, 'google_auth', payload.sub, picture]
-      );
-      
-      user = {
-        id: result.insertId,
-        name,
-        email,
-        role
-      };
-    } else {
-      // User exists, update Google ID if not set
-      user = rows[0];
-      if (!user.google_id) {
-        await db.query(
-          `UPDATE ${table} SET google_id = ?, profile_picture = ? WHERE id = ?`,
-          [payload.sub, picture, user.id]
-        );
+    // Check all tables to find the user
+    const allTables = ['admin', 'labincharge', 'labassistant'];
+    let foundUser = null;
+    let userActualRole = null;
+    let userTable = null;
+
+    for (const table of allTables) {
+      const [rows] = await db.query(`SELECT * FROM ${table} WHERE email = ?`, [email]);
+      if (rows.length > 0) {
+        foundUser = rows[0];
+        userTable = table;
+        // Determine the actual role based on table
+        if (table === 'admin') userActualRole = 'admin';
+        else if (table === 'labincharge') userActualRole = 'labincharge';
+        else if (table === 'labassistant') userActualRole = 'labassistant';
+        break;
       }
     }
 
-    // Generate JWT token
+    if (!foundUser) {
+      return res.status(403).json({
+        message: "This email is not registered in the system. Please contact your administrator.",
+      });
+    }
+
+    // Check if the user's actual role matches the selected role
+    if (userActualRole !== role) {
+      const roleNames = {
+        'admin': 'Admin',
+        'labincharge': 'Lab Incharge',
+        'labassistant': 'Lab Assistant'
+      };
+      
+      return res.status(403).json({
+        message: `This email is registered as ${roleNames[userActualRole]}, but you selected ${roleNames[role]}. Please select the correct role.`,
+      });
+    }
+
+    // Optional: Update Google ID and profile picture if not already set
+    if (!foundUser.google_id) {
+      await db.query(
+        `UPDATE ${userTable} SET google_id = ?, profile_picture = ? WHERE id = ?`,
+        [payload.sub, picture, foundUser.id]
+      );
+    }
+
     const jwtSecret = process.env.JWT_SECRET || 'fallback_secret_key_change_this_in_production';
-    const jwtToken = jwt.sign({ id: user.id, role }, jwtSecret, { expiresIn: "1d" });
-    const dashboardRoute = getDashboardRoute(role);
+    const jwtToken = jwt.sign({ id: foundUser.id, role: userActualRole }, jwtSecret, { expiresIn: "1d" });
+    const dashboardRoute = getDashboardRoute(userActualRole);
 
     res.json({
       message: "Google Sign-In successful",
       token: jwtToken,
       user: {
-        id: user.id,
-        name: user.name || name,
-        email: user.email || email,
-        role
+        id: foundUser.id,
+        name: foundUser.name || name,
+        email: foundUser.email || email,
+        role: userActualRole,
       },
-      redirectUrl: dashboardRoute
+      redirectUrl: dashboardRoute,
     });
 
   } catch (error) {
     console.error("Google Sign-In error:", error);
-    res.status(500).json({ 
-      message: "Google Sign-In failed", 
-      error: error.message 
+    res.status(500).json({
+      message: "Google Sign-In failed",
+      error: error.message,
     });
   }
 };
