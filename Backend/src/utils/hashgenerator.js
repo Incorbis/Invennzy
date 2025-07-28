@@ -5,7 +5,7 @@ async function generateHashes() {
   const passwords = [
     '12345678',
     'labincharge123', 
-    'labassistant123'
+    'labassistant123',
   ];
 
   console.log('Password Hashes for SQL:');

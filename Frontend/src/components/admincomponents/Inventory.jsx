@@ -34,7 +34,6 @@ const Inventory = () => {
   const [editingLab, setEditingLab] = useState(null);
   const [viewingLab, setViewingLab] = useState(null);
 
-  // Form state for adding/editing labs
   const [formData, setFormData] = useState({
     labNo: "",
     labName: "",
