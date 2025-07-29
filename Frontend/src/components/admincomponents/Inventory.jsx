@@ -59,21 +59,39 @@ const Inventory = () => {
 
   // Fetch labs from API
   useEffect(() => {
-    const fetchLabs = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get("/api/labs");
-        setLabs(response.data);
-        setLoading(false);
-      } catch (err) {
-        setError("Failed to fetch labs. Please try again later.");
-        setLoading(false);
-        console.error(err);
+  const fetchLabs = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await axios.get("/api/labs", {
+        timeout: 5000 // 5 second timeout
+      });
+      
+      if (!response.data || !Array.isArray(response.data)) {
+        throw new Error("Invalid data received from server");
       }
-    };
+      
+      setLabs(response.data);
+    } catch (err) {
+      let errorMessage = "Failed to fetch labs";
+      
+      if (err.code === 'ECONNABORTED') {
+        errorMessage = "Request timeout - backend not responding";
+      } else if (err.code === 'ECONNREFUSED') {
+        errorMessage = "Backend server is not running";
+      } else if (err.response) {
+        errorMessage = err.response.data.error || err.message;
+      }
+      
+      setError(errorMessage);
+      console.error("API Error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchLabs();
-  }, []);
+  fetchLabs();
+}, []);
 
   const getStatusColor = (status) => {
     switch (status) {
