@@ -3,13 +3,13 @@ const router = express.Router();
 const Lab = require('../models/Labs');
 
 // GET /api/labs - Get all labs
-router.get('/', async (req, res) => {
+router.get('/labs', async (req, res) => {
   try {
     const labs = await Lab.findAll();
     res.json(labs);
-  } catch (error) {
-    console.error('Error fetching labs:', error);
-    res.status(500).json({ error: 'Failed to fetch labs' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -43,7 +43,7 @@ router.get('/', async (req, res) => {
 
 
 // POST /api/labs - Create a new lab
-router.post('/', async (req, res) => {
+router.post('/labs', async (req, res) => {
   try {
     const {
       labNo, labName, building, floor, capacity, monitors, projectors,
@@ -92,7 +92,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /api/labs/:id - Delete a lab
-router.delete('/:id', async (req, res) => {
+router.delete('/labs/:id', async (req, res) => {
   try {
     await Lab.delete(req.params.id);
     res.json({ message: 'Lab deleted successfully' });

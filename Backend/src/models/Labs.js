@@ -1,78 +1,44 @@
-const { pool } = require('../server');
+const db = require('../db'); // should export a mysql2/promise connection or pool
 
 class Lab {
   static async findAll() {
-    try {
-      const result = await pool.query(`
-        SELECT 
-          l.*,
-          json_build_object(
-            'monitors', e.monitors,
-            'projectors', e.projectors,
-            'switch_boards', e.switch_boards,
-            'fans', e.fans,
-            'wifi', e.wifi
-          ) as equipment,
-          json_build_object(
-            'incharge_name', s.incharge_name,
-            'incharge_email', s.incharge_email,
-            'incharge_phone', s.incharge_phone,
-            'assistant_name', s.assistant_name,
-            'assistant_email', s.assistant_email,
-            'assistant_phone', s.assistant_phone
-          ) as staff
-        FROM labs l
-        LEFT JOIN equipment e ON l.id = e.lab_id
-        LEFT JOIN staff s ON l.id = s.lab_id
-        ORDER BY l.lab_no
-      `);
-      return result.rows;
-    } catch (error) {
-      throw error;
-    }
+    const [rows] = await db.query(`
+      SELECT 
+        l.*, 
+        e.monitors, e.projectors, e.switch_boards, e.fans, e.wifi,
+        s.incharge_name, s.incharge_email, s.incharge_phone,
+        s.assistant_name, s.assistant_email, s.assistant_phone
+      FROM labs l
+      LEFT JOIN equipment e ON l.id = e.lab_id
+      LEFT JOIN staff s ON l.id = s.lab_id
+      ORDER BY l.lab_no
+    `);
+    return rows;
   }
 
   static async findById(id) {
-    try {
-      const result = await pool.query(`
-        SELECT 
-          l.*,
-          json_build_object(
-            'monitors', e.monitors,
-            'projectors', e.projectors,
-            'switch_boards', e.switch_boards,
-            'fans', e.fans,
-            'wifi', e.wifi
-          ) as equipment,
-          json_build_object(
-            'incharge_name', s.incharge_name,
-            'incharge_email', s.incharge_email,
-            'incharge_phone', s.incharge_phone,
-            'assistant_name', s.assistant_name,
-            'assistant_email', s.assistant_email,
-            'assistant_phone', s.assistant_phone
-          ) as staff
-        FROM labs l
-        LEFT JOIN equipment e ON l.id = e.lab_id
-        LEFT JOIN staff s ON l.id = s.lab_id
-        WHERE l.id = $1
-      `, [id]);
-      return result.rows[0];
-    } catch (error) {
-      throw error;
-    }
+    const [rows] = await db.query(`
+      SELECT 
+        l.*, 
+        e.monitors, e.projectors, e.switch_boards, e.fans, e.wifi,
+        s.incharge_name, s.incharge_email, s.incharge_phone,
+        s.assistant_name, s.assistant_email, s.assistant_phone
+      FROM labs l
+      LEFT JOIN equipment e ON l.id = e.lab_id
+      LEFT JOIN staff s ON l.id = s.lab_id
+      WHERE l.id = ?
+    `, [id]);
+    return rows[0];
   }
 
   static async create(labData) {
-    const client = await pool.connect();
+    const conn = await db.getConnection();
     try {
-      await client.query('BEGIN');
+      await conn.beginTransaction();
 
-      // Insert lab
-      const labResult = await client.query(`
+      const [labResult] = await conn.query(`
         INSERT INTO labs (lab_no, lab_name, building, floor, capacity, status)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING *
+        VALUES (?, ?, ?, ?, ?, ?)
       `, [
         labData.labNo,
         labData.labName,
@@ -82,12 +48,11 @@ class Lab {
         labData.status
       ]);
 
-      const labId = labResult.rows[0].id;
+      const labId = labResult.insertId;
 
-      // Insert equipment
-      await client.query(`
+      await conn.query(`
         INSERT INTO equipment (lab_id, monitors, projectors, switch_boards, fans, wifi)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        VALUES (?, ?, ?, ?, ?, ?)
       `, [
         labId,
         labData.monitors,
@@ -97,11 +62,10 @@ class Lab {
         labData.wifi
       ]);
 
-      // Insert staff
-      await client.query(`
+      await conn.query(`
         INSERT INTO staff (lab_id, incharge_name, incharge_email, incharge_phone, 
                           assistant_name, assistant_email, assistant_phone)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `, [
         labId,
         labData.inchargeName,
@@ -112,27 +76,26 @@ class Lab {
         labData.assistantPhone
       ]);
 
-      await client.query('COMMIT');
-      return labResult.rows[0];
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
+      await conn.commit();
+      return { id: labId, ...labData };
+    } catch (err) {
+      await conn.rollback();
+      throw err;
     } finally {
-      client.release();
+      conn.release();
     }
   }
 
   static async update(id, labData) {
-    const client = await pool.connect();
+    const conn = await db.getConnection();
     try {
-      await client.query('BEGIN');
+      await conn.beginTransaction();
 
-      // Update lab
-      await client.query(`
+      await conn.query(`
         UPDATE labs 
-        SET lab_no = $1, lab_name = $2, building = $3, floor = $4, 
-            capacity = $5, status = $6, last_updated = CURRENT_TIMESTAMP
-        WHERE id = $7
+        SET lab_no = ?, lab_name = ?, building = ?, floor = ?, 
+            capacity = ?, status = ?, last_updated = CURRENT_TIMESTAMP
+        WHERE id = ?
       `, [
         labData.labNo,
         labData.labName,
@@ -143,11 +106,10 @@ class Lab {
         id
       ]);
 
-      // Update equipment
-      await client.query(`
+      await conn.query(`
         UPDATE equipment 
-        SET monitors = $1, projectors = $2, switch_boards = $3, fans = $4, wifi = $5
-        WHERE lab_id = $6
+        SET monitors = ?, projectors = ?, switch_boards = ?, fans = ?, wifi = ?
+        WHERE lab_id = ?
       `, [
         labData.monitors,
         labData.projectors,
@@ -157,12 +119,11 @@ class Lab {
         id
       ]);
 
-      // Update staff
-      await client.query(`
+      await conn.query(`
         UPDATE staff 
-        SET incharge_name = $1, incharge_email = $2, incharge_phone = $3,
-            assistant_name = $4, assistant_email = $5, assistant_phone = $6
-        WHERE lab_id = $7
+        SET incharge_name = ?, incharge_email = ?, incharge_phone = ?,
+            assistant_name = ?, assistant_email = ?, assistant_phone = ?
+        WHERE lab_id = ?
       `, [
         labData.inchargeName,
         labData.inchargeEmail,
@@ -173,32 +134,32 @@ class Lab {
         id
       ]);
 
-      await client.query('COMMIT');
+      await conn.commit();
       return true;
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
+    } catch (err) {
+      await conn.rollback();
+      throw err;
     } finally {
-      client.release();
+      conn.release();
     }
   }
 
   static async delete(id) {
-    const client = await pool.connect();
+    const conn = await db.getConnection();
     try {
-      await client.query('BEGIN');
-      
-      await client.query('DELETE FROM staff WHERE lab_id = $1', [id]);
-      await client.query('DELETE FROM equipment WHERE lab_id = $1', [id]);
-      await client.query('DELETE FROM labs WHERE id = $1', [id]);
-      
-      await client.query('COMMIT');
+      await conn.beginTransaction();
+
+      await conn.query('DELETE FROM staff WHERE lab_id = ?', [id]);
+      await conn.query('DELETE FROM equipment WHERE lab_id = ?', [id]);
+      await conn.query('DELETE FROM labs WHERE id = ?', [id]);
+
+      await conn.commit();
       return true;
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
+    } catch (err) {
+      await conn.rollback();
+      throw err;
     } finally {
-      client.release();
+      conn.release();
     }
   }
 }
