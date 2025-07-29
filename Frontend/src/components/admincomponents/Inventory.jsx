@@ -36,7 +36,6 @@ const Inventory = () => {
   const [viewingLab, setViewingLab] = useState(null);
   const [error, setError] = useState(null);
 
-  // Form state for adding/editing labs
   const [formData, setFormData] = useState({
     labNo: "",
     labName: "",
@@ -59,36 +58,18 @@ const Inventory = () => {
 
   // Fetch labs from API
   useEffect(() => {
-  const fetchLabs = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await axios.get("/api/labs", {
-        timeout: 5000 // 5 second timeout
-      });
-      
-      if (!response.data || !Array.isArray(response.data)) {
-        throw new Error("Invalid data received from server");
+    const fetchLabs = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get("http://localhost:3000/api/labs");
+        setLabs(response.data);
+        setLoading(false);
+      } catch (err) {
+        setError("Failed to fetch labs. Please try again later.");
+        setLoading(false);
+        console.error(err);
       }
-      
-      setLabs(response.data);
-    } catch (err) {
-      let errorMessage = "Failed to fetch labs";
-      
-      if (err.code === 'ECONNABORTED') {
-        errorMessage = "Request timeout - backend not responding";
-      } else if (err.code === 'ECONNREFUSED') {
-        errorMessage = "Backend server is not running";
-      } else if (err.response) {
-        errorMessage = err.response.data.error || err.message;
-      }
-      
-      setError(errorMessage);
-      console.error("API Error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
   fetchLabs();
 }, []);
@@ -152,7 +133,7 @@ const Inventory = () => {
 
   const handleAddLab = async () => {
     try {
-      const response = await axios.post("/api/labs", {
+      const response = await axios.post("http://localhost:3000/api/labs", {
         labNo: formData.labNo,
         labName: formData.labName,
         building: formData.building,
@@ -173,9 +154,9 @@ const Inventory = () => {
       });
 
       // Refresh the labs list
-      const labsResponse = await axios.get("/api/labs");
+      const labsResponse = await axios.get("http://localhost:3000/api/labs");
       setLabs(labsResponse.data);
-      
+
       setShowAddModal(false);
       resetForm();
     } catch (err) {
@@ -192,17 +173,17 @@ const Inventory = () => {
       building: lab.building,
       floor: lab.floor,
       capacity: lab.capacity,
-      monitors: lab.equipment.monitors,
-      projectors: lab.equipment.projectors,
-      switchBoards: lab.equipment.switch_boards,
-      fans: lab.equipment.fans,
-      wifi: lab.equipment.wifi,
-      inchargeName: lab.staff.incharge_name,
-      inchargeEmail: lab.staff.incharge_email,
-      inchargePhone: lab.staff.incharge_phone,
-      assistantName: lab.staff.assistant_name,
-      assistantEmail: lab.staff.assistant_email,
-      assistantPhone: lab.staff.assistant_phone,
+      monitors: lab.monitors,
+      projectors: lab.projectors,
+      switchBoards: lab.switch_boards,
+      fans: lab.fans,
+      wifi: lab.wifi,
+      inchargeName: lab.incharge_name,
+      inchargeEmail: lab.incharge_email,
+      inchargePhone: lab.incharge_phone,
+      assistantName: lab.assistant_name,
+      assistantEmail: lab.assistant_email,
+      assistantPhone: lab.assistant_phone,
       status: lab.status,
     });
     setShowAddModal(true);
@@ -212,7 +193,7 @@ const Inventory = () => {
     if (!editingLab) return;
 
     try {
-      await axios.put(`/api/labs/${editingLab.id}`, {
+      await axios.put(`http://localhost:3000/api/labs/${editingLab.id}`, {
         labNo: formData.labNo,
         labName: formData.labName,
         building: formData.building,
@@ -233,9 +214,9 @@ const Inventory = () => {
       });
 
       // Refresh the labs list
-      const response = await axios.get("/api/labs");
+      const response = await axios.get("http://localhost:3000/api/labs");
       setLabs(response.data);
-      
+
       setShowAddModal(false);
       setEditingLab(null);
       resetForm();
@@ -248,7 +229,7 @@ const Inventory = () => {
   const handleDeleteLab = async (labId) => {
     if (window.confirm("Are you sure you want to delete this lab?")) {
       try {
-        await axios.delete(`/api/labs/${labId}`);
+        await axios.delete(`http://localhost:3000/api/labs/${labId}`);
         setLabs(labs.filter((lab) => lab.id !== labId));
       } catch (err) {
         setError("Failed to delete lab. Please try again.");
@@ -259,11 +240,11 @@ const Inventory = () => {
 
   const totalEquipment = labs.reduce(
     (acc, lab) => ({
-      monitors: acc.monitors + (lab.equipment?.monitors || 0),
-      projectors: acc.projectors + (lab.equipment?.projectors || 0),
-      switchBoards: acc.switchBoards + (lab.equipment?.switch_boards || 0),
-      fans: acc.fans + (lab.equipment?.fans || 0),
-      wifi: acc.wifi + (lab.equipment?.wifi || 0),
+      monitors: acc.monitors + (lab.monitors || 0),
+      projectors: acc.projectors + (lab.projectors || 0),
+      switchBoards: acc.switchBoards + (lab.switch_boards || 0),
+      fans: acc.fans + (lab.fans || 0),
+      wifi: acc.wifi + (lab.wifi || 0),
     }),
     { monitors: 0, projectors: 0, switchBoards: 0, fans: 0, wifi: 0 }
   );
@@ -293,8 +274,8 @@ const Inventory = () => {
     return (
       <div className="p-4 bg-red-100 text-red-700 rounded-lg">
         {error}
-        <button 
-          onClick={() => setError(null)} 
+        <button
+          onClick={() => setError(null)}
           className="ml-4 text-red-900 font-bold"
         >
           Dismiss
@@ -477,9 +458,7 @@ const Inventory = () => {
                 <div className="grid grid-cols-5 gap-2 mb-4">
                   <div className="text-center">
                     <Monitor className="mx-auto text-blue-500 mb-1" size={16} />
-                    <p className="text-xs text-gray-600">
-                      {lab.equipment?.monitors || 0}
-                    </p>
+                    <p className="text-xs text-gray-600">{lab.monitors || 0}</p>
                   </div>
                   <div className="text-center">
                     <Projector
@@ -487,26 +466,22 @@ const Inventory = () => {
                       size={16}
                     />
                     <p className="text-xs text-gray-600">
-                      {lab.equipment?.projectors || 0}
+                      {lab.projectors || 0}
                     </p>
                   </div>
                   <div className="text-center">
                     <Zap className="mx-auto text-yellow-500 mb-1" size={16} />
                     <p className="text-xs text-gray-600">
-                      {lab.equipment?.switch_boards || 0}
+                      {lab.switch_boards || 0}
                     </p>
                   </div>
                   <div className="text-center">
                     <Fan className="mx-auto text-green-500 mb-1" size={16} />
-                    <p className="text-xs text-gray-600">
-                      {lab.equipment?.fans || 0}
-                    </p>
+                    <p className="text-xs text-gray-600">{lab.fans || 0}</p>
                   </div>
                   <div className="text-center">
                     <Wifi className="mx-auto text-indigo-500 mb-1" size={16} />
-                    <p className="text-xs text-gray-600">
-                      {lab.equipment?.wifi || 0}
-                    </p>
+                    <p className="text-xs text-gray-600">{lab.wifi || 0}</p>
                   </div>
                 </div>
 
@@ -516,14 +491,14 @@ const Inventory = () => {
                     <UserCheck className="mr-2 text-green-600" size={14} />
                     <span className="font-medium">In-charge:</span>
                     <span className="ml-1 text-gray-600">
-                      {lab.staff?.incharge_name || "Not assigned"}
+                      {lab.incharge_name || "Not assigned"}
                     </span>
                   </div>
                   <div className="flex items-center text-sm">
                     <User className="mr-2 text-blue-600" size={14} />
                     <span className="font-medium">Assistant:</span>
                     <span className="ml-1 text-gray-600">
-                      {lab.staff?.assistant_name || "Not assigned"}
+                      {lab.assistant_name || "Not assigned"}
                     </span>
                   </div>
                 </div>
@@ -562,7 +537,7 @@ const Inventory = () => {
 
       {/* Add/Edit Lab Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
@@ -978,7 +953,7 @@ const Inventory = () => {
                   <div className="text-center p-4 bg-blue-50 rounded-lg">
                     <Monitor className="mx-auto text-blue-500 mb-2" size={24} />
                     <p className="text-2xl font-bold text-gray-900">
-                      {viewingLab.equipment?.monitors || 0}
+                      {viewingLab.monitors || 0}
                     </p>
                     <p className="text-sm text-gray-600">Monitors</p>
                   </div>
@@ -988,28 +963,28 @@ const Inventory = () => {
                       size={24}
                     />
                     <p className="text-2xl font-bold text-gray-900">
-                      {viewingLab.equipment?.projectors || 0}
+                      {viewingLab.projectors || 0}
                     </p>
                     <p className="text-sm text-gray-600">Projectors</p>
                   </div>
                   <div className="text-center p-4 bg-yellow-50 rounded-lg">
                     <Zap className="mx-auto text-yellow-500 mb-2" size={24} />
                     <p className="text-2xl font-bold text-gray-900">
-                      {viewingLab.equipment?.switch_boards || 0}
+                      {viewingLab.switch_boards || 0}
                     </p>
                     <p className="text-sm text-gray-600">Switch Boards</p>
                   </div>
                   <div className="text-center p-4 bg-green-50 rounded-lg">
                     <Fan className="mx-auto text-green-500 mb-2" size={24} />
                     <p className="text-2xl font-bold text-gray-900">
-                      {viewingLab.equipment?.fans || 0}
+                      {viewingLab.fans || 0}
                     </p>
                     <p className="text-sm text-gray-600">Fans</p>
                   </div>
                   <div className="text-center p-4 bg-indigo-50 rounded-lg">
                     <Wifi className="mx-auto text-indigo-500 mb-2" size={24} />
                     <p className="text-2xl font-bold text-gray-900">
-                      {viewingLab.equipment?.wifi || 0}
+                      {viewingLab.wifi || 0}
                     </p>
                     <p className="text-sm text-gray-600">WiFi Points</p>
                   </div>
@@ -1031,15 +1006,15 @@ const Inventory = () => {
                     <div className="space-y-2">
                       <p className="text-sm">
                         <span className="font-medium">Name:</span>{" "}
-                        {viewingLab.staff?.incharge_name || "Not assigned"}
+                        {viewingLab.incharge_name || "Not assigned"}
                       </p>
                       <p className="text-sm">
                         <span className="font-medium">Email:</span>{" "}
-                        {viewingLab.staff?.incharge_email || "N/A"}
+                        {viewingLab.incharge_email || "N/A"}
                       </p>
                       <p className="text-sm">
                         <span className="font-medium">Phone:</span>{" "}
-                        {viewingLab.staff?.incharge_phone || "N/A"}
+                        {viewingLab.incharge_phone || "N/A"}
                       </p>
                     </div>
                   </div>
@@ -1053,15 +1028,15 @@ const Inventory = () => {
                     <div className="space-y-2">
                       <p className="text-sm">
                         <span className="font-medium">Name:</span>{" "}
-                        {viewingLab.staff?.assistant_name || "Not assigned"}
+                        {viewingLab.assistant_name || "Not assigned"}
                       </p>
                       <p className="text-sm">
                         <span className="font-medium">Email:</span>{" "}
-                        {viewingLab.staff?.assistant_email || "N/A"}
+                        {viewingLab.assistant_email || "N/A"}
                       </p>
                       <p className="text-sm">
                         <span className="font-medium">Phone:</span>{" "}
-                        {viewingLab.staff?.assistant_phone || "N/A"}
+                        {viewingLab.assistant_phone || "N/A"}
                       </p>
                     </div>
                   </div>
