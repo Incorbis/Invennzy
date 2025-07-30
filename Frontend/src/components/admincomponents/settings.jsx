@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   User,
   Bell,
@@ -28,6 +28,7 @@ import {
 const SettingsPage = () => {
   const [activeSection, setActiveSection] = useState('profile');
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [notifications, setNotifications] = useState({
     email: true,
     push: false,
@@ -38,12 +39,52 @@ const SettingsPage = () => {
     weeklyReports: true
   });
   const [profile, setProfile] = useState({
-    name: 'John Admin',
-    email: 'admin@college.edu',
-    phone: '+1 234 567 8900',
-    department: 'IT Administration',
-    role: 'System Administrator'
+    name: '',
+    email: '',
+    phone: '',
+    department: '',
+    role: ''
   });
+
+  // Fetch profile data from API
+  const fetchProfileData = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('token'); // Assuming you store JWT in localStorage
+      const response = await fetch('/api/settings/admin/profile', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch profile data');
+      }
+      
+      const data = await response.json();
+      
+      // Update profile with fetched data, ensuring name and email are required
+      setProfile({
+        name: data.name || '',
+        email: data.email || '',
+        phone: data.phone || '', // Can be blank
+        department: data.department || '', // Can be blank
+        role: data.role || ''
+      });
+    } catch (error) {
+      console.error('Error fetching profile data:', error);
+      // Keep default empty values if fetch fails
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load profile data on component mount
+  useEffect(() => {
+    fetchProfileData();
+  }, []);
 
   const sections = [
     { id: 'profile', label: 'Profile', icon: User },
@@ -65,11 +106,40 @@ const SettingsPage = () => {
     // Function kept for potential future use
   };
 
-  const handleSaveSettings = () => {
-    // Simulate saving settings
-    console.log('Settings saved:', { profile, notifications });
-    // You would implement actual save logic here
-    alert('Settings saved successfully!');
+  const handleSaveSettings = async () => {
+    // Validate required fields
+    if (!profile.name.trim() || !profile.email.trim()) {
+      alert('Name and email are required fields');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/settingadmin', {
+        method: 'PUT', // or POST depending on your API
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: profile.name.trim(),
+          email: profile.email.trim(),
+          phone: profile.phone.trim() || null, // Can be blank
+          department: profile.department.trim() || null, // Can be blank
+          role: profile.role
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save settings');
+      }
+
+      alert('Settings saved successfully!');
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      alert('Failed to save settings. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const renderGeneralSettings = () => (
@@ -83,8 +153,6 @@ const SettingsPage = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
             <select 
-              value={systemSettings.currency}
-              onChange={(e) => handleSystemSettingChange('currency', e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="USD">USD ($)</option>
@@ -96,8 +164,6 @@ const SettingsPage = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Timezone</label>
             <select 
-              value={systemSettings.timezone}
-              onChange={(e) => handleSystemSettingChange('timezone', e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="UTC-5">UTC-5 (Eastern)</option>
@@ -109,8 +175,6 @@ const SettingsPage = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Language</label>
             <select 
-              value={systemSettings.language}
-              onChange={(e) => handleSystemSettingChange('language', e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="English">English</option>
@@ -122,8 +186,6 @@ const SettingsPage = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Theme</label>
             <select 
-              value={systemSettings.theme}
-              onChange={(e) => handleSystemSettingChange('theme', e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="light">Light</option>
@@ -142,6 +204,7 @@ const SettingsPage = () => {
         <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
           <User className="mr-2" size={20} />
           Profile Information
+          {isLoading && <span className="ml-2 text-sm text-gray-500">Loading...</span>}
         </h3>
         <div className="flex items-center mb-6">
           <div className="w-20 h-20 rounded-full bg-blue-500 flex items-center justify-center mr-6">
@@ -158,21 +221,27 @@ const SettingsPage = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Full Name <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
               value={profile.name}
               onChange={(e) => setProfile(prev => ({ ...prev, name: e.target.value }))}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email <span className="text-red-500">*</span>
+            </label>
             <input
               type="email"
               value={profile.email}
               onChange={(e) => setProfile(prev => ({ ...prev, email: e.target.value }))}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
             />
           </div>
           <div>
@@ -330,8 +399,6 @@ const SettingsPage = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">Low Stock Threshold</label>
               <input
                 type="number"
-                value={systemSettings.lowStockThreshold}
-                onChange={(e) => handleSystemSettingChange('lowStockThreshold', parseInt(e.target.value))}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 min="1"
               />
@@ -340,8 +407,6 @@ const SettingsPage = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Items Per Page</label>
               <select 
-                value={systemSettings.itemsPerPage}
-                onChange={(e) => handleSystemSettingChange('itemsPerPage', parseInt(e.target.value))}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value={10}>10 items</option>
@@ -359,32 +424,23 @@ const SettingsPage = () => {
                 <p className="text-sm text-blue-600">Automatically reorder items when stock is low</p>
               </div>
               <button
-                onClick={() => handleSystemSettingChange('autoReorder', !systemSettings.autoReorder)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  systemSettings.autoReorder ? 'bg-blue-600' : 'bg-gray-300'
-                }`}
+                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors bg-gray-300"
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    systemSettings.autoReorder ? 'translate-x-6' : 'translate-x-1'
-                  }`}
+                  className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"
                 />
               </button>
             </div>
           </div>
 
-          {systemSettings.autoReorder && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Default Reorder Quantity</label>
-              <input
-                type="number"
-                value={systemSettings.reorderQuantity}
-                onChange={(e) => handleSystemSettingChange('reorderQuantity', parseInt(e.target.value))}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                min="1"
-              />
-            </div>
-          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Default Reorder Quantity</label>
+            <input
+              type="number"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              min="1"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -405,15 +461,10 @@ const SettingsPage = () => {
                 <p className="text-sm text-red-600">Add an extra layer of security to your account</p>
               </div>
               <button
-                onClick={() => handleSecuritySettingChange('twoFactorEnabled', !securitySettings.twoFactorEnabled)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  securitySettings.twoFactorEnabled ? 'bg-green-600' : 'bg-gray-300'
-                }`}
+                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors bg-gray-300"
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    securitySettings.twoFactorEnabled ? 'translate-x-6' : 'translate-x-1'
-                  }`}
+                  className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"
                 />
               </button>
             </div>
@@ -423,8 +474,6 @@ const SettingsPage = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Session Timeout (minutes)</label>
               <select 
-                value={securitySettings.sessionTimeout}
-                onChange={(e) => handleSecuritySettingChange('sessionTimeout', parseInt(e.target.value))}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value={15}>15 minutes</option>
@@ -436,8 +485,6 @@ const SettingsPage = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Max Login Attempts</label>
               <select 
-                value={securitySettings.loginAttempts}
-                onChange={(e) => handleSecuritySettingChange('loginAttempts', parseInt(e.target.value))}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value={3}>3 attempts</option>
@@ -596,10 +643,11 @@ const SettingsPage = () => {
                 </button>
                 <button 
                   onClick={handleSaveSettings}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+                  disabled={isLoading}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2 disabled:opacity-50"
                 >
                   <Save size={16} />
-                  <span>Save Settings</span>
+                  <span>{isLoading ? 'Saving...' : 'Save Settings'}</span>
                 </button>
               </div>
             </div>

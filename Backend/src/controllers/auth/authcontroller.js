@@ -42,9 +42,18 @@ exports.signup = async (req, res) => {
       `INSERT INTO ${table} (name, email, password) VALUES (?, ?, ?)`, 
       [name, email, hashedPassword]
     );
-    
+
+    // Save to settingsadmin as well
+    await db.query(
+      `INSERT INTO settingsadmin (full_name, adminemail, password) VALUES (?, ?, ?)`,
+      [name, email, hashedPassword]
+    );
+
+    const adminId = result.insertId;
+
     res.status(201).json({ 
       message: "Admin account created successfully",
+      id: adminId, // <-- return this to frontend
       redirectUrl: "/admindash"
     });
   } catch (error) {
@@ -80,13 +89,15 @@ exports.login = async (req, res) => {
 
     // Generate token
     const jwtSecret = process.env.JWT_SECRET || 'fallback_secret_key_change_this_in_production';
-    const token = jwt.sign({ id: user.id, role }, jwtSecret, { expiresIn: "1d" });
+    const token = jwt.sign({ id: user.id, role, email: user.email }, jwtSecret, { expiresIn: "1d" });
+
     const dashboardRoute = getDashboardRoute(role);
     
     res.json({ 
       message: "Login successful", 
       token, 
       user: { 
+        email: user.email,
         id: user.id, 
         name: user.name, 
         role 
