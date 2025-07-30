@@ -6,6 +6,7 @@ require('./db');
 const contactusRoute = require('./routes/Contactus/contactusRoute');
 const app = express();
 const authRoutes = require('./routes/auth/authRoutes');
+const settingAdminRoute = require('./routes/setting/settingadmin');
 
 
 
@@ -20,6 +21,7 @@ app.get('/', (req, res) => {
 
 app.use('/api', contactusRoute);
 app.use('/api/auth', authRoutes);
+app.use('/api/settings', settingAdminRoute);
 app.use('/api', require('./routes/labs'));
 
 
