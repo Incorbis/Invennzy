@@ -24,6 +24,7 @@ import {
   Download,
   Upload,
 } from "lucide-react";
+import axios from "axios";
 
 const Inventory = () => {
   const [labs, setLabs] = useState([]);
@@ -33,8 +34,8 @@ const Inventory = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingLab, setEditingLab] = useState(null);
   const [viewingLab, setViewingLab] = useState(null);
+  const [error, setError] = useState(null);
 
-  // Form state for adding/editing labs
   const [formData, setFormData] = useState({
     labNo: "",
     labName: "",
@@ -55,161 +56,23 @@ const Inventory = () => {
     status: "active",
   });
 
-  // Mock data - in real app, this would come from API
+  // Fetch labs from API
   useEffect(() => {
-    const mockLabs = [
-      {
-        id: "1",
-        labNo: "CS-101",
-        labName: "Computer Science Lab 1",
-        building: "Block A",
-        floor: "1st Floor",
-        capacity: 40,
-        equipment: {
-          monitors: 40,
-          projectors: 2,
-          switchBoards: 8,
-          fans: 6,
-          wifi: 2,
-        },
-        staff: {
-          incharge: {
-            name: "Dr. Sarah Johnson",
-            email: "sarah.johnson@college.edu",
-            phone: "+1-555-0101",
-          },
-          assistant: {
-            name: "Mike Chen",
-            email: "mike.chen@college.edu",
-            phone: "+1-555-0102",
-          },
-        },
-        status: "active",
-        lastUpdated: "2024-01-15T10:30:00Z",
-      },
-      {
-        id: "2",
-        labNo: "PHY-201",
-        labName: "Physics Laboratory",
-        building: "Block B",
-        floor: "2nd Floor",
-        capacity: 30,
-        equipment: {
-          monitors: 15,
-          projectors: 1,
-          switchBoards: 6,
-          fans: 4,
-          wifi: 1,
-        },
-        staff: {
-          incharge: {
-            name: "Prof. Robert Davis",
-            email: "robert.davis@college.edu",
-            phone: "+1-555-0201",
-          },
-          assistant: {
-            name: "Lisa Wang",
-            email: "lisa.wang@college.edu",
-            phone: "+1-555-0202",
-          },
-        },
-        status: "active",
-        lastUpdated: "2024-01-14T15:45:00Z",
-      },
-      {
-        id: "3",
-        labNo: "CHEM-301",
-        labName: "Chemistry Lab",
-        building: "Block C",
-        floor: "3rd Floor",
-        capacity: 25,
-        equipment: {
-          monitors: 10,
-          projectors: 1,
-          switchBoards: 4,
-          fans: 3,
-          wifi: 1,
-        },
-        staff: {
-          incharge: {
-            name: "Dr. Emily Rodriguez",
-            email: "emily.rodriguez@college.edu",
-            phone: "+1-555-0301",
-          },
-          assistant: {
-            name: "James Wilson",
-            email: "james.wilson@college.edu",
-            phone: "+1-555-0302",
-          },
-        },
-        status: "maintenance",
-        lastUpdated: "2024-01-13T09:20:00Z",
-      },
-      {
-        id: "4",
-        labNo: "EE-401",
-        labName: "Electrical Engineering Lab",
-        building: "Block D",
-        floor: "4th Floor",
-        capacity: 35,
-        equipment: {
-          monitors: 35,
-          projectors: 2,
-          switchBoards: 10,
-          fans: 5,
-          wifi: 2,
-        },
-        staff: {
-          incharge: {
-            name: "Dr. Ahmed Hassan",
-            email: "ahmed.hassan@college.edu",
-            phone: "+1-555-0401",
-          },
-          assistant: {
-            name: "Maria Garcia",
-            email: "maria.garcia@college.edu",
-            phone: "+1-555-0402",
-          },
-        },
-        status: "active",
-        lastUpdated: "2024-01-15T11:15:00Z",
-      },
-      {
-        id: "5",
-        labNo: "BIO-501",
-        labName: "Biology Laboratory",
-        building: "Block E",
-        floor: "5th Floor",
-        capacity: 20,
-        equipment: {
-          monitors: 8,
-          projectors: 1,
-          switchBoards: 3,
-          fans: 2,
-          wifi: 1,
-        },
-        staff: {
-          incharge: {
-            name: "Dr. Jennifer Lee",
-            email: "jennifer.lee@college.edu",
-            phone: "+1-555-0501",
-          },
-          assistant: {
-            name: "David Kim",
-            email: "david.kim@college.edu",
-            phone: "+1-555-0502",
-          },
-        },
-        status: "inactive",
-        lastUpdated: "2024-01-12T14:30:00Z",
-      },
-    ];
+    const fetchLabs = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get("http://localhost:3000/api/labs");
+        setLabs(response.data);
+        setLoading(false);
+      } catch (err) {
+        setError("Failed to fetch labs. Please try again later.");
+        setLoading(false);
+        console.error(err);
+      }
+    };
 
-    setTimeout(() => {
-      setLabs(mockLabs);
-      setLoading(false);
-    }, 1000);
-  }, []);
+  fetchLabs();
+}, []);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -239,8 +102,8 @@ const Inventory = () => {
 
   const filteredLabs = labs.filter((lab) => {
     const matchesSearch =
-      lab.labNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lab.labName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lab.lab_no.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lab.lab_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       lab.building.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filterStatus === "all" || lab.status === filterStatus;
     return matchesSearch && matchesFilter;
@@ -268,118 +131,120 @@ const Inventory = () => {
     });
   };
 
-  const handleAddLab = () => {
-    const newLab = {
-      id: Date.now().toString(),
-      labNo: formData.labNo,
-      labName: formData.labName,
-      building: formData.building,
-      floor: formData.floor,
-      capacity: formData.capacity,
-      equipment: {
+  const handleAddLab = async () => {
+    try {
+      const response = await axios.post("http://localhost:3000/api/labs", {
+        labNo: formData.labNo,
+        labName: formData.labName,
+        building: formData.building,
+        floor: formData.floor,
+        capacity: formData.capacity,
         monitors: formData.monitors,
         projectors: formData.projectors,
         switchBoards: formData.switchBoards,
         fans: formData.fans,
         wifi: formData.wifi,
-      },
-      staff: {
-        incharge: {
-          name: formData.inchargeName,
-          email: formData.inchargeEmail,
-          phone: formData.inchargePhone,
-        },
-        assistant: {
-          name: formData.assistantName,
-          email: formData.assistantEmail,
-          phone: formData.assistantPhone,
-        },
-      },
-      status: formData.status,
-      lastUpdated: new Date().toISOString(),
-    };
+        inchargeName: formData.inchargeName,
+        inchargeEmail: formData.inchargeEmail,
+        inchargePhone: formData.inchargePhone,
+        assistantName: formData.assistantName,
+        assistantEmail: formData.assistantEmail,
+        assistantPhone: formData.assistantPhone,
+        status: formData.status,
+      });
 
-    setLabs([...labs, newLab]);
-    setShowAddModal(false);
-    resetForm();
+      // Refresh the labs list
+      const labsResponse = await axios.get("http://localhost:3000/api/labs");
+      setLabs(labsResponse.data);
+
+      setShowAddModal(false);
+      resetForm();
+    } catch (err) {
+      setError("Failed to add lab. Please try again.");
+      console.error(err);
+    }
   };
 
   const handleEditLab = (lab) => {
     setEditingLab(lab);
     setFormData({
-      labNo: lab.labNo,
-      labName: lab.labName,
+      labNo: lab.lab_no,
+      labName: lab.lab_name,
       building: lab.building,
       floor: lab.floor,
       capacity: lab.capacity,
-      monitors: lab.equipment.monitors,
-      projectors: lab.equipment.projectors,
-      switchBoards: lab.equipment.switchBoards,
-      fans: lab.equipment.fans,
-      wifi: lab.equipment.wifi,
-      inchargeName: lab.staff.incharge.name,
-      inchargeEmail: lab.staff.incharge.email,
-      inchargePhone: lab.staff.incharge.phone,
-      assistantName: lab.staff.assistant.name,
-      assistantEmail: lab.staff.assistant.email,
-      assistantPhone: lab.staff.assistant.phone,
+      monitors: lab.monitors,
+      projectors: lab.projectors,
+      switchBoards: lab.switch_boards,
+      fans: lab.fans,
+      wifi: lab.wifi,
+      inchargeName: lab.incharge_name,
+      inchargeEmail: lab.incharge_email,
+      inchargePhone: lab.incharge_phone,
+      assistantName: lab.assistant_name,
+      assistantEmail: lab.assistant_email,
+      assistantPhone: lab.assistant_phone,
       status: lab.status,
     });
     setShowAddModal(true);
   };
 
-  const handleUpdateLab = () => {
+  const handleUpdateLab = async () => {
     if (!editingLab) return;
 
-    const updatedLab = {
-      ...editingLab,
-      labNo: formData.labNo,
-      labName: formData.labName,
-      building: formData.building,
-      floor: formData.floor,
-      capacity: formData.capacity,
-      equipment: {
+    try {
+      await axios.put(`http://localhost:3000/api/labs/${editingLab.id}`, {
+        labNo: formData.labNo,
+        labName: formData.labName,
+        building: formData.building,
+        floor: formData.floor,
+        capacity: formData.capacity,
         monitors: formData.monitors,
         projectors: formData.projectors,
         switchBoards: formData.switchBoards,
         fans: formData.fans,
         wifi: formData.wifi,
-      },
-      staff: {
-        incharge: {
-          name: formData.inchargeName,
-          email: formData.inchargeEmail,
-          phone: formData.inchargePhone,
-        },
-        assistant: {
-          name: formData.assistantName,
-          email: formData.assistantEmail,
-          phone: formData.assistantPhone,
-        },
-      },
-      status: formData.status,
-      lastUpdated: new Date().toISOString(),
-    };
+        inchargeName: formData.inchargeName,
+        inchargeEmail: formData.inchargeEmail,
+        inchargePhone: formData.inchargePhone,
+        assistantName: formData.assistantName,
+        assistantEmail: formData.assistantEmail,
+        assistantPhone: formData.assistantPhone,
+        status: formData.status,
+      });
 
-    setLabs(labs.map((lab) => (lab.id === editingLab.id ? updatedLab : lab)));
-    setShowAddModal(false);
-    setEditingLab(null);
-    resetForm();
+      // Refresh the labs list
+      const response = await axios.get("http://localhost:3000/api/labs");
+      setLabs(response.data);
+
+      setShowAddModal(false);
+      setEditingLab(null);
+      resetForm();
+    } catch (err) {
+      setError("Failed to update lab. Please try again.");
+      console.error(err);
+    }
   };
 
-  const handleDeleteLab = (labId) => {
+  const handleDeleteLab = async (labId) => {
     if (window.confirm("Are you sure you want to delete this lab?")) {
-      setLabs(labs.filter((lab) => lab.id !== labId));
+      try {
+        await axios.delete(`http://localhost:3000/api/labs/${labId}`);
+        setLabs(labs.filter((lab) => lab.id !== labId));
+      } catch (err) {
+        setError("Failed to delete lab. Please try again.");
+        console.error(err);
+      }
     }
   };
 
   const totalEquipment = labs.reduce(
     (acc, lab) => ({
-      monitors: acc.monitors + lab.equipment.monitors,
-      projectors: acc.projectors + lab.equipment.projectors,
-      switchBoards: acc.switchBoards + lab.equipment.switchBoards,
-      fans: acc.fans + lab.equipment.fans,
-      wifi: acc.wifi + lab.equipment.wifi,
+      monitors: acc.monitors + (lab.monitors || 0),
+      projectors: acc.projectors + (lab.projectors || 0),
+      switchBoards: acc.switchBoards + (lab.switch_boards || 0),
+      fans: acc.fans + (lab.fans || 0),
+      wifi: acc.wifi + (lab.wifi || 0),
     }),
     { monitors: 0, projectors: 0, switchBoards: 0, fans: 0, wifi: 0 }
   );
@@ -401,6 +266,20 @@ const Inventory = () => {
             </div>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 bg-red-100 text-red-700 rounded-lg">
+        {error}
+        <button
+          onClick={() => setError(null)}
+          className="ml-4 text-red-900 font-bold"
+        >
+          Dismiss
+        </button>
       </div>
     );
   }
@@ -548,9 +427,9 @@ const Inventory = () => {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
-                      {lab.labNo}
+                      {lab.lab_no}
                     </h3>
-                    <p className="text-gray-600">{lab.labName}</p>
+                    <p className="text-gray-600">{lab.lab_name}</p>
                   </div>
                   <div className="flex items-center space-x-2">
                     <span
@@ -579,9 +458,7 @@ const Inventory = () => {
                 <div className="grid grid-cols-5 gap-2 mb-4">
                   <div className="text-center">
                     <Monitor className="mx-auto text-blue-500 mb-1" size={16} />
-                    <p className="text-xs text-gray-600">
-                      {lab.equipment.monitors}
-                    </p>
+                    <p className="text-xs text-gray-600">{lab.monitors || 0}</p>
                   </div>
                   <div className="text-center">
                     <Projector
@@ -589,26 +466,22 @@ const Inventory = () => {
                       size={16}
                     />
                     <p className="text-xs text-gray-600">
-                      {lab.equipment.projectors}
+                      {lab.projectors || 0}
                     </p>
                   </div>
                   <div className="text-center">
                     <Zap className="mx-auto text-yellow-500 mb-1" size={16} />
                     <p className="text-xs text-gray-600">
-                      {lab.equipment.switchBoards}
+                      {lab.switch_boards || 0}
                     </p>
                   </div>
                   <div className="text-center">
                     <Fan className="mx-auto text-green-500 mb-1" size={16} />
-                    <p className="text-xs text-gray-600">
-                      {lab.equipment.fans}
-                    </p>
+                    <p className="text-xs text-gray-600">{lab.fans || 0}</p>
                   </div>
                   <div className="text-center">
                     <Wifi className="mx-auto text-indigo-500 mb-1" size={16} />
-                    <p className="text-xs text-gray-600">
-                      {lab.equipment.wifi}
-                    </p>
+                    <p className="text-xs text-gray-600">{lab.wifi || 0}</p>
                   </div>
                 </div>
 
@@ -618,14 +491,14 @@ const Inventory = () => {
                     <UserCheck className="mr-2 text-green-600" size={14} />
                     <span className="font-medium">In-charge:</span>
                     <span className="ml-1 text-gray-600">
-                      {lab.staff.incharge.name}
+                      {lab.incharge_name || "Not assigned"}
                     </span>
                   </div>
                   <div className="flex items-center text-sm">
                     <User className="mr-2 text-blue-600" size={14} />
                     <span className="font-medium">Assistant:</span>
                     <span className="ml-1 text-gray-600">
-                      {lab.staff.assistant.name}
+                      {lab.assistant_name || "Not assigned"}
                     </span>
                   </div>
                 </div>
@@ -633,7 +506,7 @@ const Inventory = () => {
                 {/* Actions */}
                 <div className="flex items-center justify-between mt-4 pt-4 border-t">
                   <p className="text-xs text-gray-500">
-                    Updated: {new Date(lab.lastUpdated).toLocaleDateString()}
+                    Updated: {new Date(lab.last_updated).toLocaleDateString()}
                   </p>
                   <div className="flex items-center space-x-2">
                     <button
@@ -664,7 +537,7 @@ const Inventory = () => {
 
       {/* Add/Edit Lab Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
@@ -1033,7 +906,7 @@ const Inventory = () => {
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-semibold text-gray-900">
-                  {viewingLab.labNo} - {viewingLab.labName}
+                  {viewingLab.lab_no} - {viewingLab.lab_name}
                 </h3>
                 <button
                   onClick={() => setViewingLab(null)}
@@ -1080,7 +953,7 @@ const Inventory = () => {
                   <div className="text-center p-4 bg-blue-50 rounded-lg">
                     <Monitor className="mx-auto text-blue-500 mb-2" size={24} />
                     <p className="text-2xl font-bold text-gray-900">
-                      {viewingLab.equipment.monitors}
+                      {viewingLab.monitors || 0}
                     </p>
                     <p className="text-sm text-gray-600">Monitors</p>
                   </div>
@@ -1090,28 +963,28 @@ const Inventory = () => {
                       size={24}
                     />
                     <p className="text-2xl font-bold text-gray-900">
-                      {viewingLab.equipment.projectors}
+                      {viewingLab.projectors || 0}
                     </p>
                     <p className="text-sm text-gray-600">Projectors</p>
                   </div>
                   <div className="text-center p-4 bg-yellow-50 rounded-lg">
                     <Zap className="mx-auto text-yellow-500 mb-2" size={24} />
                     <p className="text-2xl font-bold text-gray-900">
-                      {viewingLab.equipment.switchBoards}
+                      {viewingLab.switch_boards || 0}
                     </p>
                     <p className="text-sm text-gray-600">Switch Boards</p>
                   </div>
                   <div className="text-center p-4 bg-green-50 rounded-lg">
                     <Fan className="mx-auto text-green-500 mb-2" size={24} />
                     <p className="text-2xl font-bold text-gray-900">
-                      {viewingLab.equipment.fans}
+                      {viewingLab.fans || 0}
                     </p>
                     <p className="text-sm text-gray-600">Fans</p>
                   </div>
                   <div className="text-center p-4 bg-indigo-50 rounded-lg">
                     <Wifi className="mx-auto text-indigo-500 mb-2" size={24} />
                     <p className="text-2xl font-bold text-gray-900">
-                      {viewingLab.equipment.wifi}
+                      {viewingLab.wifi || 0}
                     </p>
                     <p className="text-sm text-gray-600">WiFi Points</p>
                   </div>
@@ -1133,15 +1006,15 @@ const Inventory = () => {
                     <div className="space-y-2">
                       <p className="text-sm">
                         <span className="font-medium">Name:</span>{" "}
-                        {viewingLab.staff.incharge.name}
+                        {viewingLab.incharge_name || "Not assigned"}
                       </p>
                       <p className="text-sm">
                         <span className="font-medium">Email:</span>{" "}
-                        {viewingLab.staff.incharge.email}
+                        {viewingLab.incharge_email || "N/A"}
                       </p>
                       <p className="text-sm">
                         <span className="font-medium">Phone:</span>{" "}
-                        {viewingLab.staff.incharge.phone}
+                        {viewingLab.incharge_phone || "N/A"}
                       </p>
                     </div>
                   </div>
@@ -1155,15 +1028,15 @@ const Inventory = () => {
                     <div className="space-y-2">
                       <p className="text-sm">
                         <span className="font-medium">Name:</span>{" "}
-                        {viewingLab.staff.assistant.name}
+                        {viewingLab.assistant_name || "Not assigned"}
                       </p>
                       <p className="text-sm">
                         <span className="font-medium">Email:</span>{" "}
-                        {viewingLab.staff.assistant.email}
+                        {viewingLab.assistant_email || "N/A"}
                       </p>
                       <p className="text-sm">
                         <span className="font-medium">Phone:</span>{" "}
-                        {viewingLab.staff.assistant.phone}
+                        {viewingLab.assistant_phone || "N/A"}
                       </p>
                     </div>
                   </div>
@@ -1172,7 +1045,7 @@ const Inventory = () => {
 
               <div className="text-center text-sm text-gray-500">
                 Last updated:{" "}
-                {new Date(viewingLab.lastUpdated).toLocaleString()}
+                {new Date(viewingLab.last_updated).toLocaleString()}
               </div>
             </div>
           </div>
