@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   User,
   Bell,
@@ -43,7 +44,8 @@ const SettingsPage = () => {
     email: '',
     phone: '',
     department: '',
-    role: ''
+    role: '',
+    newPassword: '' // Added for password updates
   });
 
   // Fetch profile data from API
@@ -51,27 +53,27 @@ const SettingsPage = () => {
     setIsLoading(true);
     try {
       const token = localStorage.getItem('token'); // Assuming you store JWT in localStorage
-      const response = await fetch('/api/settings/admin/profile', {
-        method: 'GET',
+      const response = await axios.get('/api/settings/admin/profile', {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch profile data');
-      }
+      const data = response.data;
+      console.log('Received data:', data); // Debug log
       
-      const data = await response.json();
+      // Access the nested profile object
+      const profileData = data.profile || data; // Fallback to data if profile key doesn't exist
       
       // Update profile with fetched data, ensuring name and email are required
       setProfile({
-        name: data.name || '',
-        email: data.email || '',
-        phone: data.phone || '', // Can be blank
-        department: data.department || '', // Can be blank
-        role: data.role || ''
+        name: profileData.name || profileData.full_name || '',
+        email: profileData.email || profileData.adminemail || '',
+        phone: profileData.phone || profileData.phone_number || '', // Can be blank
+        department: profileData.department || profileData.Department || '', // Can be blank
+        role: profileData.role || '',
+        newPassword: '' // Always start with empty password field
       });
     } catch (error) {
       console.error('Error fetching profile data:', error);
@@ -108,32 +110,29 @@ const SettingsPage = () => {
 
   const handleSaveSettings = async () => {
     // Validate required fields
-    if (!profile.name.trim() || !profile.email.trim()) {
-      alert('Name and email are required fields');
+    if (!profile.name.trim() || !profile.phone.trim() || !profile.department.trim()) {
+      alert('Name, phone, and department are required fields');
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/settingadmin', {
-        method: 'PUT', // or POST depending on your API
+      const token = localStorage.getItem('token');
+      const response = await axios.post('/api/settings/admin/update-profile', {
+        name: profile.name.trim(),
+        phone: profile.phone.trim(),
+        department: profile.department.trim(),
+        newPassword: profile.newPassword.trim() || undefined // Only send if not empty
+      }, {
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          name: profile.name.trim(),
-          email: profile.email.trim(),
-          phone: profile.phone.trim() || null, // Can be blank
-          department: profile.department.trim() || null, // Can be blank
-          role: profile.role
-        }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to save settings');
-      }
-
       alert('Settings saved successfully!');
+      // Clear password field after successful update
+      setProfile(prev => ({ ...prev, newPassword: '' }));
     } catch (error) {
       console.error('Error saving settings:', error);
       alert('Failed to save settings. Please try again.');

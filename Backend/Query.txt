@@ -27,3 +27,11 @@ ALTER TABLE LabIncharge ADD COLUMN profile_picture VARCHAR(500) NULL;
 
 ALTER TABLE LabAssistant ADD COLUMN google_id VARCHAR(255) NULL;
 ALTER TABLE LabAssistant ADD COLUMN profile_picture VARCHAR(500) NULL;
+
+CREATE TABLE settingsadmin (
+  adminemail VARCHAR(225) PRIMARY KEY,
+  full_name VARCHAR(45),
+  phone_number INT,
+  Department VARCHAR(225),
+  password VARCHAR(225)
+);
