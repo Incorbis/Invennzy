@@ -41,33 +41,32 @@ router.get('/admin/profile', verifyToken, async (req, res) => {
   }
 });
 
+const bcrypt = require('bcryptjs');
 
 router.post('/admin/update-profile', verifyToken, async (req, res) => {
   const { name, phone, department, newPassword } = req.body;
   const { email: userEmail } = req.user; // from JWT
 
+  console.log('[🔐 Incoming Update]', { userEmail, name, phone, department, newPassword });
+
   if (!name || !phone || !department) {
+    console.log('[⚠️ Validation Failed] Missing required fields');
     return res.status(400).json({ message: 'All fields are required' });
   }
 
   try {
-    // ✅ Check role from DB for security
+    // 1. Check if user exists
     const [rows] = await db.query(
       `SELECT * FROM settingsadmin WHERE adminemail = ?`,
       [userEmail]
     );
 
     if (rows.length === 0) {
+      console.log('[❌ User Not Found]', userEmail);
       return res.status(404).json({ message: 'Admin profile not found' });
     }
 
-    // ✅ Optional: add a check to ensure this user is actually an admin
-    // You can do this if you have a `role` column in the DB
-    // if (rows[0].role !== 'admin') {
-    //   return res.status(403).json({ message: 'Unauthorized access' });
-    // }
-
-    // ✅ Update profile
+    // 2. Update profile fields in settingsadmin
     await db.query(
       `UPDATE settingsadmin 
        SET full_name = ?, phone_number = ?, Department = ? 
@@ -75,20 +74,34 @@ router.post('/admin/update-profile', verifyToken, async (req, res) => {
       [name, phone, department, userEmail]
     );
 
-    // ✅ Update password if provided
-    if (newPassword && newPassword.trim() !== "") {
-      const bcrypt = require('bcryptjs');
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
+    console.log('[✅ Profile Info Updated]');
 
+    // 3. Update password if provided
+    if (newPassword && newPassword.trim() !== "") {
+      console.log('[🔁 Password Update Attempt]');
+      const hashedPassword = await bcrypt.hash(newPassword.trim(), 10);
+
+      // ✅ Update in settingsadmin
       await db.query(
         `UPDATE settingsadmin SET password = ? WHERE adminemail = ?`,
         [hashedPassword, userEmail]
       );
+
+      // ✅ Also update in admin table (used for login)
+      await db.query(
+        `UPDATE admin SET password = ? WHERE email = ?`,
+        [hashedPassword, userEmail]
+      );
+
+      console.log('[✅ Password Updated in Both Tables]');
+    } else {
+      console.log('[ℹ️ No New Password Provided or Empty]');
     }
 
     return res.status(200).json({ message: 'Profile updated successfully' });
+
   } catch (error) {
-    console.error('Profile update error:', error);
+    console.error('[💥 Profile update error]:', error);
     return res.status(500).json({ message: 'Failed to update profile', error: error.message });
   }
 });

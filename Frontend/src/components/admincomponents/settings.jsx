@@ -27,6 +27,9 @@ import {
 } from 'lucide-react';
 
 const SettingsPage = () => {
+  const [currentPassword, setCurrentPassword] = useState('');
+const [newPassword, setNewPassword] = useState('');
+const [confirmPassword, setConfirmPassword] = useState('');
   const [activeSection, setActiveSection] = useState('profile');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -107,39 +110,111 @@ const SettingsPage = () => {
   const handleSecuritySettingChange = (key, value) => {
     // Function kept for potential future use
   };
+  
+const handlePasswordUpdate = async () => {
+  if (!newPassword || !confirmPassword) {
+    alert("Please enter both new and confirm passwords");
+    return;
+  }
 
-  const handleSaveSettings = async () => {
-    // Validate required fields
-    if (!profile.name.trim() || !profile.phone.trim() || !profile.department.trim()) {
-      alert('Name, phone, and department are required fields');
-      return;
+  if (newPassword !== confirmPassword) {
+    alert("Passwords don't match");
+    return;
+  }
+
+  try {
+    const token = localStorage.getItem('token');
+    const name = String(profile.name || '').trim();
+    const phone = String(profile.phone || '').trim();
+    const department = String(profile.department || '').trim();
+
+    await axios.post('/api/settings/admin/update-profile', {
+      name,
+      phone,
+      department,
+      newPassword: newPassword.trim(),
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    // ✅ Show confirmation alert but do NOT clear passwords
+    alert("Password updated successfully!");
+
+  } catch (error) {
+    console.error("Error updating password:", error);
+    alert("Failed to update password.");
+  } finally {
+    setIsLoading(false);
+    // ❌ Do not clear password fields here (as requested)
+    // setNewPassword('');
+    // setConfirmPassword('');
+  }
+};
+
+ const handleSaveSettings = async () => {
+  const name = String(profile.name || '').trim();
+  const phone = String(profile.phone || '').trim();
+  const department = String(profile.department || '').trim();
+  const trimmedNewPassword = newPassword.trim();
+  const trimmedConfirmPassword = confirmPassword.trim();
+
+  if (!name || !phone || !department) {
+    alert('Name, phone, and department are required fields');
+    return;
+  }
+
+  // If password fields are filled, validate them
+  if ((trimmedNewPassword || trimmedConfirmPassword) && trimmedNewPassword !== trimmedConfirmPassword) {
+    alert("Passwords don't match");
+    return;
+  }
+
+  try {
+    const token = localStorage.getItem('token');
+
+    const requestBody = {
+      name,
+      phone,
+      department
+    };
+
+    // Add password only if it's filled
+    if (trimmedNewPassword) {
+      requestBody.newPassword = trimmedNewPassword;
     }
 
-    setIsLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post('/api/settings/admin/update-profile', {
-        name: profile.name.trim(),
-        phone: profile.phone.trim(),
-        department: profile.department.trim(),
-        newPassword: profile.newPassword.trim() || undefined // Only send if not empty
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-      });
+    const response = await axios.post('/api/settings/admin/update-profile', requestBody, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
 
-      alert('Settings saved successfully!');
-      // Clear password field after successful update
-      setProfile(prev => ({ ...prev, newPassword: '' }));
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      alert('Failed to save settings. Please try again.');
-    } finally {
-      setIsLoading(false);
+    alert('Settings updated successfully!');
+
+    // ✅ Logout ONLY if password was updated
+    if (trimmedNewPassword) {
+      alert("Password updated. You'll be logged out for security.");
+      localStorage.removeItem("token");
+      localStorage.removeItem("userRole");
+      localStorage.removeItem("userName");
+      window.location.href = "/"; // or your login page
     }
-  };
+
+  } catch (error) {
+    console.error('Error saving settings:', error);
+    alert('Failed to update settings');
+  } finally {
+    setIsLoading(false);
+    setNewPassword('');
+    setConfirmPassword('');
+  }
+};
+
+
 
   const renderGeneralSettings = () => (
     <div className="space-y-6">
@@ -273,11 +348,13 @@ const SettingsPage = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
             <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
+             <input
+  type={showPassword ? "text" : "password"}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
                 placeholder="Enter current password"
-              />
+  value={currentPassword}
+  onChange={(e) => setCurrentPassword(e.target.value)}
+/>
               <button
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute inset-y-0 right-0 pr-3 flex items-center"
@@ -289,24 +366,31 @@ const SettingsPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
-              <input
-                type="password"
+             <input
+  type="password"
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter new password"
-              />
+                 placeholder="Enter new password"
+  value={newPassword}
+  onChange={(e) => setNewPassword(e.target.value)}
+/>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
               <input
-                type="password"
+  type="password"
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Confirm new password"
-              />
+                 placeholder="Confirm new password"
+  value={confirmPassword}
+  onChange={(e) => setConfirmPassword(e.target.value)}
+/>
             </div>
           </div>
-          <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
-            Update Password
-          </button>
+          <button 
+  onClick={handlePasswordUpdate}
+  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+>
+  Update Password
+</button>
         </div>
       </div>
     </div>
