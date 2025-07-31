@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 import {
   User,
   Bell,
@@ -22,12 +23,18 @@ import {
   BarChart3,
   Globe,
   Smartphone,
-  Monitor
+  Monitor,
+  Camera
 } from 'lucide-react';
 
 const SettingsPage = () => {
   const [activeSection, setActiveSection] = useState('profile');
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [profileImage, setProfileImage] = useState(null);
+  const [profileImagePreview, setProfileImagePreview] = useState(null);
+  const fileInputRef = useRef(null);
+  
   const [notifications, setNotifications] = useState({
     email: true,
     push: false,
@@ -38,12 +45,97 @@ const SettingsPage = () => {
     weeklyReports: true
   });
   const [profile, setProfile] = useState({
-    name: 'John Admin',
-    email: 'admin@college.edu',
-    phone: '+1 234 567 8900',
-    department: 'IT Administration',
-    role: 'System Administrator'
+    name: '',
+    email: '',
+    phone: '',
+    department: '',
+    role: ''
   });
+
+  // Fetch profile data from API
+  const fetchProfileData = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('token'); // Assuming you store JWT in localStorage
+      const response = await axios.get('/api/settings/admin/profile', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+      });
+      
+      const data = response.data;
+      console.log('Received data:', data); // Debug log
+      
+      // Access the nested profile object
+      const profileData = data.profile || data; // Fallback to data if profile key doesn't exist
+      
+      // Update profile with fetched data, ensuring name and email are required
+      setProfile({
+        name: profileData.name || '',
+        email: profileData.email || '',
+        phone: profileData.phone || '', // Can be blank
+        department: profileData.department || '', // Can be blank
+        role: profileData.role || ''
+      });
+
+      // Set profile image if exists
+      if (profileData.profileImage) {
+        setProfileImagePreview(profileData.profileImage);
+      }
+    } catch (error) {
+      console.error('Error fetching profile data:', error);
+      // Keep default empty values if fetch fails
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load profile data on component mount
+  useEffect(() => {
+    fetchProfileData();
+  }, []);
+
+  // Handle file selection for profile photo
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size must be less than 5MB');
+        return;
+      }
+
+      setProfileImage(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setProfileImagePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle change photo button click
+  const handleChangePhoto = () => {
+    fileInputRef.current?.click();
+  };
+
+  // Handle remove photo
+  const handleRemovePhoto = () => {
+    setProfileImage(null);
+    setProfileImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const sections = [
     { id: 'profile', label: 'Profile', icon: User },
@@ -65,11 +157,58 @@ const SettingsPage = () => {
     // Function kept for potential future use
   };
 
-  const handleSaveSettings = () => {
-    // Simulate saving settings
-    console.log('Settings saved:', { profile, notifications });
-    // You would implement actual save logic here
-    alert('Settings saved successfully!');
+  const handleSaveSettings = async () => {
+    // Validate required fields
+    if (!profile.name.trim() || !profile.email.trim()) {
+      alert('Name and email are required fields');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Create FormData for multipart/form-data if there's an image
+      let requestData;
+      let headers = {};
+
+      if (profileImage) {
+        requestData = new FormData();
+        requestData.append('name', profile.name.trim());
+        requestData.append('email', profile.email.trim());
+        requestData.append('phone', profile.phone.trim() || '');
+        requestData.append('department', profile.department.trim() || '');
+        requestData.append('role', profile.role);
+        requestData.append('profileImage', profileImage);
+        // Don't set Content-Type header for FormData, let browser set it
+      } else {
+        requestData = {
+          name: profile.name.trim(),
+          email: profile.email.trim(),
+          phone: profile.phone.trim() || null, // Can be blank
+          department: profile.department.trim() || null, // Can be blank
+          role: profile.role
+        };
+        headers['Content-Type'] = 'application/json';
+      }
+
+      const response = await axios.put('/api/settingadmin', requestData, {
+        headers,
+      });
+
+      alert('Settings saved successfully!');
+      
+      // Reset the file input after successful save
+      if (profileImage) {
+        setProfileImage(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      alert('Failed to save settings. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const renderGeneralSettings = () => (
@@ -83,8 +222,6 @@ const SettingsPage = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
             <select 
-              value={systemSettings.currency}
-              onChange={(e) => handleSystemSettingChange('currency', e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="USD">USD ($)</option>
@@ -96,8 +233,6 @@ const SettingsPage = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Timezone</label>
             <select 
-              value={systemSettings.timezone}
-              onChange={(e) => handleSystemSettingChange('timezone', e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="UTC-5">UTC-5 (Eastern)</option>
@@ -109,8 +244,6 @@ const SettingsPage = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Language</label>
             <select 
-              value={systemSettings.language}
-              onChange={(e) => handleSystemSettingChange('language', e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="English">English</option>
@@ -122,8 +255,6 @@ const SettingsPage = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Theme</label>
             <select 
-              value={systemSettings.theme}
-              onChange={(e) => handleSystemSettingChange('theme', e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="light">Light</option>
@@ -142,37 +273,75 @@ const SettingsPage = () => {
         <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
           <User className="mr-2" size={20} />
           Profile Information
+          {isLoading && <span className="ml-2 text-sm text-gray-500">Loading...</span>}
         </h3>
         <div className="flex items-center mb-6">
-          <div className="w-20 h-20 rounded-full bg-blue-500 flex items-center justify-center mr-6">
-            <User className="text-white" size={32} />
+          <div className="w-20 h-20 rounded-full bg-blue-500 flex items-center justify-center mr-6 overflow-hidden">
+            {profileImagePreview ? (
+              <img 
+                src={profileImagePreview} 
+                alt="Profile" 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <User className="text-white" size={32} />
+            )}
           </div>
           <div>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 mr-3">
-              Change Photo
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              accept="image/*"
+              className="hidden"
+            />
+            <button 
+              onClick={handleChangePhoto}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 mr-3 flex items-center space-x-2"
+            >
+              <Camera size={16} />
+              <span>Change Photo</span>
             </button>
-            <button className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50">
+            <button 
+              onClick={handleRemovePhoto}
+              className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50"
+            >
               Remove
             </button>
           </div>
         </div>
+        {profileImage && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-sm text-green-700 flex items-center">
+              <Check size={16} className="mr-2" />
+              New photo selected: {profileImage.name} ({(profileImage.size / 1024 / 1024).toFixed(2)} MB)
+            </p>
+            <p className="text-xs text-green-600 mt-1">Don't forget to save your changes to upload the new photo.</p>
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Full Name <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
               value={profile.name}
               onChange={(e) => setProfile(prev => ({ ...prev, name: e.target.value }))}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email <span className="text-red-500">*</span>
+            </label>
             <input
               type="email"
               value={profile.email}
               onChange={(e) => setProfile(prev => ({ ...prev, email: e.target.value }))}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
             />
           </div>
           <div>
@@ -330,8 +499,6 @@ const SettingsPage = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">Low Stock Threshold</label>
               <input
                 type="number"
-                value={systemSettings.lowStockThreshold}
-                onChange={(e) => handleSystemSettingChange('lowStockThreshold', parseInt(e.target.value))}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 min="1"
               />
@@ -340,8 +507,6 @@ const SettingsPage = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Items Per Page</label>
               <select 
-                value={systemSettings.itemsPerPage}
-                onChange={(e) => handleSystemSettingChange('itemsPerPage', parseInt(e.target.value))}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value={10}>10 items</option>
@@ -359,32 +524,23 @@ const SettingsPage = () => {
                 <p className="text-sm text-blue-600">Automatically reorder items when stock is low</p>
               </div>
               <button
-                onClick={() => handleSystemSettingChange('autoReorder', !systemSettings.autoReorder)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  systemSettings.autoReorder ? 'bg-blue-600' : 'bg-gray-300'
-                }`}
+                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors bg-gray-300"
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    systemSettings.autoReorder ? 'translate-x-6' : 'translate-x-1'
-                  }`}
+                  className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"
                 />
               </button>
             </div>
           </div>
 
-          {systemSettings.autoReorder && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Default Reorder Quantity</label>
-              <input
-                type="number"
-                value={systemSettings.reorderQuantity}
-                onChange={(e) => handleSystemSettingChange('reorderQuantity', parseInt(e.target.value))}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                min="1"
-              />
-            </div>
-          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Default Reorder Quantity</label>
+            <input
+              type="number"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              min="1"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -405,15 +561,10 @@ const SettingsPage = () => {
                 <p className="text-sm text-red-600">Add an extra layer of security to your account</p>
               </div>
               <button
-                onClick={() => handleSecuritySettingChange('twoFactorEnabled', !securitySettings.twoFactorEnabled)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  securitySettings.twoFactorEnabled ? 'bg-green-600' : 'bg-gray-300'
-                }`}
+                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors bg-gray-300"
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    securitySettings.twoFactorEnabled ? 'translate-x-6' : 'translate-x-1'
-                  }`}
+                  className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"
                 />
               </button>
             </div>
@@ -423,8 +574,6 @@ const SettingsPage = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Session Timeout (minutes)</label>
               <select 
-                value={securitySettings.sessionTimeout}
-                onChange={(e) => handleSecuritySettingChange('sessionTimeout', parseInt(e.target.value))}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value={15}>15 minutes</option>
@@ -436,8 +585,6 @@ const SettingsPage = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Max Login Attempts</label>
               <select 
-                value={securitySettings.loginAttempts}
-                onChange={(e) => handleSecuritySettingChange('loginAttempts', parseInt(e.target.value))}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value={3}>3 attempts</option>
@@ -519,7 +666,7 @@ const SettingsPage = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl p-6 border border-red-200 border-2">
+      <div className="bg-white rounded-xl p-6  border-red-200 border-2">
         <h3 className="text-lg font-semibold text-red-600 mb-4 flex items-center">
           <AlertTriangle className="mr-2" size={20} />
           Danger Zone
@@ -596,10 +743,11 @@ const SettingsPage = () => {
                 </button>
                 <button 
                   onClick={handleSaveSettings}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+                  disabled={isLoading}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2 disabled:opacity-50"
                 >
                   <Save size={16} />
-                  <span>Save Settings</span>
+                  <span>{isLoading ? 'Saving...' : 'Save Settings'}</span>
                 </button>
               </div>
             </div>

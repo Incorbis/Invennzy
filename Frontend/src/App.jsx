@@ -18,6 +18,8 @@ import Overview from "./components/admincomponents/overview.jsx";
 import Notifications from "./components/admincomponents/Notification.jsx";
 import Notification from "./components/Inchargecomponents/Notification.jsx";
 import PrivateRoute from "./Utils/PrivateRoute.jsx";
+import AddItems from "./components/Inchargecomponents/AddItems.jsx";
+import Requests from "./components/Inchargecomponents/Requests.jsx";
 
 function App() {
   return (
@@ -56,8 +58,10 @@ function App() {
           </PrivateRoute>
         }
       >
-        <Route path="notification" element={<Notification />} />
+        <Route path="notifications" element={<Notifications />} />
         <Route path="inventory" element={<Inventory />} />
+        <Route path="additems" element={<AddItems />} />
+        <Route path="requests" element={<Requests />} />
         <Route path="reports" element={<Reports />} />
         <Route path="" element={<Overview />} />
         <Route path="settings" element={<Settings />} />

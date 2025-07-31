@@ -27,3 +27,79 @@ ALTER TABLE LabIncharge ADD COLUMN profile_picture VARCHAR(500) NULL;
 
 ALTER TABLE LabAssistant ADD COLUMN google_id VARCHAR(255) NULL;
 ALTER TABLE LabAssistant ADD COLUMN profile_picture VARCHAR(500) NULL;
+
+
+
+
+
+
+
+
+
+
+
+
+USE invennzy;
+
+-- Create labs table
+CREATE TABLE labs (
+    id SERIAL PRIMARY KEY,
+    lab_no VARCHAR(50) UNIQUE NOT NULL,
+    lab_name VARCHAR(255) NOT NULL,
+    building VARCHAR(100) NOT NULL,
+    floor VARCHAR(50) NOT NULL,
+    capacity INTEGER DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'maintenance', 'inactive')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create equipment table
+CREATE TABLE equipment (
+    id SERIAL PRIMARY KEY,
+    lab_id INTEGER REFERENCES labs(id) ON DELETE CASCADE,
+    monitors INTEGER DEFAULT 0,
+    projectors INTEGER DEFAULT 0,
+    switch_boards INTEGER DEFAULT 0,
+    fans INTEGER DEFAULT 0,
+    wifi INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create staff table
+CREATE TABLE staff (
+    id SERIAL PRIMARY KEY,
+    lab_id INTEGER REFERENCES labs(id) ON DELETE CASCADE,
+    incharge_name VARCHAR(255),
+    incharge_email VARCHAR(255),
+    incharge_phone VARCHAR(20),
+    assistant_name VARCHAR(255),
+    assistant_email VARCHAR(255),
+    assistant_phone VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for better performance
+CREATE INDEX idx_labs_lab_no ON labs(lab_no);
+CREATE INDEX idx_labs_building ON labs(building);
+CREATE INDEX idx_labs_status ON labs(status);
+CREATE INDEX idx_equipment_lab_id ON equipment(lab_id);
+CREATE INDEX idx_staff_lab_id ON staff(lab_id);
+
+-- Insert sample data
+INSERT INTO labs (lab_no, lab_name, building, floor, capacity, status) VALUES
+('LAB001', 'Computer Science Lab 1', 'Main Building', 'Ground Floor', 30, 'active'),
+('LAB002', 'Physics Lab', 'Science Block', 'First Floor', 25, 'active'),
+('LAB003', 'Chemistry Lab', 'Science Block', 'Second Floor', 20, 'maintenance');
+
+INSERT INTO equipment (lab_id, monitors, projectors, switch_boards, fans, wifi) VALUES
+(1, 30, 1, 4, 6, 2),
+(2, 0, 1, 2, 4, 1),
+(3, 0, 1, 3, 5, 1);
+
+INSERT INTO staff (lab_id, incharge_name, incharge_email, incharge_phone, assistant_name, assistant_email, assistant_phone) VALUES
+(1, 'Dr. John Smith', 'john.smith@college.edu', '+1-555-0101', 'Alice Johnson', 'alice.johnson@college.edu', '+1-555-0102'),
+(2, 'Prof. Sarah Wilson', 'sarah.wilson@college.edu', '+1-555-0201', 'Bob Brown', 'bob.brown@college.edu', '+1-555-0202'),
+(3, 'Dr. Mike Davis', 'mike.davis@college.edu', '+1-555-0301', 'Carol White', 'carol.white@college.edu', '+1-555-0302');
