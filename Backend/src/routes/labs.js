@@ -70,7 +70,7 @@ router.post('/labs', async (req, res) => {
 });
 
 // PUT /api/labs/:id - Update a lab
-router.put('/:id', async (req, res) => {
+router.put('/labs/:id', async (req, res) => {
   try {
     const {
       labNo, labName, building, floor, capacity, monitors, projectors,

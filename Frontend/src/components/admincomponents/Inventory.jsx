@@ -23,6 +23,7 @@ import {
   Clock,
   Download,
   Upload,
+  AlertTriangle,
 } from "lucide-react";
 import axios from "axios";
 
@@ -35,6 +36,7 @@ const Inventory = () => {
   const [editingLab, setEditingLab] = useState(null);
   const [viewingLab, setViewingLab] = useState(null);
   const [error, setError] = useState(null);
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState(null);
 
   const [formData, setFormData] = useState({
     labNo: "",
@@ -56,6 +58,274 @@ const Inventory = () => {
     status: "active",
   });
 
+  // PDF Generation Function
+  const generatePDF = (lab) => {
+    // Create a new window for the PDF content
+    const printWindow = window.open('', '_blank');
+    
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Lab Report - ${lab.lab_no}</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            color: #333;
+            line-height: 1.6;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+          }
+          .header h1 {
+            color: #2563eb;
+            margin: 0;
+            font-size: 28px;
+          }
+          .header p {
+            color: #666;
+            margin: 5px 0 0 0;
+            font-size: 16px;
+          }
+          .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background-color: #f9fafb;
+          }
+          .section h2 {
+            color: #1f2937;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            font-size: 20px;
+          }
+          .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+          }
+          .info-item {
+            display: flex;
+            flex-direction: column;
+          }
+          .info-label {
+            font-weight: bold;
+            color: #374151;
+            font-size: 14px;
+            margin-bottom: 5px;
+          }
+          .info-value {
+            color: #1f2937;
+            font-size: 16px;
+          }
+          .equipment-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+          }
+          .equipment-item {
+            text-align: center;
+            padding: 15px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background-color: white;
+          }
+          .equipment-count {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 5px;
+          }
+          .equipment-label {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+          }
+          .status-active {
+            background-color: #dcfce7;
+            color: #166534;
+          }
+          .status-maintenance {
+            background-color: #fef3c7;
+            color: #92400e;
+          }
+          .status-inactive {
+            background-color: #fee2e2;
+            color: #991b1b;
+          }
+          .staff-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 15px;
+          }
+          .staff-section {
+            padding: 15px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background-color: white;
+          }
+          .staff-title {
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 10px;
+            font-size: 16px;
+          }
+          .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            color: #6b7280;
+            font-size: 14px;
+          }
+          @media print {
+            body { margin: 20px; }
+            .section { break-inside: avoid; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>${lab.lab_no} - ${lab.lab_name}</h1>
+          <p>Laboratory Information Report</p>
+          <p>Generated on ${new Date().toLocaleDateString()}</p>
+        </div>
+
+        <div class="section">
+          <h2>Basic Information</h2>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Lab Number</span>
+              <span class="info-value">${lab.lab_no}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Lab Name</span>
+              <span class="info-value">${lab.lab_name}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Building</span>
+              <span class="info-value">${lab.building}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Floor</span>
+              <span class="info-value">${lab.floor}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Capacity</span>
+              <span class="info-value">${lab.capacity} students</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Status</span>
+              <span class="info-value">
+                <span class="status-badge status-${lab.status}">${lab.status}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Equipment Inventory</h2>
+          <div class="equipment-grid">
+            <div class="equipment-item">
+              <div class="equipment-count">${lab.monitors || 0}</div>
+              <div class="equipment-label">Monitors</div>
+            </div>
+            <div class="equipment-item">
+              <div class="equipment-count">${lab.projectors || 0}</div>
+              <div class="equipment-label">Projectors</div>
+            </div>
+            <div class="equipment-item">
+              <div class="equipment-count">${lab.switch_boards || 0}</div>
+              <div class="equipment-label">Switch Boards</div>
+            </div>
+            <div class="equipment-item">
+              <div class="equipment-count">${lab.fans || 0}</div>
+              <div class="equipment-label">Fans</div>
+            </div>
+            <div class="equipment-item">
+              <div class="equipment-count">${lab.wifi || 0}</div>
+              <div class="equipment-label">WiFi Points</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Staff Information</h2>
+          <div class="staff-grid">
+            <div class="staff-section">
+              <div class="staff-title">Lab In-charge</div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <span class="info-label">Name</span>
+                  <span class="info-value">${lab.incharge_name || 'Not assigned'}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Email</span>
+                  <span class="info-value">${lab.incharge_email || 'N/A'}</span>
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <span class="info-label">Phone</span>
+                  <span class="info-value">${lab.incharge_phone || 'N/A'}</span>
+                </div>
+              </div>
+            </div>
+            <div class="staff-section">
+              <div class="staff-title">Lab Assistant</div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <span class="info-label">Name</span>
+                  <span class="info-value">${lab.assistant_name || 'Not assigned'}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Email</span>
+                  <span class="info-value">${lab.assistant_email || 'N/A'}</span>
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <span class="info-label">Phone</span>
+                  <span class="info-value">${lab.assistant_phone || 'N/A'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer">
+          <p>Last updated: ${new Date(lab.last_updated).toLocaleString()}</p>
+          <p>This report was generated automatically from the Laboratory Inventory Management System</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    
+    // Wait for content to load, then print
+    printWindow.onload = function() {
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
+    };
+  };
+
   // Fetch labs from API
   useEffect(() => {
     const fetchLabs = async () => {
@@ -71,8 +341,8 @@ const Inventory = () => {
       }
     };
 
-  fetchLabs();
-}, []);
+    fetchLabs();
+  }, []);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -226,15 +496,23 @@ const Inventory = () => {
     }
   };
 
-  const handleDeleteLab = async (labId) => {
-    if (window.confirm("Are you sure you want to delete this lab?")) {
-      try {
-        await axios.delete(`http://localhost:3000/api/labs/${labId}`);
-        setLabs(labs.filter((lab) => lab.id !== labId));
-      } catch (err) {
-        setError("Failed to delete lab. Please try again.");
-        console.error(err);
-      }
+  // Updated delete function to show modal instead of alert
+  const handleDeleteLab = (lab) => {
+    setDeleteConfirmModal(lab);
+  };
+
+  // New function to confirm deletion
+  const confirmDeleteLab = async () => {
+    if (!deleteConfirmModal) return;
+
+    try {
+      await axios.delete(`http://localhost:3000/api/labs/${deleteConfirmModal.id}`);
+      setLabs(labs.filter((lab) => lab.id !== deleteConfirmModal.id));
+      setDeleteConfirmModal(null);
+    } catch (err) {
+      setError("Failed to delete lab. Please try again.");
+      console.error(err);
+      setDeleteConfirmModal(null);
     }
   };
 
@@ -522,7 +800,7 @@ const Inventory = () => {
                       <Edit size={16} />
                     </button>
                     <button
-                      onClick={() => handleDeleteLab(lab.id)}
+                      onClick={() => handleDeleteLab(lab)}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     >
                       <Trash2 size={16} />
@@ -535,9 +813,54 @@ const Inventory = () => {
         })}
       </div>
 
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmModal && (
+        <div className="fixed inset-0 bg-gray-100 bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-center mb-4">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                  <AlertTriangle className="text-red-600" size={32} />
+                </div>
+              </div>
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  Delete Laboratory
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Are you sure you want to delete{" "}
+                  <span className="font-semibold text-gray-900">
+                    {deleteConfirmModal.lab_no} - {deleteConfirmModal.lab_name}
+                  </span>
+                  ?
+                </p>
+                <p className="text-sm text-red-600">
+                  This action cannot be undone. All lab data and equipment records will be permanently removed.
+                </p>
+              </div>
+              <div className="flex items-center justify-end space-x-3">
+                <button
+                  onClick={() => setDeleteConfirmModal(null)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteLab}
+                  className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  <Trash2 className="mr-2" size={16} />
+                  Delete Lab
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Add/Edit Lab Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0  bg-gray-100 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
@@ -901,19 +1224,29 @@ const Inventory = () => {
 
       {/* View Lab Modal */}
       {viewingLab && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-gray-100 bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-semibold text-gray-900">
                   {viewingLab.lab_no} - {viewingLab.lab_name}
                 </h3>
-                <button
-                  onClick={() => setViewingLab(null)}
-                  className="p-2 hover:bg-gray-100 rounded-lg"
-                >
-                  <X size={20} />
-                </button>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => generatePDF(viewingLab)}
+                    className="flex items-center px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    title="Download PDF Report"
+                  >
+                    <Download className="mr-2" size={16} />
+                    Download PDF
+                  </button>
+                  <button
+                    onClick={() => setViewingLab(null)}
+                    className="p-2 hover:bg-gray-100 rounded-lg"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
               </div>
             </div>
 

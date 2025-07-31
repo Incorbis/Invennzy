@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import {
   User,
@@ -23,7 +23,8 @@ import {
   BarChart3,
   Globe,
   Smartphone,
-  Monitor
+  Monitor,
+  Camera
 } from 'lucide-react';
 
 const SettingsPage = () => {
@@ -33,6 +34,10 @@ const [confirmPassword, setConfirmPassword] = useState('');
   const [activeSection, setActiveSection] = useState('profile');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [profileImage, setProfileImage] = useState(null);
+  const [profileImagePreview, setProfileImagePreview] = useState(null);
+  const fileInputRef = useRef(null);
+  
   const [notifications, setNotifications] = useState({
     email: true,
     push: false,
@@ -47,8 +52,7 @@ const [confirmPassword, setConfirmPassword] = useState('');
     email: '',
     phone: '',
     department: '',
-    role: '',
-    newPassword: '' // Added for password updates
+    role: ''
   });
 
   // Fetch profile data from API
@@ -71,13 +75,17 @@ const [confirmPassword, setConfirmPassword] = useState('');
       
       // Update profile with fetched data, ensuring name and email are required
       setProfile({
-        name: profileData.name || profileData.full_name || '',
-        email: profileData.email || profileData.adminemail || '',
-        phone: profileData.phone || profileData.phone_number || '', // Can be blank
-        department: profileData.department || profileData.Department || '', // Can be blank
-        role: profileData.role || '',
-        newPassword: '' // Always start with empty password field
+        name: profileData.name || '',
+        email: profileData.email || '',
+        phone: profileData.phone || '', // Can be blank
+        department: profileData.department || '', // Can be blank
+        role: profileData.role || ''
       });
+
+      // Set profile image if exists
+      if (profileData.profileImage) {
+        setProfileImagePreview(profileData.profileImage);
+      }
     } catch (error) {
       console.error('Error fetching profile data:', error);
       // Keep default empty values if fetch fails
@@ -90,6 +98,47 @@ const [confirmPassword, setConfirmPassword] = useState('');
   useEffect(() => {
     fetchProfileData();
   }, []);
+
+  // Handle file selection for profile photo
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size must be less than 5MB');
+        return;
+      }
+
+      setProfileImage(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setProfileImagePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle change photo button click
+  const handleChangePhoto = () => {
+    fileInputRef.current?.click();
+  };
+
+  // Handle remove photo
+  const handleRemovePhoto = () => {
+    setProfileImage(null);
+    setProfileImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const sections = [
     { id: 'profile', label: 'Profile', icon: User },
@@ -281,18 +330,49 @@ const handlePasswordUpdate = async () => {
           {isLoading && <span className="ml-2 text-sm text-gray-500">Loading...</span>}
         </h3>
         <div className="flex items-center mb-6">
-          <div className="w-20 h-20 rounded-full bg-blue-500 flex items-center justify-center mr-6">
-            <User className="text-white" size={32} />
+          <div className="w-20 h-20 rounded-full bg-blue-500 flex items-center justify-center mr-6 overflow-hidden">
+            {profileImagePreview ? (
+              <img 
+                src={profileImagePreview} 
+                alt="Profile" 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <User className="text-white" size={32} />
+            )}
           </div>
           <div>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 mr-3">
-              Change Photo
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              accept="image/*"
+              className="hidden"
+            />
+            <button 
+              onClick={handleChangePhoto}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 mr-3 flex items-center space-x-2"
+            >
+              <Camera size={16} />
+              <span>Change Photo</span>
             </button>
-            <button className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50">
+            <button 
+              onClick={handleRemovePhoto}
+              className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50"
+            >
               Remove
             </button>
           </div>
         </div>
+        {profileImage && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-sm text-green-700 flex items-center">
+              <Check size={16} className="mr-2" />
+              New photo selected: {profileImage.name} ({(profileImage.size / 1024 / 1024).toFixed(2)} MB)
+            </p>
+            <p className="text-xs text-green-600 mt-1">Don't forget to save your changes to upload the new photo.</p>
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -649,7 +729,7 @@ const handlePasswordUpdate = async () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl p-6 border border-red-200 border-2">
+      <div className="bg-white rounded-xl p-6  border-red-200 border-2">
         <h3 className="text-lg font-semibold text-red-600 mb-4 flex items-center">
           <AlertTriangle className="mr-2" size={20} />
           Danger Zone
