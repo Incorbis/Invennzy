@@ -22,7 +22,7 @@ app.get('/', (req, res) => {
 app.use('/api', contactusRoute);
 app.use('/api/auth', authRoutes);
 app.use('/api/settings', settingAdminRoute);
-app.use('/api', require('./routes/labs'));
+app.use('/api/labs', require('./routes/labs'));
 
 
 

@@ -425,7 +425,9 @@ const Inventory = () => {
         status: formData.status,
         adminId,
       });
-      const labsResponse = await axios.get("http://localhost:3000/api/labs");
+      const labsResponse = await axios.get(
+        `http://localhost:3000/api/labs/admin/${adminId}`
+      );
       setLabs(labsResponse.data);
       setShowAddModal(false);
       resetForm();
@@ -461,6 +463,7 @@ const Inventory = () => {
   };
 
   const handleUpdateLab = async () => {
+    const adminId = localStorage.getItem("adminId");
     if (!editingLab) return;
     try {
       await axios.put(`http://localhost:3000/api/labs/${editingLab.id}`, {
@@ -482,7 +485,9 @@ const Inventory = () => {
         assistantPhone: formData.assistantPhone,
         status: formData.status,
       });
-      const response = await axios.get("http://localhost:3000/api/labs");
+      const response = await axios.get(
+        `http://localhost:3000/api/labs/admin/${adminId}`
+      );
       setLabs(response.data);
       setShowAddModal(false);
       setEditingLab(null);

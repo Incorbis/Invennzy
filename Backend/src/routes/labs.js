@@ -2,58 +2,53 @@ const express = require('express');
 const router = express.Router();
 const Lab = require('../models/Labs');
 
-// GET /api/labs/admin/:adminId - Get all labs for a specific admin
-router.get('/labs/admin/:adminId', async (req, res) => {
+// ✅ GET /api/labs/admin/:adminId — Get labs by admin
+router.get('/admin/:adminId', async (req, res) => {
   try {
     const adminId = req.params.adminId;
-    const labs = await Lab.findByAdminId(adminId); // This method must exist in your model
-    res.json(labs);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const labs = await Lab.findByAdminId(adminId);
+    res.status(200).json(labs);
+  } catch (error) {
+    console.error('Error fetching labs for admin:', error);
+    res.status(500).json({ error: 'Failed to fetch labs for admin' });
   }
 });
 
+// ✅ GET /api/labs — Get all labs (not filtered)
+router.get('/', async (req, res) => {
+  try {
+    const labs = await Lab.findAll();
+    res.status(200).json(labs);
+  } catch (error) {
+    console.error('Error fetching all labs:', error);
+    res.status(500).json({ error: 'Failed to fetch labs' });
+  }
+});
 
-// GET /api/labs/:id - Get a specific lab
+// ✅ GET /api/labs/:id — Get a specific lab by ID
 router.get('/:id', async (req, res) => {
   try {
     const lab = await Lab.findById(req.params.id);
     if (!lab) {
       return res.status(404).json({ error: 'Lab not found' });
     }
-    res.json(lab);
+    res.status(200).json(lab);
   } catch (error) {
-    console.error('Error fetching lab:', error);
+    console.error('Error fetching lab by ID:', error);
     res.status(500).json({ error: 'Failed to fetch lab' });
   }
 });
 
-// GET /api/labs - Get all labs
-router.get('/', async (req, res) => {
-  try {
-    console.log('Fetching all labs...'); // Add this
-    const labs = await Lab.findAll();
-    console.log('Labs fetched successfully:', labs.length); // Add this
-    res.json(labs);
-  } catch (error) {
-    console.error('Error fetching labs:', error.message); // Enhanced logging
-    console.error('Stack trace:', error.stack); // Add stack trace
-    res.status(500).json({ error: 'Failed to fetch labs', details: error.message });
-  }
-});
-
-
-// POST /api/labs - Create a new lab
-router.post('/labs', async (req, res) => {
+// ✅ POST /api/labs — Create a new lab
+router.post('/', async (req, res) => {
   try {
     const {
       labNo, labName, building, floor, capacity, monitors, projectors,
       switchBoards, fans, wifi, inchargeName, inchargeEmail, inchargePhone,
-      assistantName, assistantEmail, assistantPhone, status, adminId // 👈 Added this
+      assistantName, assistantEmail, assistantPhone, status, adminId
     } = req.body;
 
-    // Validation
+    // Validate required fields
     if (!labNo || !labName || !building || !floor || !adminId) {
       return res.status(400).json({ error: 'Missing required fields (lab info or adminId)' });
     }
@@ -71,9 +66,8 @@ router.post('/labs', async (req, res) => {
   }
 });
 
-
-// PUT /api/labs/:id - Update a lab
-router.put('/labs/:id', async (req, res) => {
+// ✅ PUT /api/labs/:id — Update a lab
+router.put('/:id', async (req, res) => {
   try {
     const {
       labNo, labName, building, floor, capacity, monitors, projectors,
@@ -81,24 +75,34 @@ router.put('/labs/:id', async (req, res) => {
       assistantName, assistantEmail, assistantPhone, status
     } = req.body;
 
-    await Lab.update(req.params.id, {
+    const updated = await Lab.update(req.params.id, {
       labNo, labName, building, floor, capacity, monitors, projectors,
       switchBoards, fans, wifi, inchargeName, inchargeEmail, inchargePhone,
       assistantName, assistantEmail, assistantPhone, status
     });
 
-    res.json({ message: 'Lab updated successfully' });
+    if (!updated) {
+      return res.status(404).json({ error: 'Lab not found or update failed' });
+    }
+
+    // Fetch and return updated lab
+    const updatedLab = await Lab.findById(req.params.id);
+    res.status(200).json(updatedLab);
   } catch (error) {
     console.error('Error updating lab:', error);
     res.status(500).json({ error: 'Failed to update lab' });
   }
 });
 
-// DELETE /api/labs/:id - Delete a lab
-router.delete('/labs/:id', async (req, res) => {
+// ✅ DELETE /api/labs/:id — Delete a lab
+router.delete('/:id', async (req, res) => {
   try {
-    await Lab.delete(req.params.id);
-    res.json({ message: 'Lab deleted successfully' });
+    const deleted = await Lab.delete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Lab not found or delete failed' });
+    }
+
+    res.status(200).json({ message: 'Lab deleted successfully' });
   } catch (error) {
     console.error('Error deleting lab:', error);
     res.status(500).json({ error: 'Failed to delete lab' });

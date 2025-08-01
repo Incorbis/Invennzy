@@ -9,17 +9,14 @@ import {
   Fan,
   Wifi,
   Zap,
-  Calendar,
   User,
   MapPin,
-  Tool,
-  TrendingUp,
   Bell,
   ClipboardList,
-  Settings,
+  Wrench, // Import an existing icon to replace Tool
 } from "lucide-react";
 
-const Overview = ({ inventory, labs, userRole = "assistant" }) => {
+const Overview = ({ inventory = [], labs = [], userRole = "assistant" }) => {
   const [selectedTimeframe, setSelectedTimeframe] = useState("today");
 
   // Core statistics
@@ -40,16 +37,13 @@ const Overview = ({ inventory, labs, userRole = "assistant" }) => {
   const pendingTasks = inventory.filter(
     (item) => item.status === "maintenance" || item.status === "damaged"
   ).length;
-
   const todaysSchedule = inventory.filter(
     (item) => item.nextMaintenance && isToday(item.nextMaintenance)
   ).length;
-
   const overdueItems = inventory.filter(
     (item) => item.nextMaintenance && isPastDue(item.nextMaintenance)
   ).length;
-
-  const myAssignedLabs = labs.filter((lab) => lab.assistant === "current_user"); // In real app, this would be dynamic
+  const myAssignedLabs = labs.filter((lab) => lab.assistant === "current_user"); // In a real app, this would be dynamic
 
   const categoryStats = {
     monitors: inventory.filter((item) => item.category === "monitors").length,
@@ -191,24 +185,6 @@ const Overview = ({ inventory, labs, userRole = "assistant" }) => {
 
   return (
     <div className="space-y-6">
-      {/* Lab Assistant Dashboard Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
-        <h2 className="text-2xl font-bold mb-2">Lab Assistant Dashboard</h2>
-        <p className="text-blue-100">Your daily overview and pending tasks</p>
-        <div className="flex items-center space-x-4 mt-4">
-          <div className="flex items-center space-x-2">
-            <Calendar className="w-4 h-4" />
-            <span className="text-sm">
-              Today: {new Date().toLocaleDateString()}
-            </span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <User className="w-4 h-4" />
-            <span className="text-sm">Lab Assistant</span>
-          </div>
-        </div>
-      </div>
-
       {/* Priority Tasks - Lab Assistant Focused */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
@@ -217,16 +193,14 @@ const Overview = ({ inventory, labs, userRole = "assistant" }) => {
           icon={ClipboardList}
           color="text-orange-600"
           bgColor="bg-orange-100"
-          action="View All Tasks"
           priority={pendingTasks > 5 ? "high" : "normal"}
         />
         <StatCard
-          title="Today's Schedule"
-          value={todaysSchedule}
-          icon={Calendar}
+          title="Total Equipment"
+          value={activeItems}
+          icon={Package}
           color="text-blue-600"
           bgColor="bg-blue-100"
-          action="Check Schedule"
         />
         <StatCard
           title="Overdue Items"
@@ -234,7 +208,6 @@ const Overview = ({ inventory, labs, userRole = "assistant" }) => {
           icon={AlertTriangle}
           color="text-red-600"
           bgColor="bg-red-100"
-          action="Immediate Action"
           priority={overdueItems > 0 ? "high" : "normal"}
         />
         <StatCard
@@ -243,7 +216,6 @@ const Overview = ({ inventory, labs, userRole = "assistant" }) => {
           icon={CheckCircle}
           color="text-green-600"
           bgColor="bg-green-100"
-          action="View Details"
         />
       </div>
 
@@ -262,7 +234,7 @@ const Overview = ({ inventory, labs, userRole = "assistant" }) => {
             <TaskCard
               title="Maintenance Due"
               count={maintenanceItems}
-              icon={Tool}
+              icon={Wrench} // Use the imported Wrench icon
               color="bg-yellow-500"
               urgency={maintenanceItems > 3 ? "urgent" : "normal"}
               onClick={() => console.log("Navigate to maintenance tasks")}
@@ -299,7 +271,6 @@ const Overview = ({ inventory, labs, userRole = "assistant" }) => {
                 wifi: Wifi,
                 "switch-boards": Zap,
               };
-
               const categoryColors = {
                 monitors: "bg-blue-500",
                 projectors: "bg-purple-500",
@@ -307,14 +278,12 @@ const Overview = ({ inventory, labs, userRole = "assistant" }) => {
                 wifi: "bg-green-500",
                 "switch-boards": "bg-orange-500",
               };
-
               const Icon = categoryIcons[category];
               const issuesInCategory = inventory.filter(
                 (item) =>
                   item.category === category &&
                   (item.status === "damaged" || item.status === "maintenance")
               ).length;
-
               return (
                 <div
                   key={category}
@@ -380,9 +349,9 @@ const Overview = ({ inventory, labs, userRole = "assistant" }) => {
               Completed
             </span>
           </div>
-
           <div className="flex items-center space-x-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-            <Tool className="w-5 h-5 text-blue-500" />
+            <Wrench className="w-5 h-5 text-blue-500" />{" "}
+            {/* Use the imported Wrench icon */}
             <div className="flex-1">
               <p className="text-sm text-gray-900 font-medium">
                 Started maintenance: Projector #P-012
@@ -393,7 +362,6 @@ const Overview = ({ inventory, labs, userRole = "assistant" }) => {
               In Progress
             </span>
           </div>
-
           <div className="flex items-center space-x-4 p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
             <AlertTriangle className="w-5 h-5 text-yellow-500" />
             <div className="flex-1">
