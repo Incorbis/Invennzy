@@ -33,20 +33,9 @@ CREATE TABLE settingsadmin (
   full_name VARCHAR(45),
   phone_number INT,
   Department VARCHAR(225),
-  password VARCHAR(225)
+  password VARCHAR(225),
+  role VARCHAR(225)
 );
-
-
-
-
-
-
-
-
-
-
-
-
 
 USE invennzy;
 
@@ -111,4 +100,4 @@ INSERT INTO equipment (lab_id, monitors, projectors, switch_boards, fans, wifi) 
 INSERT INTO staff (lab_id, incharge_name, incharge_email, incharge_phone, assistant_name, assistant_email, assistant_phone) VALUES
 (1, 'Dr. John Smith', 'john.smith@college.edu', '+1-555-0101', 'Alice Johnson', 'alice.johnson@college.edu', '+1-555-0102'),
 (2, 'Prof. Sarah Wilson', 'sarah.wilson@college.edu', '+1-555-0201', 'Bob Brown', 'bob.brown@college.edu', '+1-555-0202'),
-(3, 'Dr. Mike Davis', 'mike.davis@college.edu', '+1-555-0301', 'Carol White', 'carol.white@college.edu', '+1-555-0302');
+(3, 'Dr. Mike Davis', 'mike.davis@college.edu', '+1-555-0301', 'Carol White', 'carol.white@college.edu','+1-555-0302');

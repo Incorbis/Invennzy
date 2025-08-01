@@ -59,9 +59,8 @@ const labinchargedash = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [notifications] = useState(5);
-  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [isMobile, setIsMobile] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -82,6 +81,8 @@ const labinchargedash = () => {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  const name = localStorage.getItem("userName");
 
   const menuItems = [
     { id: "overview", label: "Overview", icon: Home, path: "/labinchargedash" },
@@ -132,8 +133,16 @@ const labinchargedash = () => {
   };
 
   const handleLogout = () => {
-    console.log("Logging out...");
+    setShowLogoutModal(true);
+  };
+
+  const handleConfirmLogout = () => {
+    localStorage.clear();
     navigate("/");
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutModal(false);
   };
 
   if (isLoading) {
@@ -195,9 +204,9 @@ const labinchargedash = () => {
                 <User className="text-white" size={18} />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-800">
-                  Lab Assistant
-                </p>
+                <h2 className="text-sm font-semibold text-gray-800">
+                  {name || "Lab Incharge"}
+                </h2>
                 <p className="text-xs text-gray-500">Laboratory Manager</p>
               </div>
             </div>
@@ -238,14 +247,12 @@ const labinchargedash = () => {
                     "Dashboard"}
                 </h1>
                 <p className="text-sm text-gray-500">
-                  Welcome back, Lab Incharge
+                  Welcome Back, {name || "LabInCharge"}!
                 </p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <div className="relative hidden md:block">
-                
-              </div>
+              <div className="relative hidden md:block"></div>
               <button className="p-2 relative rounded-lg hover:bg-gray-100">
                 <Bell className="text-gray-500" size={20} />
                 {notifications > 0 && (
@@ -257,6 +264,37 @@ const labinchargedash = () => {
             </div>
           </div>
         </header>
+
+        {showLogoutModal && (
+          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999]">
+            <div className="w-[400px] p-8 bg-white border border-gray-300 shadow-2xl rounded-2xl">
+              <h2 className="text-xl font-bold text-gray-800 mb-4 text-center">
+                Confirm Logout
+              </h2>
+              <p className="text-base text-gray-600 mb-6 text-center">
+                Are you sure you want to log out?
+              </p>
+              <div className="flex justify-center gap-6">
+                <button
+                  onClick={handleCancelLogout}
+                  className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-sm font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmLogout}
+                  className="px-6 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-medium"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
+          <Outlet />
+        </main>
       </div>
     </div>
   );

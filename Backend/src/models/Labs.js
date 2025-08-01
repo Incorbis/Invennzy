@@ -1,6 +1,11 @@
 const db = require('../db'); // should export a mysql2/promise connection or pool
 
 class Lab {
+  static async findByAdminId(adminId) {
+  const [rows] = await db.query("SELECT * FROM labs WHERE admin_id = ?", [adminId]);
+  return rows;
+}
+
   static async findAll() {
     const [rows] = await db.query(`
       SELECT 
@@ -31,60 +36,64 @@ class Lab {
     return rows[0];
   }
 
-  static async create(labData) {
-    const conn = await db.getConnection();
-    try {
-      await conn.beginTransaction();
+static async create(labData) {
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
 
-      const [labResult] = await conn.query(`
-        INSERT INTO labs (lab_no, lab_name, building, floor, capacity, status)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `, [
-        labData.labNo,
-        labData.labName,
-        labData.building,
-        labData.floor,
-        labData.capacity,
-        labData.status
-      ]);
+    // ✅ INSERT into labs with admin_id
+    const [labResult] = await conn.query(`
+      INSERT INTO labs (lab_no, lab_name, building, floor, capacity, status, admin_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [
+      labData.labNo,
+      labData.labName,
+      labData.building,
+      labData.floor,
+      labData.capacity,
+      labData.status,
+      labData.adminId // ✅ Added this
+    ]);
 
-      const labId = labResult.insertId;
+    const labId = labResult.insertId;
 
-      await conn.query(`
-        INSERT INTO equipment (lab_id, monitors, projectors, switch_boards, fans, wifi)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `, [
-        labId,
-        labData.monitors,
-        labData.projectors,
-        labData.switchBoards,
-        labData.fans,
-        labData.wifi
-      ]);
+    // Insert into equipment
+    await conn.query(`
+      INSERT INTO equipment (lab_id, monitors, projectors, switch_boards, fans, wifi)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [
+      labId,
+      labData.monitors,
+      labData.projectors,
+      labData.switchBoards,
+      labData.fans,
+      labData.wifi
+    ]);
 
-      await conn.query(`
-        INSERT INTO staff (lab_id, incharge_name, incharge_email, incharge_phone, 
-                          assistant_name, assistant_email, assistant_phone)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `, [
-        labId,
-        labData.inchargeName,
-        labData.inchargeEmail,
-        labData.inchargePhone,
-        labData.assistantName,
-        labData.assistantEmail,
-        labData.assistantPhone
-      ]);
+    // Insert into staff
+    await conn.query(`
+      INSERT INTO staff (lab_id, incharge_name, incharge_email, incharge_phone, 
+                        assistant_name, assistant_email, assistant_phone)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [
+      labId,
+      labData.inchargeName,
+      labData.inchargeEmail,
+      labData.inchargePhone,
+      labData.assistantName,
+      labData.assistantEmail,
+      labData.assistantPhone
+    ]);
 
-      await conn.commit();
-      return { id: labId, ...labData };
-    } catch (err) {
-      await conn.rollback();
-      throw err;
-    } finally {
-      conn.release();
-    }
+    await conn.commit();
+    return { id: labId, ...labData };
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
   }
+}
 
   static async update(id, labData) {
     const conn = await db.getConnection();

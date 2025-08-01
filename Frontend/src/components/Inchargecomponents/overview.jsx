@@ -1,28 +1,39 @@
-import React from 'react';
-import { 
-  Package, 
-  AlertTriangle, 
-  CheckCircle, 
-  Clock, 
-  Monitor, 
-  Projector, 
+import React from "react";
+import {
+  Package,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Monitor,
+  Projector,
   Fan,
   Wifi,
-  Zap
-} from 'lucide-react';
+  Zap,
+} from "lucide-react";
 
-const Overview = ({ inventory, labs }) => {
-  const activeItems = inventory.filter(item => item.status === 'active').length;
-  const maintenanceItems = inventory.filter(item => item.status === 'maintenance').length;
-  const damagedItems = inventory.filter(item => item.status === 'damaged').length;
-  const inactiveItems = inventory.filter(item => item.status === 'inactive').length;
+const Overview = ({ inventory = [], labs = [] }) => {
+  const activeItems = inventory.filter(
+    (item) => item.status === "active"
+  ).length;
+  const maintenanceItems = inventory.filter(
+    (item) => item.status === "maintenance"
+  ).length;
+  const damagedItems = inventory.filter(
+    (item) => item.status === "damaged"
+  ).length;
+  const inactiveItems = inventory.filter(
+    (item) => item.status === "inactive"
+  ).length;
 
   const categoryStats = {
-    monitors: inventory.filter(item => item.category === 'monitors').length,
-    projectors: inventory.filter(item => item.category === 'projectors').length,
-    fans: inventory.filter(item => item.category === 'fans').length,
-    wifi: inventory.filter(item => item.category === 'wifi').length,
-    'switch-boards': inventory.filter(item => item.category === 'switch-boards').length,
+    monitors: inventory.filter((item) => item.category === "monitors").length,
+    projectors: inventory.filter((item) => item.category === "projectors")
+      .length,
+    fans: inventory.filter((item) => item.category === "fans").length,
+    wifi: inventory.filter((item) => item.category === "wifi").length,
+    "switch-boards": inventory.filter(
+      (item) => item.category === "switch-boards"
+    ).length,
   };
 
   const StatCard = ({ title, value, icon: Icon, color, bgColor }) => (
@@ -90,7 +101,9 @@ const Overview = ({ inventory, labs }) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Equipment Categories */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Equipment Categories</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Equipment Categories
+          </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <CategoryCard
               title="Monitors"
@@ -118,7 +131,7 @@ const Overview = ({ inventory, labs }) => {
             />
             <CategoryCard
               title="Switch Boards"
-              count={categoryStats['switch-boards']}
+              count={categoryStats["switch-boards"]}
               icon={Zap}
               color="bg-orange-500"
             />
@@ -127,23 +140,40 @@ const Overview = ({ inventory, labs }) => {
 
         {/* Labs Overview */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Labs Overview</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Labs Overview
+          </h3>
           <div className="space-y-4">
             {labs.slice(0, 5).map((lab) => {
-              const labItems = inventory.filter(item => item.lab === lab.name);
-              const activeLabItems = labItems.filter(item => item.status === 'active');
-              
+              const labItems = inventory.filter(
+                (item) => item.lab === lab.name
+              );
+              const activeLabItems = labItems.filter(
+                (item) => item.status === "active"
+              );
+
               return (
-                <div key={lab.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <div
+                  key={lab.id}
+                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
                   <div>
                     <h4 className="font-medium text-gray-900">{lab.name}</h4>
-                    <p className="text-sm text-gray-600">{lab.building} • Floor {lab.floor}</p>
-                    <p className="text-xs text-gray-500">Incharge: {lab.incharge}</p>
+                    <p className="text-sm text-gray-600">
+                      {lab.building} • Floor {lab.floor}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Incharge: {lab.incharge}
+                    </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-gray-900">{labItems.length}</p>
+                    <p className="text-lg font-bold text-gray-900">
+                      {labItems.length}
+                    </p>
                     <p className="text-sm text-gray-600">Total Items</p>
-                    <p className="text-xs text-green-600">{activeLabItems.length} Active</p>
+                    <p className="text-xs text-green-600">
+                      {activeLabItems.length} Active
+                    </p>
                   </div>
                 </div>
               );
@@ -154,26 +184,34 @@ const Overview = ({ inventory, labs }) => {
 
       {/* Recent Activity */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Recent Activity
+        </h3>
         <div className="space-y-3">
           <div className="flex items-center space-x-4 p-3 bg-blue-50 rounded-lg">
             <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
             <div className="flex-1">
-              <p className="text-sm text-gray-900">New monitor added to Computer Lab A</p>
+              <p className="text-sm text-gray-900">
+                New monitor added to Computer Lab A
+              </p>
               <p className="text-xs text-gray-500">2 hours ago</p>
             </div>
           </div>
           <div className="flex items-center space-x-4 p-3 bg-yellow-50 rounded-lg">
             <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
             <div className="flex-1">
-              <p className="text-sm text-gray-900">Samsung monitor scheduled for maintenance</p>
+              <p className="text-sm text-gray-900">
+                Samsung monitor scheduled for maintenance
+              </p>
               <p className="text-xs text-gray-500">5 hours ago</p>
             </div>
           </div>
           <div className="flex items-center space-x-4 p-3 bg-green-50 rounded-lg">
             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
             <div className="flex-1">
-              <p className="text-sm text-gray-900">WiFi router issue resolved in Physics Lab</p>
+              <p className="text-sm text-gray-900">
+                WiFi router issue resolved in Physics Lab
+              </p>
               <p className="text-xs text-gray-500">1 day ago</p>
             </div>
           </div>

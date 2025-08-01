@@ -2,16 +2,18 @@ const express = require('express');
 const router = express.Router();
 const Lab = require('../models/Labs');
 
-// GET /api/labs - Get all labs
-router.get('/labs', async (req, res) => {
+// GET /api/labs/admin/:adminId - Get all labs for a specific admin
+router.get('/labs/admin/:adminId', async (req, res) => {
   try {
-    const labs = await Lab.findAll();
+    const adminId = req.params.adminId;
+    const labs = await Lab.findByAdminId(adminId); // This method must exist in your model
     res.json(labs);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
 
 // GET /api/labs/:id - Get a specific lab
 router.get('/:id', async (req, res) => {
@@ -48,18 +50,18 @@ router.post('/labs', async (req, res) => {
     const {
       labNo, labName, building, floor, capacity, monitors, projectors,
       switchBoards, fans, wifi, inchargeName, inchargeEmail, inchargePhone,
-      assistantName, assistantEmail, assistantPhone, status
+      assistantName, assistantEmail, assistantPhone, status, adminId // 👈 Added this
     } = req.body;
 
     // Validation
-    if (!labNo || !labName || !building || !floor) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    if (!labNo || !labName || !building || !floor || !adminId) {
+      return res.status(400).json({ error: 'Missing required fields (lab info or adminId)' });
     }
 
     const newLab = await Lab.create({
       labNo, labName, building, floor, capacity, monitors, projectors,
       switchBoards, fans, wifi, inchargeName, inchargeEmail, inchargePhone,
-      assistantName, assistantEmail, assistantPhone, status
+      assistantName, assistantEmail, assistantPhone, status, adminId
     });
 
     res.status(201).json(newLab);
@@ -68,6 +70,7 @@ router.post('/labs', async (req, res) => {
     res.status(500).json({ error: 'Failed to create lab' });
   }
 });
+
 
 // PUT /api/labs/:id - Update a lab
 router.put('/labs/:id', async (req, res) => {

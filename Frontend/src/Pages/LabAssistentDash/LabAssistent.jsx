@@ -58,8 +58,7 @@ const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [notifications] = useState(5);
-  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const navigate = useNavigate();
 
@@ -82,37 +81,39 @@ const Dashboard = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  const name = localStorage.getItem("userName");
+
   const menuItems = [
     { id: "overview", label: "Overview", icon: Home, path: "/dashboard" },
     {
       id: "inventory",
       label: "Inventory",
       icon: Package,
-      path: "/dashboard/inventory",
+      path: "/labassistantdash/inventory",
     },
     {
       id: "reports",
       label: "Reports",
       icon: BarChart3,
-      path: "/dashboard/reports",
+      path: "/labassistantdash/reports",
     },
     {
       id: "notifications",
       label: "Notifications",
       icon: Bell,
-      path: "/dashboard/notifications",
+      path: "/labassistantdash/notifications",
     },
     {
       id: "requests",
       label: "Requests",
       icon: ClipboardList,
-      path: "/dashboard/requests",
+      path: "/labassistantdash/requests",
     },
     {
       id: "settings",
       label: "Settings",
       icon: Settings,
-      path: "/dashboard/settings",
+      path: "/labassistantdash/settings",
     },
   ];
 
@@ -125,8 +126,16 @@ const Dashboard = () => {
   };
 
   const handleLogout = () => {
-    console.log("Logging out...");
+    setShowLogoutModal(true);
+  };
+
+  const handleConfirmLogout = () => {
+    localStorage.clear();
     navigate("/");
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutModal(false);
   };
 
   if (isLoading) {
@@ -189,7 +198,7 @@ const Dashboard = () => {
               </div>
               <div>
                 <p className="text-sm font-semibold text-gray-800">
-                  Lab Assistant
+                  {name || "Lab Assistant"}
                 </p>
                 <p className="text-xs text-gray-500">Laboratory Manager</p>
               </div>
@@ -231,23 +240,11 @@ const Dashboard = () => {
                     "Dashboard"}
                 </h1>
                 <p className="text-sm text-gray-500">
-                  Welcome back, Lab Assistant
+                  Welcome back, {name || "Lab Assistant"}!
                 </p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <div className="relative hidden md:block">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="text-gray-400" size={18} />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search inventory..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-64 rounded-lg border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
               <button className="p-2 relative rounded-lg hover:bg-gray-100">
                 <Bell className="text-gray-500" size={20} />
                 {notifications > 0 && (
@@ -256,49 +253,39 @@ const Dashboard = () => {
                   </span>
                 )}
               </button>
-              <div className="relative">
-                <button
-                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                  className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100"
-                >
-                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-                    <User className="text-white" size={16} />
-                  </div>
-                  <ChevronDown
-                    className={`text-gray-500 transition-transform ${
-                      profileDropdownOpen ? "transform rotate-180" : ""
-                    }`}
-                    size={16}
-                  />
-                </button>
-                {profileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50 border border-gray-200">
-                    <button className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50 w-full text-left">
-                      <User size={16} className="mr-3" />
-                      <span>Profile</span>
-                    </button>
-                    <button className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50 w-full text-left">
-                      <Settings size={16} className="mr-3" />
-                      <span>Settings</span>
-                    </button>
-                    <button className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50 w-full text-left">
-                      <HelpCircle size={16} className="mr-3" />
-                      <span>Help</span>
-                    </button>
-                    <div className="border-t border-gray-200 my-1"></div>
-                    <button
-                      onClick={handleLogout}
-                      className="flex items-center px-4 py-2 text-red-600 hover:bg-red-50 w-full text-left"
-                    >
-                      <LogOut size={16} className="mr-3" />
-                      <span>Log Out</span>
-                    </button>
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         </header>
+
+        {showLogoutModal && (
+          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999]">
+            <div className="w-[400px] p-8 bg-white border border-gray-300 shadow-2xl rounded-2xl">
+              <h2 className="text-xl font-bold text-gray-800 mb-4 text-center">
+                Confirm Logout
+              </h2>
+              <p className="text-base text-gray-600 mb-6 text-center">
+                Are you sure you want to log out?
+              </p>
+              <div className="flex justify-center gap-6">
+                <button
+                  onClick={handleCancelLogout}
+                  className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-sm font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmLogout}
+                  className="px-6 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-medium"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
+          <Outlet />
+        </main>
       </div>
     </div>
   );

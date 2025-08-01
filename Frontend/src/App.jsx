@@ -12,14 +12,26 @@ import DocsPage from "./Pages/DocsPage/DocsPage.jsx";
 import PPsection from "./Pages/PrivacyPolicy/PPsection.jsx";
 import Terms from "./Pages/Terms&Condition/Terms.jsx";
 import Inventory from "./components/admincomponents/Inventory.jsx";
-import Reports from "./components/admincomponents/Reports.jsx";
+import AdminReports from "./components/admincomponents/Reports.jsx";
 import Settings from "./components/admincomponents/settings.jsx";
 import Overview from "./components/admincomponents/overview.jsx";
 import Notifications from "./components/admincomponents/Notification.jsx";
-import Notification from "./components/Inchargecomponents/Notification.jsx";
+
 import PrivateRoute from "./Utils/PrivateRoute.jsx";
-import AddItems from "./components/Inchargecomponents/AddItems.jsx";
-import Requests from "./components/Inchargecomponents/Requests.jsx";
+
+import LICAddItems from "./components/Inchargecomponents/AddItems.jsx";
+import LICRequests from "./components/Inchargecomponents/Requests.jsx";
+import LICNotification from "./components/Inchargecomponents/Notification.jsx";
+import LICReports from "./components/Inchargecomponents/Reports.jsx";
+import LICSettingsPage from "./components/Inchargecomponents/settings.jsx";
+import LICoverview from "./components/Inchargecomponents/overview.jsx";
+import LICInventory from "./components/Inchargecomponents/Inventory.jsx";
+
+import LAInventory from "./components/Assistantcomponents/Inventory.jsx";
+import LAReports from "./components/Assistantcomponents/Reports.jsx";
+import LASettings from "./components/Assistantcomponents/settings.jsx";
+import LAOverview from "./components/Assistantcomponents/overview.jsx";
+import LANotification from "./components/Assistantcomponents/notifications.jsx";
 
 function App() {
   return (
@@ -43,7 +55,7 @@ function App() {
         }
       >
         <Route path="inventory" element={<Inventory />} />
-        <Route path="reports" element={<Reports />} />
+        <Route path="reports" element={<AdminReports />} />
         <Route path="" element={<Overview />} />
         <Route path="settings" element={<Settings />} />
         <Route path="notifications" element={<Notifications />} />
@@ -58,13 +70,13 @@ function App() {
           </PrivateRoute>
         }
       >
-        <Route path="notifications" element={<Notifications />} />
-        <Route path="inventory" element={<Inventory />} />
-        <Route path="additems" element={<AddItems />} />
-        <Route path="requests" element={<Requests />} />
-        <Route path="reports" element={<Reports />} />
-        <Route path="" element={<Overview />} />
-        <Route path="settings" element={<Settings />} />
+        <Route path="notifications" element={<LICNotification />} />
+        <Route path="inventory" element={<LICInventory />} />
+        <Route path="additems" element={<LICAddItems />} />
+        <Route path="requests" element={<LICRequests />} />
+        <Route path="reports" element={<LICReports />} />
+        <Route path="" element={<LICoverview />} />
+        <Route path="settings" element={<LICSettingsPage />} />
       </Route>
 
       {/* ✅ Lab Assistant Routes */}
@@ -76,11 +88,11 @@ function App() {
           </PrivateRoute>
         }
       >
-        <Route path="notification" element={<Notification />} />
-        <Route path="inventory" element={<Inventory />} />
-        <Route path="reports" element={<Reports />} />
-        <Route path="" element={<Overview />} />
-        <Route path="settings" element={<Settings />} />
+        <Route path="notifications" element={<LANotification />} />
+        <Route path="inventory" element={<LAInventory />} />
+        <Route path="reports" element={<LAReports />} />
+        <Route path="" element={<LAOverview />} />
+        <Route path="settings" element={<LASettings />} />
       </Route>
     </Routes>
   );

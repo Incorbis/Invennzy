@@ -26,6 +26,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Inventory = () => {
   const [labs, setLabs] = useState([]);
@@ -35,9 +37,7 @@ const Inventory = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingLab, setEditingLab] = useState(null);
   const [viewingLab, setViewingLab] = useState(null);
-  const [error, setError] = useState(null);
   const [deleteConfirmModal, setDeleteConfirmModal] = useState(null);
-
   const [formData, setFormData] = useState({
     labNo: "",
     labName: "",
@@ -58,11 +58,8 @@ const Inventory = () => {
     status: "active",
   });
 
-  // PDF Generation Function
   const generatePDF = (lab) => {
-    // Create a new window for the PDF content
-    const printWindow = window.open('', '_blank');
-    
+    const printWindow = window.open("", "_blank");
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -208,7 +205,6 @@ const Inventory = () => {
           <p>Laboratory Information Report</p>
           <p>Generated on ${new Date().toLocaleDateString()}</p>
         </div>
-
         <div class="section">
           <h2>Basic Information</h2>
           <div class="info-grid">
@@ -235,12 +231,13 @@ const Inventory = () => {
             <div class="info-item">
               <span class="info-label">Status</span>
               <span class="info-value">
-                <span class="status-badge status-${lab.status}">${lab.status}</span>
+                <span class="status-badge status-${lab.status}">${
+      lab.status
+    }</span>
               </span>
             </div>
           </div>
         </div>
-
         <div class="section">
           <h2>Equipment Inventory</h2>
           <div class="equipment-grid">
@@ -266,7 +263,6 @@ const Inventory = () => {
             </div>
           </div>
         </div>
-
         <div class="section">
           <h2>Staff Information</h2>
           <div class="staff-grid">
@@ -275,15 +271,17 @@ const Inventory = () => {
               <div class="info-grid">
                 <div class="info-item">
                   <span class="info-label">Name</span>
-                  <span class="info-value">${lab.incharge_name || 'Not assigned'}</span>
+                  <span class="info-value">${
+                    lab.incharge_name || "Not assigned"
+                  }</span>
                 </div>
                 <div class="info-item">
                   <span class="info-label">Email</span>
-                  <span class="info-value">${lab.incharge_email || 'N/A'}</span>
+                  <span class="info-value">${lab.incharge_email || "N/A"}</span>
                 </div>
                 <div class="info-item" style="grid-column: span 2;">
                   <span class="info-label">Phone</span>
-                  <span class="info-value">${lab.incharge_phone || 'N/A'}</span>
+                  <span class="info-value">${lab.incharge_phone || "N/A"}</span>
                 </div>
               </div>
             </div>
@@ -292,21 +290,26 @@ const Inventory = () => {
               <div class="info-grid">
                 <div class="info-item">
                   <span class="info-label">Name</span>
-                  <span class="info-value">${lab.assistant_name || 'Not assigned'}</span>
+                  <span class="info-value">${
+                    lab.assistant_name || "Not assigned"
+                  }</span>
                 </div>
                 <div class="info-item">
                   <span class="info-label">Email</span>
-                  <span class="info-value">${lab.assistant_email || 'N/A'}</span>
+                  <span class="info-value">${
+                    lab.assistant_email || "N/A"
+                  }</span>
                 </div>
                 <div class="info-item" style="grid-column: span 2;">
                   <span class="info-label">Phone</span>
-                  <span class="info-value">${lab.assistant_phone || 'N/A'}</span>
+                  <span class="info-value">${
+                    lab.assistant_phone || "N/A"
+                  }</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
-
         <div class="footer">
           <p>Last updated: ${new Date(lab.last_updated).toLocaleString()}</p>
           <p>This report was generated automatically from the Laboratory Inventory Management System</p>
@@ -314,33 +317,31 @@ const Inventory = () => {
       </body>
       </html>
     `;
-
     printWindow.document.write(htmlContent);
     printWindow.document.close();
-    
-    // Wait for content to load, then print
-    printWindow.onload = function() {
+    printWindow.onload = function () {
       setTimeout(() => {
         printWindow.print();
       }, 250);
     };
   };
 
-  // Fetch labs from API
   useEffect(() => {
     const fetchLabs = async () => {
       try {
         setLoading(true);
-        const response = await axios.get("http://localhost:3000/api/labs");
+        const adminId = localStorage.getItem("adminId");
+        const response = await axios.get(
+          `http://localhost:3000/api/labs/admin/${adminId}`
+        );
         setLabs(response.data);
         setLoading(false);
       } catch (err) {
-        setError("Failed to fetch labs. Please try again later.");
+        toast.error("Failed to fetch labs. Please try again later.");
         setLoading(false);
         console.error(err);
       }
     };
-
     fetchLabs();
   }, []);
 
@@ -403,7 +404,8 @@ const Inventory = () => {
 
   const handleAddLab = async () => {
     try {
-      const response = await axios.post("http://localhost:3000/api/labs", {
+      const adminId = localStorage.getItem("adminId");
+      await axios.post("http://localhost:3000/api/labs", {
         labNo: formData.labNo,
         labName: formData.labName,
         building: formData.building,
@@ -421,16 +423,15 @@ const Inventory = () => {
         assistantEmail: formData.assistantEmail,
         assistantPhone: formData.assistantPhone,
         status: formData.status,
+        adminId,
       });
-
-      // Refresh the labs list
       const labsResponse = await axios.get("http://localhost:3000/api/labs");
       setLabs(labsResponse.data);
-
       setShowAddModal(false);
       resetForm();
+      toast.success("Lab added successfully!");
     } catch (err) {
-      setError("Failed to add lab. Please try again.");
+      toast.error("Failed to add lab. Please try again.");
       console.error(err);
     }
   };
@@ -461,7 +462,6 @@ const Inventory = () => {
 
   const handleUpdateLab = async () => {
     if (!editingLab) return;
-
     try {
       await axios.put(`http://localhost:3000/api/labs/${editingLab.id}`, {
         labNo: formData.labNo,
@@ -482,35 +482,33 @@ const Inventory = () => {
         assistantPhone: formData.assistantPhone,
         status: formData.status,
       });
-
-      // Refresh the labs list
       const response = await axios.get("http://localhost:3000/api/labs");
       setLabs(response.data);
-
       setShowAddModal(false);
       setEditingLab(null);
       resetForm();
+      toast.success("Lab updated successfully!");
     } catch (err) {
-      setError("Failed to update lab. Please try again.");
+      toast.error("Failed to update lab. Please try again.");
       console.error(err);
     }
   };
 
-  // Updated delete function to show modal instead of alert
   const handleDeleteLab = (lab) => {
     setDeleteConfirmModal(lab);
   };
 
-  // New function to confirm deletion
   const confirmDeleteLab = async () => {
     if (!deleteConfirmModal) return;
-
     try {
-      await axios.delete(`http://localhost:3000/api/labs/${deleteConfirmModal.id}`);
+      await axios.delete(
+        `http://localhost:3000/api/labs/${deleteConfirmModal.id}`
+      );
       setLabs(labs.filter((lab) => lab.id !== deleteConfirmModal.id));
       setDeleteConfirmModal(null);
+      toast.success("Lab deleted successfully!");
     } catch (err) {
-      setError("Failed to delete lab. Please try again.");
+      toast.error("Failed to delete lab. Please try again.");
       console.error(err);
       setDeleteConfirmModal(null);
     }
@@ -548,23 +546,9 @@ const Inventory = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="p-4 bg-red-100 text-red-700 rounded-lg">
-        {error}
-        <button
-          onClick={() => setError(null)}
-          className="ml-4 text-red-900 font-bold"
-        >
-          Dismiss
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      {/* Header */}
+      <ToastContainer />
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">
@@ -585,7 +569,6 @@ const Inventory = () => {
         </div>
       </div>
 
-      {/* Equipment Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <div className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
@@ -600,7 +583,6 @@ const Inventory = () => {
             </div>
           </div>
         </div>
-
         <div className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
@@ -614,7 +596,6 @@ const Inventory = () => {
             </div>
           </div>
         </div>
-
         <div className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
@@ -628,7 +609,6 @@ const Inventory = () => {
             </div>
           </div>
         </div>
-
         <div className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
@@ -642,7 +622,6 @@ const Inventory = () => {
             </div>
           </div>
         </div>
-
         <div className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div className="w-12 h-12 bg-indigo-500 rounded-lg flex items-center justify-center">
@@ -658,7 +637,6 @@ const Inventory = () => {
         </div>
       </div>
 
-      {/* Search and Filter */}
       <div className="bg-white p-6 rounded-xl border border-gray-200">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
@@ -692,7 +670,6 @@ const Inventory = () => {
         </div>
       </div>
 
-      {/* Labs Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredLabs.map((lab) => {
           const StatusIcon = getStatusIcon(lab.status);
@@ -720,7 +697,6 @@ const Inventory = () => {
                     </span>
                   </div>
                 </div>
-
                 <div className="space-y-3 mb-4">
                   <div className="flex items-center text-sm text-gray-600">
                     <Building className="mr-2" size={16} />
@@ -731,8 +707,6 @@ const Inventory = () => {
                     Capacity: {lab.capacity} students
                   </div>
                 </div>
-
-                {/* Equipment Grid */}
                 <div className="grid grid-cols-5 gap-2 mb-4">
                   <div className="text-center">
                     <Monitor className="mx-auto text-blue-500 mb-1" size={16} />
@@ -762,8 +736,6 @@ const Inventory = () => {
                     <p className="text-xs text-gray-600">{lab.wifi || 0}</p>
                   </div>
                 </div>
-
-                {/* Staff Info */}
                 <div className="border-t pt-4 space-y-2">
                   <div className="flex items-center text-sm">
                     <UserCheck className="mr-2 text-green-600" size={14} />
@@ -780,8 +752,6 @@ const Inventory = () => {
                     </span>
                   </div>
                 </div>
-
-                {/* Actions */}
                 <div className="flex items-center justify-between mt-4 pt-4 border-t">
                   <p className="text-xs text-gray-500">
                     Updated: {new Date(lab.last_updated).toLocaleDateString()}
@@ -813,13 +783,12 @@ const Inventory = () => {
         })}
       </div>
 
-      {/* Delete Confirmation Modal */}
       {deleteConfirmModal && (
-        <div className="fixed inset-0 bg-gray-100 bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full">
+        <div className="fixed inset-0 bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full shadow-2xl border border-gray-300 ring-1 ring-gray-200">
             <div className="p-6">
               <div className="flex items-center justify-center mb-4">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center border-2 border-red-200">
                   <AlertTriangle className="text-red-600" size={32} />
                 </div>
               </div>
@@ -834,20 +803,21 @@ const Inventory = () => {
                   </span>
                   ?
                 </p>
-                <p className="text-sm text-red-600">
-                  This action cannot be undone. All lab data and equipment records will be permanently removed.
+                <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+                  This action cannot be undone. All lab data and equipment
+                  records will be permanently removed.
                 </p>
               </div>
               <div className="flex items-center justify-end space-x-3">
                 <button
                   onClick={() => setDeleteConfirmModal(null)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmDeleteLab}
-                  className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-lg"
                 >
                   <Trash2 className="mr-2" size={16} />
                   Delete Lab
@@ -858,11 +828,10 @@ const Inventory = () => {
         </div>
       )}
 
-      {/* Add/Edit Lab Modal */}
       {showAddModal && (
-        <div className="fixed inset-0  bg-gray-100 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
+        <div className="fixed inset-0 bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-300 ring-1 ring-gray-200">
+            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-semibold text-gray-900">
                   {editingLab ? "Edit Laboratory" : "Add New Laboratory"}
@@ -873,17 +842,15 @@ const Inventory = () => {
                     setEditingLab(null);
                     resetForm();
                   }}
-                  className="p-2 hover:bg-gray-100 rounded-lg"
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <X size={20} />
                 </button>
               </div>
             </div>
-
             <div className="p-6 space-y-6">
-              {/* Basic Information */}
               <div>
-                <h4 className="text-lg font-medium text-gray-900 mb-4">
+                <h4 className="text-lg font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                   Basic Information
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -897,7 +864,7 @@ const Inventory = () => {
                       onChange={(e) =>
                         setFormData({ ...formData, labNo: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                       placeholder="e.g., CS-101"
                     />
                   </div>
@@ -911,7 +878,7 @@ const Inventory = () => {
                       onChange={(e) =>
                         setFormData({ ...formData, labName: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                       placeholder="e.g., Computer Science Lab 1"
                     />
                   </div>
@@ -925,7 +892,7 @@ const Inventory = () => {
                       onChange={(e) =>
                         setFormData({ ...formData, building: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                       placeholder="e.g., Block A"
                     />
                   </div>
@@ -939,7 +906,7 @@ const Inventory = () => {
                       onChange={(e) =>
                         setFormData({ ...formData, floor: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                       placeholder="e.g., 1st Floor"
                     />
                   </div>
@@ -956,7 +923,7 @@ const Inventory = () => {
                           capacity: parseInt(e.target.value) || 0,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                       placeholder="Number of students"
                     />
                   </div>
@@ -969,7 +936,7 @@ const Inventory = () => {
                       onChange={(e) =>
                         setFormData({ ...formData, status: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                     >
                       <option value="active">Active</option>
                       <option value="maintenance">Maintenance</option>
@@ -978,10 +945,8 @@ const Inventory = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Equipment Information */}
               <div>
-                <h4 className="text-lg font-medium text-gray-900 mb-4">
+                <h4 className="text-lg font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                   Equipment Inventory
                 </h4>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -999,7 +964,7 @@ const Inventory = () => {
                           monitors: parseInt(e.target.value) || 0,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                     />
                   </div>
                   <div>
@@ -1016,7 +981,7 @@ const Inventory = () => {
                           projectors: parseInt(e.target.value) || 0,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                     />
                   </div>
                   <div>
@@ -1033,7 +998,7 @@ const Inventory = () => {
                           switchBoards: parseInt(e.target.value) || 0,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                     />
                   </div>
                   <div>
@@ -1050,7 +1015,7 @@ const Inventory = () => {
                           fans: parseInt(e.target.value) || 0,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                     />
                   </div>
                   <div>
@@ -1067,19 +1032,17 @@ const Inventory = () => {
                           wifi: parseInt(e.target.value) || 0,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                     />
                   </div>
                 </div>
               </div>
-
-              {/* Staff Information */}
               <div>
-                <h4 className="text-lg font-medium text-gray-900 mb-4">
+                <h4 className="text-lg font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                   Staff Information
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                     <h5 className="text-md font-medium text-gray-800 mb-3">
                       Lab In-charge
                     </h5>
@@ -1097,7 +1060,7 @@ const Inventory = () => {
                               inchargeName: e.target.value,
                             })
                           }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                           placeholder="Dr. John Doe"
                         />
                       </div>
@@ -1114,7 +1077,7 @@ const Inventory = () => {
                               inchargeEmail: e.target.value,
                             })
                           }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                           placeholder="john.doe@college.edu"
                         />
                       </div>
@@ -1131,13 +1094,13 @@ const Inventory = () => {
                               inchargePhone: e.target.value,
                             })
                           }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                           placeholder="+1-555-0123"
                         />
                       </div>
                     </div>
                   </div>
-                  <div>
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                     <h5 className="text-md font-medium text-gray-800 mb-3">
                       Lab Assistant
                     </h5>
@@ -1155,7 +1118,7 @@ const Inventory = () => {
                               assistantName: e.target.value,
                             })
                           }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                           placeholder="Jane Smith"
                         />
                       </div>
@@ -1172,7 +1135,7 @@ const Inventory = () => {
                               assistantEmail: e.target.value,
                             })
                           }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                           placeholder="jane.smith@college.edu"
                         />
                       </div>
@@ -1189,7 +1152,7 @@ const Inventory = () => {
                               assistantPhone: e.target.value,
                             })
                           }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                           placeholder="+1-555-0124"
                         />
                       </div>
@@ -1198,21 +1161,20 @@ const Inventory = () => {
                 </div>
               </div>
             </div>
-
-            <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">
+            <div className="p-6 border-t border-gray-200 flex justify-end space-x-3 bg-gray-50">
               <button
                 onClick={() => {
                   setShowAddModal(false);
                   setEditingLab(null);
                   resetForm();
                 }}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
               >
                 Cancel
               </button>
               <button
                 onClick={editingLab ? handleUpdateLab : handleAddLab}
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-lg"
               >
                 <Save className="mr-2" size={16} />
                 {editingLab ? "Update Lab" : "Add Lab"}
@@ -1222,11 +1184,10 @@ const Inventory = () => {
         </div>
       )}
 
-      {/* View Lab Modal */}
       {viewingLab && (
-        <div className="fixed inset-0 bg-gray-100 bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
+        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-300 ring-1 ring-gray-200">
+            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-semibold text-gray-900">
                   {viewingLab.lab_no} - {viewingLab.lab_name}
@@ -1234,7 +1195,7 @@ const Inventory = () => {
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => generatePDF(viewingLab)}
-                    className="flex items-center px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    className="flex items-center px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-lg"
                     title="Download PDF Report"
                   >
                     <Download className="mr-2" size={16} />
@@ -1242,14 +1203,13 @@ const Inventory = () => {
                   </button>
                   <button
                     onClick={() => setViewingLab(null)}
-                    className="p-2 hover:bg-gray-100 rounded-lg"
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   >
                     <X size={20} />
                   </button>
                 </div>
               </div>
             </div>
-
             <div className="p-6 space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -1277,20 +1237,19 @@ const Inventory = () => {
                   </span>
                 </div>
               </div>
-
               <div>
-                <h4 className="text-lg font-medium text-gray-900 mb-4">
+                <h4 className="text-lg font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                   Equipment Details
                 </h4>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
                     <Monitor className="mx-auto text-blue-500 mb-2" size={24} />
                     <p className="text-2xl font-bold text-gray-900">
                       {viewingLab.monitors || 0}
                     </p>
                     <p className="text-sm text-gray-600">Monitors</p>
                   </div>
-                  <div className="text-center p-4 bg-purple-50 rounded-lg">
+                  <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
                     <Projector
                       className="mx-auto text-purple-500 mb-2"
                       size={24}
@@ -1300,21 +1259,21 @@ const Inventory = () => {
                     </p>
                     <p className="text-sm text-gray-600">Projectors</p>
                   </div>
-                  <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                  <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
                     <Zap className="mx-auto text-yellow-500 mb-2" size={24} />
                     <p className="text-2xl font-bold text-gray-900">
                       {viewingLab.switch_boards || 0}
                     </p>
                     <p className="text-sm text-gray-600">Switch Boards</p>
                   </div>
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
                     <Fan className="mx-auto text-green-500 mb-2" size={24} />
                     <p className="text-2xl font-bold text-gray-900">
                       {viewingLab.fans || 0}
                     </p>
                     <p className="text-sm text-gray-600">Fans</p>
                   </div>
-                  <div className="text-center p-4 bg-indigo-50 rounded-lg">
+                  <div className="text-center p-4 bg-indigo-50 rounded-lg border border-indigo-200">
                     <Wifi className="mx-auto text-indigo-500 mb-2" size={24} />
                     <p className="text-2xl font-bold text-gray-900">
                       {viewingLab.wifi || 0}
@@ -1323,13 +1282,12 @@ const Inventory = () => {
                   </div>
                 </div>
               </div>
-
               <div>
-                <h4 className="text-lg font-medium text-gray-900 mb-4">
+                <h4 className="text-lg font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                   Staff Information
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="p-4 bg-green-50 rounded-lg">
+                  <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                     <div className="flex items-center mb-3">
                       <UserCheck className="text-green-600 mr-2" size={20} />
                       <h5 className="font-medium text-gray-900">
@@ -1351,7 +1309,7 @@ const Inventory = () => {
                       </p>
                     </div>
                   </div>
-                  <div className="p-4 bg-blue-50 rounded-lg">
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                     <div className="flex items-center mb-3">
                       <User className="text-blue-600 mr-2" size={20} />
                       <h5 className="font-medium text-gray-900">
@@ -1375,8 +1333,7 @@ const Inventory = () => {
                   </div>
                 </div>
               </div>
-
-              <div className="text-center text-sm text-gray-500">
+              <div className="text-center text-sm text-gray-500 pt-4 border-t border-gray-200">
                 Last updated:{" "}
                 {new Date(viewingLab.last_updated).toLocaleString()}
               </div>

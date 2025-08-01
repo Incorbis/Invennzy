@@ -69,69 +69,66 @@ const LoginSection = () => {
     });
   };
 
-const makeApiCall = async (endpoint, data) => {
-  setIsLoading(true);
-  try {
-    const response = await fetch(`http://localhost:3000${endpoint}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
-
-    const result = await response.json();
-
-    if (response.ok) {
-      // ✅ Store token if present
-      if (result.token) {
-        localStorage.setItem("token", result.token);
-        localStorage.setItem("userRole", activeTab);
-        localStorage.setItem("userName", result.user.name);
-
-        // ✅ Also store user ID (adminId)
-        if (result.user?.id) {
-          localStorage.setItem("adminId", result.user.id);
-        }
-        
-        // ✅ Redirect if available
-        if (result.redirectUrl) {
-          window.location.href = result.redirectUrl;
-        } else {
-          const redirectUrls = {
-            admin: "/admindash",
-            labincharge: "/labinchargedash",
-            labassistant: "/labassistantdash",
-          };
-          window.location.href = redirectUrls[activeTab] || "/";
-        }
-
-      } else {
-        // ✅ Handle signup-only success (without login token)
-        if (result.id) {
-          localStorage.setItem("adminId", result.id);
-        }
-
-        setMessage({ text: result.message, type: "success" });
-
-        if (result.redirectUrl) {
-          window.location.href = result.redirectUrl;
-        }
-      }
-
-    } else {
-      setMessage({
-        text: result.message || "An error occurred",
-        type: "error",
+  const makeApiCall = async (endpoint, data) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`http://localhost:3000${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
       });
-    }
-  } catch (error) {
-    setMessage({ text: "Network error. Please try again.", type: "error" });
-  } finally {
-    setIsLoading(false);
-  }
-};
 
+      const result = await response.json();
+
+      if (response.ok) {
+        // ✅ Store token if present
+        if (result.token) {
+          localStorage.setItem("token", result.token);
+          localStorage.setItem("userRole", activeTab);
+          localStorage.setItem("userName", result.user.name);
+
+          // ✅ Also store user ID (adminId)
+          if (result.user?.id) {
+            localStorage.setItem("adminId", result.user.id);
+          }
+
+          // ✅ Redirect if available
+          if (result.redirectUrl) {
+            window.location.href = result.redirectUrl;
+          } else {
+            const redirectUrls = {
+              admin: "/admindash",
+              labincharge: "/labinchargedash",
+              labassistant: "/labassistantdash",
+            };
+            window.location.href = redirectUrls[activeTab] || "/";
+          }
+        } else {
+          // ✅ Handle signup-only success (without login token)
+          if (result.id) {
+            localStorage.setItem("adminId", result.id);
+          }
+
+          setMessage({ text: result.message, type: "success" });
+
+          if (result.redirectUrl) {
+            window.location.href = result.redirectUrl;
+          }
+        }
+      } else {
+        setMessage({
+          text: result.message || "An error occurred",
+          type: "error",
+        });
+      }
+    } catch (error) {
+      setMessage({ text: "Network error. Please try again.", type: "error" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -195,6 +192,11 @@ const makeApiCall = async (endpoint, data) => {
         localStorage.setItem(`token`, result.token);
         localStorage.setItem("userRole", result.user.role);
         localStorage.setItem("userName", result.user.name);
+        // ✅ Store adminId or user id
+        if (result.user?.id) {
+          localStorage.setItem(`${result.user.role}Id`, result.user.id);
+        }
+
         if (result.redirectUrl) {
           window.location.href = result.redirectUrl;
         }
