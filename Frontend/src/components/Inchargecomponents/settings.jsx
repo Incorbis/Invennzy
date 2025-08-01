@@ -295,19 +295,21 @@ const SettingsPage = () => {
               accept="image/*"
               className="hidden"
             />
-            <button 
-              onClick={handleChangePhoto}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 mr-3 flex items-center space-x-2"
-            >
-              <Camera size={16} />
-              <span>Change Photo</span>
-            </button>
-            <button 
-              onClick={handleRemovePhoto}
-              className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50"
-            >
-              Remove
-            </button>
+            <div className="flex items-center space-x-4">
+              <button 
+                onClick={handleChangePhoto}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+              >
+                <Camera size={16} />
+                <span>Change Photo</span>
+              </button>
+              <button 
+                onClick={handleRemovePhoto}
+                className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50"
+              >
+                Remove
+              </button>
+            </div>
           </div>
         </div>
         {profileImage && (
