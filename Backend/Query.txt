@@ -34,7 +34,7 @@ CREATE TABLE settingsadmin (
   phone_number INT,
   Department VARCHAR(225),
   password VARCHAR(225),
-  role VARCHAR(225)
+  role VARCHAR(255) NOT NULL
 );
 
 USE invennzy;
