@@ -112,3 +112,20 @@ ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIME
 
 ALTER TABLE admin
 MODIFY COLUMN profile_picture TEXT;
+
+ALTER TABLE labincharge
+MODIFY COLUMN staff_id BIGINT UNSIGNED;
+
+ALTER TABLE labincharge
+ADD CONSTRAINT fk_staff_id_labincharges
+FOREIGN KEY (staff_id) REFERENCES staff(id)
+ON DELETE CASCADE;
+
+ALTER TABLE labassistant
+MODIFY COLUMN staff_id BIGINT UNSIGNED;
+
+ALTER TABLE labassistant
+ADD CONSTRAINT fk_staff_id_labincharges
+FOREIGN KEY (staff_id) REFERENCES staff(id)
+ON DELETE CASCADE;
+
