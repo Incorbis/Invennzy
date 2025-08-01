@@ -7,7 +7,12 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js"
   },
-  "keywords": ["lab", "inventory", "management", "api"],
+  "keywords": [
+    "lab",
+    "inventory",
+    "management",
+    "api"
+  ],
   "author": "",
   "license": "ISC",
   "description": "",
@@ -21,6 +26,7 @@
     "google-auth-library": "^10.2.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.12.1",
+    "multer": "^2.0.2",
     "mysql2": "^3.14.2",
     "ngrok": "^5.0.0-beta.2",
     "qs": "^6.14.0",

@@ -1,108 +1,107 @@
 const express = require('express');
-require('dotenv').config();
-const db = require('../../db');
-
-const verifyToken = require('../../middlewares/verifytoken');
 const router = express.Router();
+const db = require('../../db'); // your mysql2/promise db pool
+const multer = require('multer');
+const path = require('path');
+const verifyToken = require('../../middlewares/verifyToken'); // middleware to verify JWT token
+const bcrypt = require('bcrypt');
 
-// GET /api/settings/admin/profile
+// Multer setup for image uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, 'uploads/'),
+  filename: (req, file, cb) =>
+    cb(null, `${Date.now()}-${file.originalname.replace(/\s+/g, '_')}`)
+});
+const upload = multer({ storage });
+
+/**
+ * GET /api/settings/admin/profile
+ */
 router.get('/admin/profile', verifyToken, async (req, res) => {
-  try {
-    const { email, role } = req.user;
+  const userId = req.user.id;
+  console.log("🔎 Executing profile query for userId:", userId);
 
+  try {
     const [rows] = await db.query(
-      `SELECT 
-        full_name AS name, 
-        adminemail AS email, 
-        phone_number AS phone,      
-        Department AS department,
-        role
-       FROM settingsadmin
-       WHERE adminemail = ?`,
-      [email]
+      `SELECT name, email, phone, department, role, profile_picture FROM admin WHERE id = ?`,
+      [userId]
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ message: 'Profile settings not found' });
+      return res.status(404).json({ message: 'Admin not found' });
     }
 
-    const profile = {
-      name: rows[0].name || '',
-      email: rows[0].email || '',
-      phone: rows[0].phone || '',
-      department: rows[0].department || '',
-      role: rows[0].role || '' // ✅ include role
-    };
-
-    return res.status(200).json({ profile });
-  } catch (error) {
-    console.error('Profile fetch error:', error);
-    return res.status(500).json({ message: 'Failed to fetch profile settings', error: error.message });
+    res.json({ profile: rows[0] });
+  } catch (err) {
+    console.error('❌ Error fetching profile:', err);
+    res.status(500).json({ message: 'Database error', error: err });
   }
 });
 
-const bcrypt = require('bcryptjs');
+/**
+ * PUT /api/settingadmin
+ * Accepts JSON or multipart/form-data (with optional profileImage)
+ */
+router.put('/settingadmin', verifyToken, upload.single('profileImage'), async (req, res) => {
+  const userId = req.user.id;
 
-router.post('/admin/update-profile', verifyToken, async (req, res) => {
-  const { name, phone, department, newPassword } = req.body;
-  const { email: userEmail } = req.user; // from JWT
+  try {
+    const { name, email, phone, department, role } = req.body;
+    const profile_picture = req.file ? `/uploads/${req.file.filename}` : null;
 
-  console.log('[🔐 Incoming Update]', { userEmail, name, phone, department, newPassword });
+    const fields = [name, email, phone || null, department || null, role];
+    let query = `
+      UPDATE admin
+      SET name = ?, email = ?, phone = ?, department = ?, role = ?`;
 
-  if (!name || !phone || !department) {
-    console.log('[⚠️ Validation Failed] Missing required fields');
-    return res.status(400).json({ message: 'All fields are required' });
+    if (profile_picture) {
+      query += `, profile_picture = ?`;
+      fields.push(profile_picture);
+    }
+
+    query += ` WHERE id = ?`;
+    fields.push(userId);
+
+    const [result] = await db.query(query, fields);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Admin not found or no changes made' });
+    }
+
+    res.json({ message: 'Profile updated successfully' });
+  } catch (err) {
+    console.error('❌ Error updating profile:', err);
+    res.status(500).json({ message: 'Update failed', error: err });
+  }
+});
+
+router.put("/admin/password", verifyToken, async (req, res) => {
+  const userId = req.user.id;
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ message: "All fields are required." });
   }
 
   try {
-    // 1. Check if user exists
-    const [rows] = await db.query(
-      `SELECT * FROM settingsadmin WHERE adminemail = ?`,
-      [userEmail]
-    );
+    // 1. Get hashed password from DB
+    const [rows] = await db.query("SELECT password FROM admin WHERE id = ?", [userId]);
+    if (rows.length === 0) return res.status(404).json({ message: "Admin not found" });
 
-    if (rows.length === 0) {
-      console.log('[❌ User Not Found]', userEmail);
-      return res.status(404).json({ message: 'Admin profile not found' });
-    }
+    const isMatch = await bcrypt.compare(currentPassword, rows[0].password);
+    if (!isMatch) return res.status(401).json({ message: "Current password is incorrect" });
 
-    // 2. Update profile fields in settingsadmin
-    await db.query(
-      `UPDATE settingsadmin 
-       SET full_name = ?, phone_number = ?, Department = ? 
-       WHERE adminemail = ?`,
-      [name, phone, department, userEmail]
-    );
+    // 2. Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedNewPassword = await bcrypt.hash(newPassword, salt);
 
-    console.log('[✅ Profile Info Updated]');
+    // 3. Update password
+    await db.query("UPDATE admin SET password = ? WHERE id = ?", [hashedNewPassword, userId]);
 
-    // 3. Update password if provided
-    if (newPassword && newPassword.trim() !== "") {
-      console.log('[🔁 Password Update Attempt]');
-      const hashedPassword = await bcrypt.hash(newPassword.trim(), 10);
-
-      // ✅ Update in settingsadmin
-      await db.query(
-        `UPDATE settingsadmin SET password = ? WHERE adminemail = ?`,
-        [hashedPassword, userEmail]
-      );
-
-      // ✅ Also update in admin table (used for login)
-      await db.query(
-        `UPDATE admin SET password = ? WHERE email = ?`,
-        [hashedPassword, userEmail]
-      );
-
-      console.log('[✅ Password Updated in Both Tables]');
-    } else {
-      console.log('[ℹ️ No New Password Provided or Empty]');
-    }
-
-    return res.status(200).json({ message: 'Profile updated successfully' });
-
-  } catch (error) {
-    console.error('[💥 Profile update error]:', error);
-    return res.status(500).json({ message: 'Failed to update profile', error: error.message });
+    res.json({ message: "Password updated successfully" });
+  } catch (err) {
+    console.error("Error updating password:", err);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 

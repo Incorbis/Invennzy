@@ -1,24 +1,23 @@
-const db = require('../db'); // should export a mysql2/promise connection or pool
+const db = require('../db');
+const bcrypt = require('bcrypt');
 
 class Lab {
-  // Get labs created by specific admin
   static async findByAdminId(adminId) {
-  const [rows] = await db.query(`
-    SELECT 
-      l.*, 
-      e.monitors, e.projectors, e.switch_boards, e.fans, e.wifi,
-      s.incharge_name, s.incharge_email, s.incharge_phone,
-      s.assistant_name, s.assistant_email, s.assistant_phone
-    FROM labs l
-    LEFT JOIN equipment e ON l.id = e.lab_id
-    LEFT JOIN staff s ON l.id = s.lab_id
-    WHERE l.admin_id = ?
-    ORDER BY l.lab_no
-  `, [adminId]);
-  return rows;
-}
+    const [rows] = await db.query(`
+      SELECT 
+        l.*, 
+        e.monitors, e.projectors, e.switch_boards, e.fans, e.wifi,
+        s.incharge_name, s.incharge_email, s.incharge_phone,
+        s.assistant_name, s.assistant_email, s.assistant_phone
+      FROM labs l
+      LEFT JOIN equipment e ON l.id = e.lab_id
+      LEFT JOIN staff s ON l.id = s.lab_id
+      WHERE l.admin_id = ?
+      ORDER BY l.lab_no
+    `, [adminId]);
+    return rows;
+  }
 
-  // Get all labs with joined equipment and staff
   static async findAll() {
     const [rows] = await db.query(`
       SELECT 
@@ -34,7 +33,6 @@ class Lab {
     return rows;
   }
 
-  // Get a specific lab by ID with joins
   static async findById(id) {
     const [rows] = await db.query(`
       SELECT 
@@ -50,12 +48,12 @@ class Lab {
     return rows[0];
   }
 
-  // Create a new lab (including equipment, staff, admin_id)
   static async create(labData) {
     const conn = await db.getConnection();
     try {
       await conn.beginTransaction();
 
+      // ✅ Insert into labs
       const [labResult] = await conn.query(`
         INSERT INTO labs (lab_no, lab_name, building, floor, capacity, status, admin_id)
         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -71,6 +69,7 @@ class Lab {
 
       const labId = labResult.insertId;
 
+      // ✅ Insert into equipment
       await conn.query(`
         INSERT INTO equipment (lab_id, monitors, projectors, switch_boards, fans, wifi)
         VALUES (?, ?, ?, ?, ?, ?)
@@ -83,7 +82,8 @@ class Lab {
         labData.wifi
       ]);
 
-      await conn.query(`
+      // ✅ Insert into staff
+      const [staffResult] = await conn.query(`
         INSERT INTO staff (lab_id, incharge_name, incharge_email, incharge_phone, 
                           assistant_name, assistant_email, assistant_phone)
         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -97,9 +97,38 @@ class Lab {
         labData.assistantPhone
       ]);
 
+      const staffId = staffResult.insertId;
+
+      // ✅ Hash default password
+      const hashedPassword = await bcrypt.hash("defaultpassword", 10);
+
+      // ✅ Insert into labincharges
+      await conn.query(`
+        INSERT INTO labincharge (staff_id, name, email, password, google_id, profile_picture)
+        VALUES (?, ?, ?, ?, NULL, NULL)
+        ON DUPLICATE KEY UPDATE name = VALUES(name), password = VALUES(password)
+      `, [
+        staffId,
+        labData.inchargeName,
+        labData.inchargeEmail,
+        hashedPassword
+      ]);
+
+      // ✅ Insert into labassistants
+      await conn.query(`
+        INSERT INTO labassistant (staff_id, name, email, password, google_id, profile_picture)
+        VALUES (?, ?, ?, ?, NULL, NULL)
+        ON DUPLICATE KEY UPDATE name = VALUES(name), password = VALUES(password)
+      `, [
+        staffId,
+        labData.assistantName,
+        labData.assistantEmail,
+        hashedPassword
+      ]);
+
       await conn.commit();
 
-      // ✅ Return full lab record
+      // ✅ Return full lab with joins
       const fullLab = await Lab.findById(labId);
       return fullLab;
 
@@ -111,7 +140,6 @@ class Lab {
     }
   }
 
-  // Update an existing lab and its equipment/staff
   static async update(id, labData) {
     const conn = await db.getConnection();
     try {
@@ -170,7 +198,6 @@ class Lab {
     }
   }
 
-  // Delete lab + associated staff and equipment
   static async delete(id) {
     const conn = await db.getConnection();
     try {
