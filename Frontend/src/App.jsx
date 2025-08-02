@@ -19,7 +19,6 @@ import Notifications from "./components/admincomponents/Notification.jsx";
 
 import PrivateRoute from "./Utils/PrivateRoute.jsx";
 
-import LICAddItems from "./components/Inchargecomponents/AddItems.jsx";
 import LICRequests from "./components/Inchargecomponents/Requests.jsx";
 import LICNotification from "./components/Inchargecomponents/Notification.jsx";
 import LICReports from "./components/Inchargecomponents/Reports.jsx";
@@ -72,7 +71,6 @@ function App() {
       >
         <Route path="notifications" element={<LICNotification />} />
         <Route path="inventory" element={<LICInventory />} />
-        <Route path="additems" element={<LICAddItems />} />
         <Route path="requests" element={<LICRequests />} />
         <Route path="reports" element={<LICReports />} />
         <Route path="" element={<LICoverview />} />

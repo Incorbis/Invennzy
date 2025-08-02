@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Monitor,
   Projector,
@@ -21,15 +21,14 @@ import {
 } from 'lucide-react';
 
 const LabEquipmentManager = () => {
-  // Generate random equipment data
-  const generateEquipment = () => {
+  // Generate random equipment data - using useMemo to prevent regeneration
+  const equipment = useMemo(() => {
     const types = [
       { name: 'monitors', icon: Monitor, color: 'blue', count: Math.floor(Math.random() * 15) + 8 },
       { name: 'projectors', icon: Projector, color: 'purple', count: Math.floor(Math.random() * 6) + 3 },
       { name: 'switch_boards', icon: Zap, color: 'yellow', count: Math.floor(Math.random() * 8) + 4 },
       { name: 'fans', icon: Fan, color: 'green', count: Math.floor(Math.random() * 12) + 8 },
       { name: 'wifi_routers', icon: Wifi, color: 'indigo', count: Math.floor(Math.random() * 8) + 4 },
-      { name: 'security_cameras', icon: Camera, color: 'pink', count: Math.floor(Math.random() * 10) + 6 }
     ];
 
     const monitorDescriptions = [
@@ -45,7 +44,7 @@ const LabEquipmentManager = () => {
       "29-inch ultrawide monitor with split-screen functionality for multitasking"
     ];
 
-    const statuses = ['working', 'maintenance', 'faulty'];
+    const statuses = ['Active', 'Maintenance', 'Damaged'];
     const locations = ['Lab A', 'Lab B', 'Lab C', 'Conference Room', 'Server Room', 'Reception', 'Office 101', 'Office 102'];
     
     const generateCode = (type, index) => {
@@ -58,19 +57,19 @@ const LabEquipmentManager = () => {
       return Array.from({length: 8}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
     };
 
-    let equipment = [];
+    let equipmentList = [];
     
     types.forEach(type => {
       for (let i = 0; i < type.count; i++) {
         const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
         const hasPassword = ['monitors', 'wifi_routers'].includes(type.name);
         
-        equipment.push({
+        equipmentList.push({
           id: `${type.name}_${i + 1}`,
           type: type.name,
           name: `${type.name.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} ${i + 1}`,
           code: generateCode(type.name, i),
-          status: randomStatus,
+          status: randomStatus.toLowerCase(), // Convert to lowercase for consistency
           location: locations[Math.floor(Math.random() * locations.length)],
           password: hasPassword ? generatePassword() : null,
           description: type.name === 'monitors' ? monitorDescriptions[i % monitorDescriptions.length] : null,
@@ -84,10 +83,10 @@ const LabEquipmentManager = () => {
       }
     });
 
-    return equipment.sort((a, b) => a.type.localeCompare(b.type));
-  };
+    return equipmentList.sort((a, b) => a.type.localeCompare(b.type));
+  }, []); // Empty dependency array ensures this only runs once
 
-  const [equipment, setEquipment] = useState(generateEquipment());
+  const [equipmentState, setEquipmentState] = useState(equipment);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
@@ -95,7 +94,12 @@ const LabEquipmentManager = () => {
   const [showModal, setShowModal] = useState(false);
   const [showPasswords, setShowPasswords] = useState({});
   const [editMode, setEditMode] = useState(false);
-  const [collapsedCategories, setCollapsedCategories] = useState({});
+  
+  // Initialize all categories as collapsed
+  const [collapsedCategories, setCollapsedCategories] = useState(() => {
+    const types = ['monitors', 'projectors', 'switch_boards', 'fans', 'wifi_routers'];
+    return Object.fromEntries(types.map(type => [type, true]));
+  });
 
   const togglePasswordVisibility = (itemId) => {
     setShowPasswords(prev => ({
@@ -105,26 +109,34 @@ const LabEquipmentManager = () => {
   };
 
   const toggleCategory = (category) => {
-    setCollapsedCategories(prev => ({
-      ...prev,
-      [category]: !prev[category]
-    }));
+    setCollapsedCategories(prev => {
+      const isCurrentlyCollapsed = prev[category];
+      // Collapse all categories first
+      const newCollapsed = Object.fromEntries(
+        Object.keys(prev).map(key => [key, true])
+      );
+      // Toggle the clicked one
+      return {
+        ...newCollapsed,
+        [category]: !isCurrentlyCollapsed
+      };
+    });
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'working': return 'bg-green-100 text-green-800 border-green-200';
+      case 'active': return 'bg-green-100 text-green-800 border-green-200';
       case 'maintenance': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'faulty': return 'bg-red-100 text-red-800 border-red-200';
+      case 'damaged': return 'bg-red-100 text-red-800 border-red-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'working': return CheckCircle;
+      case 'active': return CheckCircle;
       case 'maintenance': return Clock;
-      case 'faulty': return AlertTriangle;
+      case 'damaged': return AlertTriangle;
       default: return AlertTriangle;
     }
   };
@@ -137,14 +149,14 @@ const LabEquipmentManager = () => {
 
   const handleSaveEdit = () => {
     if (selectedItem) {
-      setEquipment(prev => prev.map(item => 
+      setEquipmentState(prev => prev.map(item => 
         item.id === selectedItem.id ? selectedItem : item
       ));
       setEditMode(false);
     }
   };
 
-  const filteredEquipment = equipment.filter(item => {
+  const filteredEquipment = equipmentState.filter(item => {
     const matchesSearch = 
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -157,7 +169,7 @@ const LabEquipmentManager = () => {
   });
 
   const getUniqueTypes = () => {
-    const types = ['monitors', 'projectors', 'switch_boards', 'fans', 'wifi_routers', 'security_cameras'];
+    const types = ['monitors', 'projectors', 'switch_boards', 'fans', 'wifi_routers'];
     return types;
   };
 
@@ -174,9 +186,9 @@ const LabEquipmentManager = () => {
 
   const getTypeSummary = () => {
     const summary = {};
-    equipment.forEach(item => {
+    equipmentState.forEach(item => {
       if (!summary[item.type]) {
-        summary[item.type] = { total: 0, working: 0, maintenance: 0, faulty: 0 };
+        summary[item.type] = { total: 0, active: 0, maintenance: 0, damaged: 0 };
       }
       summary[item.type].total++;
       summary[item.type][item.status]++;
@@ -194,7 +206,6 @@ const LabEquipmentManager = () => {
       'switch_boards': 'Switch Boards',
       'fans': 'Fans',
       'wifi_routers': 'WiFi Routers',
-      'security_cameras': 'Security Cameras'
     };
     return names[type] || type;
   };
@@ -206,7 +217,6 @@ const LabEquipmentManager = () => {
       'switch_boards': Zap,
       'fans': Fan,
       'wifi_routers': Wifi,
-      'security_cameras': Camera
     };
     return icons[type] || Monitor;
   };
@@ -222,26 +232,26 @@ const LabEquipmentManager = () => {
           {/* Summary Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-blue-50 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{equipment.length}</div>
+              <div className="text-2xl font-bold text-blue-600">{equipmentState.length}</div>
               <div className="text-sm text-blue-800">Total Equipment</div>
             </div>
             <div className="bg-green-50 p-4 rounded-lg">
               <div className="text-2xl font-bold text-green-600">
-                {equipment.filter(e => e.status === 'working').length}
+                {equipmentState.filter(e => e.status === 'active').length}
               </div>
-              <div className="text-sm text-green-800">Working</div>
+              <div className="text-sm text-green-800">Active</div>
             </div>
             <div className="bg-yellow-50 p-4 rounded-lg">
               <div className="text-2xl font-bold text-yellow-600">
-                {equipment.filter(e => e.status === 'maintenance').length}
+                {equipmentState.filter(e => e.status === 'maintenance').length}
               </div>
               <div className="text-sm text-yellow-800">Maintenance</div>
             </div>
             <div className="bg-red-50 p-4 rounded-lg">
               <div className="text-2xl font-bold text-red-600">
-                {equipment.filter(e => e.status === 'faulty').length}
+                {equipmentState.filter(e => e.status === 'damaged').length}
               </div>
-              <div className="text-sm text-red-800">Faulty</div>
+              <div className="text-sm text-red-800">Damaged</div>
             </div>
           </div>
         </div>
@@ -278,9 +288,9 @@ const LabEquipmentManager = () => {
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Status</option>
-                <option value="working">Working</option>
+                <option value="active">Active</option>
                 <option value="maintenance">Maintenance</option>
-                <option value="faulty">Faulty</option>
+                <option value="damaged">Damaged</option>
               </select>
             </div>
           </div>
@@ -293,7 +303,7 @@ const LabEquipmentManager = () => {
             const CategoryIcon = getCategoryIcon(type);
             const isCollapsed = collapsedCategories[type];
             const categoryTotal = categoryEquipment.length;
-            const categoryWorking = categoryEquipment.filter(item => item.status === 'working').length;
+            const categoryActive = categoryEquipment.filter(item => item.status === 'active').length;
             
             if (categoryTotal === 0) return null;
             
@@ -306,28 +316,28 @@ const LabEquipmentManager = () => {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <div className={`w-10 h-10 bg-${equipment.find(e => e.type === type)?.color}-100 rounded-lg flex items-center justify-center`}>
-                        <CategoryIcon className={`text-${equipment.find(e => e.type === type)?.color}-600`} size={20} />
+                      <div className={`w-10 h-10 bg-${equipmentState.find(e => e.type === type)?.color}-100 rounded-lg flex items-center justify-center`}>
+                        <CategoryIcon className={`text-${equipmentState.find(e => e.type === type)?.color}-600`} size={20} />
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900">
                           {getCategoryDisplayName(type)}
                         </h3>
                         <p className="text-sm text-gray-600">
-                          {categoryTotal} items • {categoryWorking} working
+                          {categoryTotal} items • {categoryActive} active
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
                       <div className="flex space-x-2">
                         <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                          {categoryEquipment.filter(item => item.status === 'working').length} Working
+                          {categoryEquipment.filter(item => item.status === 'active').length} Active
                         </span>
                         <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
                           {categoryEquipment.filter(item => item.status === 'maintenance').length} Maintenance
                         </span>
                         <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
-                          {categoryEquipment.filter(item => item.status === 'faulty').length} Faulty
+                          {categoryEquipment.filter(item => item.status === 'damaged').length} Damaged
                         </span>
                       </div>
                       <div className={`transform transition-transform ${isCollapsed ? 'rotate-180' : ''}`}>
@@ -483,9 +493,9 @@ const LabEquipmentManager = () => {
                         onChange={(e) => setSelectedItem({...selectedItem, status: e.target.value})}
                         className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="working">Working</option>
+                        <option value="active">Active</option>
                         <option value="maintenance">Maintenance</option>
-                        <option value="faulty">Faulty</option>
+                        <option value="damaged">Damaged</option>
                       </select>
                     ) : (
                       <p className="mt-1 text-gray-900 capitalize">{selectedItem.status}</p>
@@ -522,21 +532,6 @@ const LabEquipmentManager = () => {
                       </div>
                     </div>
                   )}
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Warranty Status</label>
-                    <p className={`mt-1 font-medium ${selectedItem.warranty ? 'text-green-600' : 'text-red-600'}`}>
-                      {selectedItem.warranty ? 'Active' : 'Expired'}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Purchase Date</label>
-                    <p className="mt-1 text-gray-900">
-                      {new Date(selectedItem.purchaseDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Last Maintenance</label>
                     <p className="mt-1 text-gray-900">

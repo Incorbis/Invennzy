@@ -92,12 +92,7 @@ const labinchargedash = () => {
       icon: Package,
       path: "/labinchargedash/inventory",
     },
-    {
-      id: "add-items",
-      label: "Add Items",
-      icon: Plus,
-      path: "/labinchargedash/additems",
-    },
+  
     {
       id: "reports",
       label: "Reports",
