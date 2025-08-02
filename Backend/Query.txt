@@ -101,3 +101,31 @@ INSERT INTO staff (lab_id, incharge_name, incharge_email, incharge_phone, assist
 (1, 'Dr. John Smith', 'john.smith@college.edu', '+1-555-0101', 'Alice Johnson', 'alice.johnson@college.edu', '+1-555-0102'),
 (2, 'Prof. Sarah Wilson', 'sarah.wilson@college.edu', '+1-555-0201', 'Bob Brown', 'bob.brown@college.edu', '+1-555-0202'),
 (3, 'Dr. Mike Davis', 'mike.davis@college.edu', '+1-555-0301', 'Carol White', 'carol.white@college.edu','+1-555-0302');
+
+
+ALTER TABLE admin
+ADD COLUMN phone VARCHAR(15) NULL,
+ADD COLUMN department VARCHAR(100) NULL,
+ADD COLUMN role VARCHAR(50) NULL,
+ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+
+ALTER TABLE admin
+MODIFY COLUMN profile_picture TEXT;
+
+ALTER TABLE labincharge
+MODIFY COLUMN staff_id BIGINT UNSIGNED;
+
+ALTER TABLE labincharge
+ADD CONSTRAINT fk_staff_id_labincharges
+FOREIGN KEY (staff_id) REFERENCES staff(id)
+ON DELETE CASCADE;
+
+ALTER TABLE labassistant
+MODIFY COLUMN staff_id BIGINT UNSIGNED;
+
+ALTER TABLE labassistant
+ADD CONSTRAINT fk_staff_id_labincharges
+FOREIGN KEY (staff_id) REFERENCES staff(id)
+ON DELETE CASCADE;
+

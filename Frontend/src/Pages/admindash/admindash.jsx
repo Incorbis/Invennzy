@@ -259,7 +259,7 @@ const Dashboard = () => {
         </header>
 
         {showLogoutModal && (
-          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
+          <div className="fixed inset-0 bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-50">
             <div className="w-[400px] p-8 rounded-2xl shadow-2xl border border-gray-300 bg-white backdrop-blur-sm">
               <h2 className="text-xl font-bold text-gray-800 mb-4 text-center">
                 Confirm Logout

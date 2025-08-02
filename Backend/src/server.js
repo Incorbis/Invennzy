@@ -3,6 +3,9 @@ require('dotenv').config();
 const bodyParser = require('body-parser');
 const cors = require('cors'); 
 require('./db'); 
+const path = require('path');
+
+
 const contactusRoute = require('./routes/Contactus/contactusRoute');
 const app = express();
 const authRoutes = require('./routes/auth/authRoutes');
@@ -13,6 +16,9 @@ const settingAdminRoute = require('./routes/setting/settingadmin');
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+app.use(express.json());
 
 
 app.get('/', (req, res) => {
