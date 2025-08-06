@@ -1,24 +1,67 @@
 import React, { useState } from "react";
 import jsPDF from "jspdf";
-import { CheckCircle, AlertCircle, X } from "lucide-react";
+import {
+  CheckCircle,
+  AlertCircle,
+  X,
+  Clock,
+  User,
+  FileText,
+  Settings,
+  CheckSquare,
+} from "lucide-react";
 
 const steps = [
-  "Type of Problem & Date",
-  "Originator Details",
-  "Verification",
-  "Corrective Action",
-  "Closure",
+  {
+    id: 1,
+    title: "Problem Details",
+    subtitle: "Completed",
+    icon: CheckCircle,
+    editable: false,
+    role: "Lab In-charge",
+  },
+  {
+    id: 2,
+    title: "Request Submitted",
+    subtitle: "Completed",
+    icon: CheckCircle,
+    editable: false,
+    role: "Lab In-charge",
+  },
+  {
+    id: 3,
+    title: "Verification",
+    subtitle: "Review & Assign",
+    icon: Clock,
+    editable: true,
+    role: "Lab Assistant",
+  },
+  {
+    id: 4,
+    title: "Corrective Action",
+    subtitle: "Execute Work",
+    icon: Settings,
+    editable: true,
+    role: "Lab Assistant",
+  },
+  {
+    id: 5,
+    title: "Closure",
+    subtitle: "Final Report",
+    icon: CheckSquare,
+    editable: true,
+    role: "Lab Assistant",
+  },
 ];
 
-// Professional Modal Component
 function Modal({ isOpen, onClose, type, title, message }) {
   if (!isOpen) return null;
 
   const getIcon = () => {
     switch (type) {
-      case 'success':
+      case "success":
         return <CheckCircle className="w-8 h-8 text-green-500" />;
-      case 'info':
+      case "info":
         return <AlertCircle className="w-8 h-8 text-blue-500" />;
       default:
         return <AlertCircle className="w-8 h-8 text-gray-500" />;
@@ -27,18 +70,18 @@ function Modal({ isOpen, onClose, type, title, message }) {
 
   const getBgColor = () => {
     switch (type) {
-      case 'success':
-        return 'bg-green-50 border-green-200';
-      case 'info':
-        return 'bg-blue-50 border-blue-200';
+      case "success":
+        return "bg-green-50 border-green-200";
+      case "info":
+        return "bg-blue-50 border-blue-200";
       default:
-        return 'bg-gray-50 border-gray-200';
+        return "bg-gray-50 border-gray-200";
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -69,23 +112,115 @@ function Modal({ isOpen, onClose, type, title, message }) {
   );
 }
 
+function ProgressBar({ currentStep, completedSteps = 2 }) {
+  return (
+    <div className="w-full max-w-4xl mx-auto mb-8">
+      <div className="relative">
+        <div className="absolute top-6 left-0 w-full h-0.5 bg-gray-200"></div>
+        <div
+          className="absolute top-6 left-0 h-0.5 bg-blue-600 transition-all duration-500 ease-in-out"
+          style={{
+            width: `${((completedSteps - 1) / (steps.length - 1)) * 100}%`,
+          }}
+        ></div>
+
+        <div className="relative flex justify-between">
+          {steps.map((step, index) => {
+            const StepIcon = step.icon;
+            const isCompleted = step.id <= completedSteps;
+            const isCurrent = step.id === currentStep;
+            const isAccessible = step.id <= Math.max(completedSteps, 5);
+
+            return (
+              <div key={step.id} className="flex flex-col items-center group">
+                <div
+                  className={`
+                    relative z-10 w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all duration-300
+                    ${
+                      isCompleted
+                        ? "bg-blue-600 border-blue-600 text-white shadow-lg"
+                        : isCurrent
+                        ? "bg-white border-blue-600 text-blue-600 shadow-lg ring-4 ring-blue-100"
+                        : isAccessible
+                        ? "bg-white border-gray-300 text-gray-400"
+                        : "bg-gray-100 border-gray-200 text-gray-300"
+                    }
+                  `}
+                >
+                  {step.id <= 2 || isCompleted ? (
+                    <CheckCircle className="w-6 h-6" />
+                  ) : isCurrent ? (
+                    <StepIcon className="w-5 h-5" />
+                  ) : (
+                    <StepIcon className="w-5 h-5" />
+                  )}
+                </div>
+
+                <div className="mt-3 text-center max-w-24">
+                  <p
+                    className={`text-sm font-semibold ${
+                      isCurrent
+                        ? "text-blue-700"
+                        : isCompleted
+                        ? "text-blue-600"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    {step.title}
+                  </p>
+                  <p
+                    className={`text-xs mt-1 ${
+                      isCurrent
+                        ? "text-blue-600"
+                        : isCompleted
+                        ? "text-blue-500"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    {step.subtitle}
+                  </p>
+                  <p
+                    className={`text-xs mt-1 ${
+                      isCurrent
+                        ? "text-blue-500"
+                        : isCompleted
+                        ? "text-blue-400"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    ({step.role})
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LabAssistantForm() {
-  const [step, setStep] = useState(1); // Start from step 1 but allow viewing
-  const [modal, setModal] = useState({ isOpen: false, type: '', title: '', message: '' });
+  const [currentStep, setCurrentStep] = useState(3);
+  const [completedSteps, setCompletedSteps] = useState(2);
+  const [modal, setModal] = useState({
+    isOpen: false,
+    type: "",
+    title: "",
+    message: "",
+  });
   const [form, setForm] = useState({
-    typeOfProblem: "",
-    date: "",
-    department: "",
-    location: "",
-    complaintDetails: "",
+    typeOfProblem: "System",
+    date: "2024-08-01",
+    department: "Computer Science",
+    location: "Lab Room 101",
+    complaintDetails: "Computer not starting properly",
     recurringComplaint: "no",
     recurringTimes: "",
-    labAssistant: "",
-    labAssistantSignature: "",
-    labAssistantDate: "",
-    hod: "",
-    hodSignature: "",
-    hodDate: "",
+    labAssistant: "John Smith",
+    labAssistantDate: "2024-08-01",
+    hod: "Dr. Johnson",
+    hodDate: "2024-08-01",
     inChargeDate: "",
     inChargeSignature: "",
     assignedPerson: "",
@@ -112,14 +247,43 @@ function LabAssistantForm() {
   };
 
   const closeModal = () => {
-    setModal({ isOpen: false, type: '', title: '', message: '' });
+    setModal({ isOpen: false, type: "", title: "", message: "" });
   };
 
-  const handleSaveDetails = () => {
+  const handleSaveProgress = () => {
     showModal(
-      'success',
-      'Details Saved Successfully',
-      'Your maintenance form details have been saved successfully. You can continue working on the form or come back to it later.'
+      "success",
+      "Progress Saved Successfully",
+      "Your maintenance work progress has been saved successfully. You can continue working on the form or come back to it later."
+    );
+  };
+
+  const handleCompleteVerification = () => {
+    setCompletedSteps(3);
+    setCurrentStep(4);
+    showModal(
+      "success",
+      "Verification Completed",
+      "Verification step has been completed successfully. The work has been assigned and you can now proceed with corrective actions."
+    );
+  };
+
+  const handleCompleteAction = () => {
+    setCompletedSteps(4);
+    setCurrentStep(5);
+    showModal(
+      "success",
+      "Corrective Action Completed",
+      "Corrective action has been completed successfully. Please proceed to final closure of the maintenance request."
+    );
+  };
+
+  const handleCompleteClosure = () => {
+    setCompletedSteps(5);
+    showModal(
+      "success",
+      "Maintenance Request Closed",
+      "The maintenance request has been successfully completed and closed. The Lab In-charge will be notified of the completion."
     );
   };
 
@@ -128,84 +292,72 @@ function LabAssistantForm() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const nextStep = () => setStep((prev) => Math.min(prev + 1, steps.length));
-  const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
+  const nextStep = () => {
+    if (currentStep < 5) {
+      setCurrentStep((prev) => prev + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep((prev) => prev - 1);
+    }
+  };
 
   const downloadPDF = () => {
     const doc = new jsPDF();
-    let y = 12;
-    function write(label, value) {
-      doc.setFont("helvetica", "normal");
+    let y = 20;
+
+    const addText = (label, value, isBold = false) => {
+      doc.setFont("helvetica", isBold ? "bold" : "normal");
       doc.setFontSize(11);
       doc.text(`${label}: ${value || "-"}`, 14, y);
-      y += 8;
-    }
+      y += 7;
+    };
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
-    doc.text("Maintenance Report Form", 14, y);
+    doc.text("Maintenance Report Form - Complete", 14, y);
     y += 10;
     doc.setLineWidth(0.5);
     doc.line(14, y, 195, y);
-    y += 6;
-    write("Type of Problem", form.typeOfProblem);
-    write("Date", form.date);
-    y += 3;
-    doc.setFont("helvetica", "bold");
-    doc.text("-- Originator Details --", 14, y);
-    y += 7;
-    write("Department", form.department);
-    write("Location", form.location);
-    write("Complaint Details", form.complaintDetails);
-    write("Recurring Complaint", form.recurringComplaint);
-    if (form.recurringComplaint === "yes")
-      write("Times", form.recurringTimes);
-    write("Lab Assistant", form.labAssistant);
-    write("Assistant Signature", form.labAssistantSignature);
-    write("Date", form.labAssistantDate);
-    write("Head of Dept.", form.hod);
-    write("HoD Signature", form.hodSignature);
-    write("Date", form.hodDate);
-    y += 3;
-    doc.setFont("helvetica", "bold");
-    doc.text("-- Verification --", 14, y);
-    y += 7;
-    write("Maintenance In Charge Date", form.inChargeDate);
-    write("In Charge Signature", form.inChargeSignature);
-    write("Assigned to", form.assignedPerson);
-    write("Verification Remarks", form.verificationRemarks);
-    write("Materials Used", form.materialsUsed);
-    y += 3;
-    doc.setFont("helvetica", "bold");
-    doc.text("-- Corrective Action --", 14, y);
-    y += 7;
-    write("Resolved Inhouse", form.resolvedInhouse);
-    write("Remark", form.resolvedRemark);
-    write("Consumables Needed", form.consumablesNeeded);
-    if (form.consumablesNeeded === "yes")
-      write("Consumable Details", form.consumableDetails);
-    write("External Agency Needed", form.externalAgencyNeeded);
-    if (form.externalAgencyNeeded === "yes") {
-      write("Agency", form.agencyName);
-      write("Approx. Expenditure", form.approxExpenditure);
-    }
-    y += 3;
-    doc.setFont("helvetica", "bold");
-    doc.text("-- Report Closure --", 14, y);
-    y += 7;
-    write("Lab Completion Remark", form.completionRemarkLab);
-    write("Lab Completion By", form.labCompletionName);
-    write("Lab Completion Signature", form.labCompletionSignature);
-    write("Lab Completion Date", form.labCompletionDate);
-    write("Maintenance Completion Remark", form.completionRemarkMaintenance);
-    write("Maintenance Closure Date", form.maintenanceClosedDate);
-    write("Maintenance Closure Signature", form.maintenanceClosedSignature);
+    y += 10;
 
-    doc.save("maintenance_report_form.pdf");
+    addText("Type of Problem", form.typeOfProblem, true);
+    addText("Date", form.date);
+    addText("Department", form.department);
+    addText("Location", form.location);
+    addText("Complaint Details", form.complaintDetails);
+    addText("Recurring Complaint", form.recurringComplaint);
+    if (form.recurringComplaint === "yes") {
+      addText("Number of times", form.recurringTimes);
+    }
+
+    y += 5;
+    addText("Verification Details", "", true);
+    addText("Assigned Person", form.assignedPerson);
+    addText("Verification Remarks", form.verificationRemarks);
+    addText("Materials Used", form.materialsUsed);
+
+    y += 5;
+    addText("Corrective Action", "", true);
+    addText("Resolved In-house", form.resolvedInhouse);
+    addText("Resolution Remarks", form.resolvedRemark);
+    addText("Consumables Needed", form.consumablesNeeded);
+    if (form.consumablesNeeded === "yes") {
+      addText("Consumable Details", form.consumableDetails);
+    }
+
+    y += 5;
+    addText("Closure Details", "", true);
+    addText("Lab Completion Remarks", form.completionRemarkLab);
+    addText("Maintenance Completion Remarks", form.completionRemarkMaintenance);
+    addText("Closure Date", form.maintenanceClosedDate);
+    doc.save("maintenance_report_complete.pdf");
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center py-8 px-2">
-      {/* Modal */}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
       <Modal
         isOpen={modal.isOpen}
         onClose={closeModal}
@@ -213,293 +365,361 @@ function LabAssistantForm() {
         title={modal.title}
         message={modal.message}
       />
-
-      {/* User Role Indicator */}
-      <div className="w-full max-w-2xl mb-4">
-        <div className="bg-green-600 text-white px-4 py-2 rounded-lg text-center font-semibold">
-          Lab Assistant Portal
-        </div>
-      </div>
-
-      {/*--- Progress Bar ---*/}
-      <div className="w-full max-w-2xl flex gap-2 justify-start items-center mb-6">
-        {steps.map((s, i) => (
-          <div
-            key={s}
-            className={`flex-1 flex flex-col items-center transition-all 
-                ${i + 1 === step 
-                  ? "bg-green-600 text-white font-semibold shadow-lg"
-                  : i + 1 >= 3
-                  ? "bg-gray-200 text-gray-700"
-                  : "bg-gray-100 text-gray-400"} 
-                rounded-md py-2 px-2 text-center 
-                ${i + 1 < 3 ? "opacity-50" : ""}
-                `}
-            style={{ minWidth: "160px", maxWidth: "170px" }}
-          >
-            <span className="block text-sm">{i + 1}. {s}</span>
-            {i + 1 < 3 && <span className="text-xs">(View Only)</span>}
-          </div>
-        ))}
-      </div>
-
-      {/*--- Form Container Card ---*/}
-      <div className="w-full max-w-2xl bg-white shadow-xl rounded-2xl p-8 relative">
-        <div className="space-y-6">
-          {/* ---------- Step 1 - View Only ---------- */}
-          {step === 1 && (
-            <div>
-              <h3 className="text-xl font-bold mb-4 text-gray-500">Step 1: Type of Problem & Date (View Only)</h3>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                <p className="text-yellow-800 text-sm">
-                  <AlertCircle className="inline w-4 h-4 mr-1" />
-                  This section was filled by the Lab In-charge. You can view the details but cannot edit them.
+      <div className="max-w-4xl mx-auto">
+        <ProgressBar
+          currentStep={currentStep}
+          completedSteps={completedSteps}
+        />
+        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+          {currentStep === 1 && (
+            <div className="space-y-6">
+              <div className="border-b border-gray-200 pb-4">
+                <h2 className="text-2xl font-bold text-gray-500 flex items-center gap-3">
+                  <CheckCircle className="w-7 h-7 text-green-500" />
+                  Problem Details (Completed)
+                </h2>
+                <p className="text-gray-500 mt-2">
+                  This information was provided by the Lab In-charge
                 </p>
               </div>
-              <div className="mb-4">
-                <label className="block font-medium text-gray-500 mb-1">
-                  Type of Problem
-                </label>
-                <select
-                  value=""
-                  disabled
-                  className="w-full border border-gray-200 rounded px-3 py-2 bg-gray-50 cursor-not-allowed"
-                >
-                  <option value="">Not specified</option>
-                </select>
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <CheckCircle className="w-6 h-6 text-blue-600" />
+                  <h3 className="text-lg font-semibold text-blue-800">
+                    Request Received
+                  </h3>
+                </div>
+                <p className="text-blue-700">
+                  The maintenance request has been successfully submitted by the
+                  Lab In-charge and is ready for processing.
+                </p>
+              </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-2">
+                    Type of Problem
+                  </label>
+                  <input
+                    value={form.typeOfProblem}
+                    disabled
+                    className="w-full border border-gray-200 rounded-lg px-4 py-3 bg-gray-50 cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-2">
+                    Date Reported
+                  </label>
+                  <input
+                    value={form.date}
+                    disabled
+                    className="w-full border border-gray-200 rounded-lg px-4 py-3 bg-gray-50 cursor-not-allowed"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentStep === 2 && (
+            <div className="space-y-6">
+              <div className="border-b border-gray-200 pb-4">
+                <h2 className="text-2xl font-bold text-gray-500 flex items-center gap-3">
+                  <CheckCircle className="w-7 h-7 text-green-500" />
+                  Request Details (Completed)
+                </h2>
+                <p className="text-gray-500 mt-2">
+                  Complete request information from Lab In-charge
+                </p>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <CheckCircle className="w-6 h-6 text-blue-600" />
+                  <h3 className="text-lg font-semibold text-blue-800">
+                    Request Submitted
+                  </h3>
+                </div>
+                <p className="text-blue-700">
+                  All request details have been provided and approved. You can
+                  now proceed with verification and work assignment.
+                </p>
+              </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-2">
+                    Department
+                  </label>
+                  <input
+                    value={form.department}
+                    disabled
+                    className="w-full border border-gray-200 rounded-lg px-4 py-3 bg-gray-50 cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-2">
+                    Location
+                  </label>
+                  <input
+                    value={form.location}
+                    disabled
+                    className="w-full border border-gray-200 rounded-lg px-4 py-3 bg-gray-50 cursor-not-allowed"
+                  />
+                </div>
               </div>
               <div>
-                <label className="block font-medium text-gray-500 mb-1">
-                  Date
+                <label className="block text-sm font-medium text-gray-500 mb-2">
+                  Complaint Details
                 </label>
-                <input
-                  type="date"
-                  value=""
+                <textarea
+                  value={form.complaintDetails}
                   disabled
-                  className="w-full border border-gray-200 rounded px-3 py-2 bg-gray-50 cursor-not-allowed"
+                  className="w-full border border-gray-200 rounded-lg px-4 py-3 bg-gray-50 cursor-not-allowed"
+                  rows={3}
                 />
+              </div>
+              <div className="bg-gray-50 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-gray-700 mb-4">
+                  Approval Information
+                </h3>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-2">
+                      Lab Assistant
+                    </label>
+                    <input
+                      value={form.labAssistant}
+                      disabled
+                      className="w-full border border-gray-200 rounded-lg px-4 py-3 bg-gray-50 cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-2">
+                      Head of Department
+                    </label>
+                    <input
+                      value={form.hod}
+                      disabled
+                      className="w-full border border-gray-200 rounded-lg px-4 py-3 bg-gray-50 cursor-not-allowed"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
-          {/* ---------- Step 2 - View Only ---------- */}
-          {step === 2 && (
-            <div>
-              <h3 className="text-xl font-bold mb-4 text-gray-500">Step 2: Originator Details (View Only)</h3>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                <p className="text-yellow-800 text-sm">
-                  <AlertCircle className="inline w-4 h-4 mr-1" />
-                  This section was filled by the Lab In-charge. You can view the details but cannot edit them.
+          {currentStep === 3 && (
+            <div className="space-y-6">
+              <div className="border-b border-gray-200 pb-4">
+                <h2 className="text-2xl font-bold text-blue-700 flex items-center gap-3">
+                  <Clock className="w-7 h-7 text-orange-500" />
+                  Verification & Assignment
+                </h2>
+                <p className="text-gray-600 mt-2">
+                  Review the request and assign work to appropriate personnel
                 </p>
               </div>
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-gray-500">Department</label>
-                  <input
-                    value=""
-                    disabled
-                    className="w-full border border-gray-200 rounded px-3 py-2 bg-gray-50 cursor-not-allowed"
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-500">Location</label>
-                  <input
-                    value=""
-                    disabled
-                    className="w-full border border-gray-200 rounded px-3 py-2 bg-gray-50 cursor-not-allowed"
-                  />
-                </div>
-              </div>
-              <div className="mt-4">
-                <label className="block text-gray-500">Complaint Details</label>
-                <textarea
-                  value=""
-                  disabled
-                  className="w-full border border-gray-200 rounded px-3 py-2 bg-gray-50 cursor-not-allowed"
-                  rows={2}
-                />
-              </div>
-              <div className="grid sm:grid-cols-2 gap-4 mt-4">
-                <div>
-                  <label className="block text-gray-500">Recurring Complaint?</label>
-                  <select
-                    value=""
-                    disabled
-                    className="w-full border border-gray-200 rounded px-3 py-2 bg-gray-50 cursor-not-allowed"
-                  >
-                    <option value="">Not specified</option>
-                  </select>
-                </div>
-              </div>
-              <div className="grid sm:grid-cols-3 gap-4 mt-4">
-                <div>
-                  <label className="block text-gray-500">Lab Assistant Name</label>
-                  <input
-                    value=""
-                    disabled
-                    className="w-full border border-gray-200 rounded px-3 py-2 bg-gray-50 cursor-not-allowed"
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-500">Date</label>
-                  <input
-                    type="date"
-                    value=""
-                    disabled
-                    className="w-full border border-gray-200 rounded px-3 py-2 bg-gray-50 cursor-not-allowed"
-                  />
-                </div>
-              </div>
-              <div className="grid sm:grid-cols-3 gap-4 mt-4">
-                <div>
-                  <label className="block text-gray-500">HOD Name</label>
-                  <input
-                    value=""
-                    disabled
-                    className="w-full border border-gray-200 rounded px-3 py-2 bg-gray-50 cursor-not-allowed"
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-500">Date</label>
-                  <input
-                    type="date"
-                    value=""
-                    disabled
-                    className="w-full border border-gray-200 rounded px-3 py-2 bg-gray-50 cursor-not-allowed"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ---------- Step 3 - Editable ---------- */}
-          {step === 3 && (
-            <div>
-              <h3 className="text-xl font-bold mb-4 text-green-700">Step 3: Verification</h3>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block">Complaint Received Date</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Complaint Received Date{" "}
+                    <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="date"
                     name="inChargeDate"
                     value={form.inChargeDate}
                     onChange={handleChange}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Your Signature
+                  </label>
+                  <input
+                    name="inChargeSignature"
+                    value={form.inChargeSignature}
+                    onChange={handleChange}
+                    placeholder="Enter your signature/name"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
                 </div>
               </div>
-              <div className="mt-4">
-                <label className="block">Name of person to whom work is allotted</label>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Assigned Person <span className="text-red-500">*</span>
+                </label>
                 <input
                   name="assignedPerson"
                   value={form.assignedPerson}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
+                  placeholder="Name of person assigned to handle this work"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 />
               </div>
-              <div className="mt-4">
-                <label className="block">Verification and remarks</label>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Verification Remarks <span className="text-red-500">*</span>
+                </label>
                 <textarea
                   name="verificationRemarks"
                   value={form.verificationRemarks}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
-                  rows={2}
+                  placeholder="Your remarks on the complaint verification and work assignment..."
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  rows={4}
                 />
               </div>
-              <div className="mt-4">
-                <label className="block">Materials replaced/repaired/used</label>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Materials/Tools to be Used
+                </label>
                 <textarea
                   name="materialsUsed"
                   value={form.materialsUsed}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
-                  rows={2}
+                  placeholder="List of materials, tools, or components that will be used for repair..."
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  rows={3}
                 />
               </div>
             </div>
           )}
 
-          {/* ---------- Step 4 - Editable ---------- */}
-          {step === 4 && (
-            <div>
-              <h3 className="text-xl font-bold mb-4 text-green-700">Step 4: Corrective Action</h3>
-              <div className="grid sm:grid-cols-2 gap-4">
+          {currentStep === 4 && (
+            <div className="space-y-6">
+              <div className="border-b border-gray-200 pb-4">
+                <h2 className="text-2xl font-bold text-blue-700 flex items-center gap-3">
+                  <Settings className="w-7 h-7 text-blue-500" />
+                  Corrective Action
+                </h2>
+                <p className="text-gray-600 mt-2">
+                  Execute the maintenance work and document the actions taken
+                </p>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-blue-800 mb-3">
+                  Work Execution
+                </h3>
+                <p className="text-blue-700">
+                  Document all corrective actions taken, materials used, and
+                  whether additional resources are needed.
+                </p>
+              </div>
+              <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block">Complaint resolved and closed inhouse?</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Complaint Resolved In-house?{" "}
+                    <span className="text-red-500">*</span>
+                  </label>
                   <select
                     name="resolvedInhouse"
                     value={form.resolvedInhouse}
                     onChange={handleChange}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   >
-                    <option value="yes">Yes</option>
-                    <option value="no">No</option>
+                    <option value="yes">Yes - Resolved Internally</option>
+                    <option value="no">No - External Help Required</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block">Remark</label>
-                  <textarea
-                    name="resolvedRemark"
-                    value={form.resolvedRemark}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
-                    rows={2}
-                  />
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Resolution Status
+                  </label>
+                  <select className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                    <option value="completed">Completed</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="pending">Pending</option>
+                  </select>
                 </div>
               </div>
-              <div className="grid sm:grid-cols-2 gap-4 mt-4">
-                <div>
-                  <label className="block">Purchase of consumables required/recommended?</label>
-                  <select
-                    name="consumablesNeeded"
-                    value={form.consumablesNeeded}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
-                  >
-                    <option value="no">No</option>
-                    <option value="yes">Yes</option>
-                  </select>
-                  {form.consumablesNeeded === "yes" && (
-                    <textarea
-                      name="consumableDetails"
-                      value={form.consumableDetails}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Work Completion Remarks{" "}
+                  <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  name="resolvedRemark"
+                  value={form.resolvedRemark}
+                  onChange={handleChange}
+                  placeholder="Detailed description of work performed, issues encountered, and final status..."
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  rows={4}
+                />
+              </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Purchase of Consumables Required?
+                    </label>
+                    <select
+                      name="consumablesNeeded"
+                      value={form.consumablesNeeded}
                       onChange={handleChange}
-                      placeholder="Description/quantity/cost"
-                      className="w-full border border-gray-300 rounded px-3 py-2 mt-2 focus:outline-none focus:ring-2 focus:ring-green-400"
-                      rows={2}
-                    />
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    >
+                      <option value="no">No</option>
+                      <option value="yes">Yes</option>
+                    </select>
+                  </div>
+                  {form.consumablesNeeded === "yes" && (
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Consumable Details
+                      </label>
+                      <textarea
+                        name="consumableDetails"
+                        value={form.consumableDetails}
+                        onChange={handleChange}
+                        placeholder="Description, quantity, estimated cost..."
+                        className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        rows={3}
+                      />
+                    </div>
                   )}
                 </div>
-                <div>
-                  <label className="block">Recommended maintenance from external agency?</label>
-                  <select
-                    name="externalAgencyNeeded"
-                    value={form.externalAgencyNeeded}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
-                  >
-                    <option value="no">No</option>
-                    <option value="yes">Yes</option>
-                  </select>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      External Agency Required?
+                    </label>
+                    <select
+                      name="externalAgencyNeeded"
+                      value={form.externalAgencyNeeded}
+                      onChange={handleChange}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    >
+                      <option value="no">No</option>
+                      <option value="yes">Yes</option>
+                    </select>
+                  </div>
                   {form.externalAgencyNeeded === "yes" && (
-                    <div>
-                      <input
-                        name="agencyName"
-                        value={form.agencyName}
-                        onChange={handleChange}
-                        placeholder="Agency Name"
-                        className="w-full border border-gray-300 rounded px-3 py-2 mt-2 focus:outline-none focus:ring-2 focus:ring-green-400"
-                      />
-                      <input
-                        type="number"
-                        min="0"
-                        name="approxExpenditure"
-                        value={form.approxExpenditure}
-                        onChange={handleChange}
-                        placeholder="Expected approx. expenditure"
-                        className="w-full border border-gray-300 rounded px-3 py-2 mt-2 focus:outline-none focus:ring-2 focus:ring-green-400"
-                      />
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Agency Name
+                        </label>
+                        <input
+                          name="agencyName"
+                          value={form.agencyName}
+                          onChange={handleChange}
+                          placeholder="Name of external service provider"
+                          className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Expected Expenditure (₹)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          name="approxExpenditure"
+                          value={form.approxExpenditure}
+                          onChange={handleChange}
+                          placeholder="Estimated cost"
+                          className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -507,128 +727,205 @@ function LabAssistantForm() {
             </div>
           )}
 
-          {/* ---------- Step 5 - Editable ---------- */}
-          {step === 5 && (
-            <div>
-              <h3 className="text-xl font-bold mb-4 text-green-700">Step 5: Maintenance Report Closure</h3>
+          {currentStep === 5 && (
+            <div className="space-y-6">
+              <div className="border-b border-gray-200 pb-4">
+                <h2 className="text-2xl font-bold text-blue-700 flex items-center gap-3">
+                  <CheckSquare className="w-7 h-7 text-green-500" />
+                  Final Closure
+                </h2>
+                <p className="text-gray-600 mt-2">
+                  Complete the maintenance request with final documentation and
+                  sign-off
+                </p>
+              </div>
+              <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-green-800 mb-3">
+                  Final Documentation
+                </h3>
+                <p className="text-green-700">
+                  Complete all final remarks, signatures, and closure
+                  documentation for this maintenance request.
+                </p>
+              </div>
               <div>
-                <label className="block">Remark on work completion (Lab/class in charge)</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Lab Completion Remarks <span className="text-red-500">*</span>
+                </label>
                 <textarea
                   name="completionRemarkLab"
                   value={form.completionRemarkLab}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
-                  rows={2}
+                  placeholder="Final remarks from lab/class in-charge regarding work completion and satisfaction..."
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  rows={4}
                 />
               </div>
-              <div className="grid sm:grid-cols-3 gap-4 mt-4">
-                <div>
-                  <label className="block">Lab Assistant Name</label>
-                  <input
-                    name="labCompletionName"
-                    value={form.labCompletionName}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
-                  />
-                </div>
-                <div>
-                  <label className="block">Signature</label>
-                  <input
-                    name="labCompletionSignature"
-                    value={form.labCompletionSignature}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
-                  />
-                </div>
-                <div>
-                  <label className="block">Date</label>
-                  <input
-                    type="date"
-                    name="labCompletionDate"
-                    value={form.labCompletionDate}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
-                  />
+              <div className="bg-gray-50 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-gray-700 mb-4">
+                  Lab Assistant Sign-off
+                </h3>
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      name="labCompletionName"
+                      value={form.labCompletionName}
+                      onChange={handleChange}
+                      placeholder="Lab assistant name"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Signature
+                    </label>
+                    <input
+                      name="labCompletionSignature"
+                      value={form.labCompletionSignature}
+                      onChange={handleChange}
+                      placeholder="Digital signature"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Date <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      name="labCompletionDate"
+                      value={form.labCompletionDate}
+                      onChange={handleChange}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="mt-4">
-                <label className="block">Remark on work completion (Maintenance section)</label>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Maintenance Section Completion Remarks{" "}
+                  <span className="text-red-500">*</span>
+                </label>
                 <textarea
                   name="completionRemarkMaintenance"
                   value={form.completionRemarkMaintenance}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
-                  rows={2}
+                  placeholder="Final remarks from maintenance section regarding work completion, quality, and future recommendations..."
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  rows={4}
                 />
               </div>
-              <div className="grid sm:grid-cols-2 gap-4 mt-4">
-                <div>
-                  <label className="block">
-                    Maintenance section in-charge complaint closed date
-                  </label>
-                  <input
-                    type="date"
-                    name="maintenanceClosedDate"
-                    value={form.maintenanceClosedDate}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
-                  />
-                </div>
-                <div>
-                  <label className="block">Signature</label>
-                  <input
-                    name="maintenanceClosedSignature"
-                    value={form.maintenanceClosedSignature}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
-                  />
+              <div className="bg-gray-50 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-gray-700 mb-4">
+                  Maintenance Section Closure
+                </h3>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Complaint Closed Date{" "}
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      name="maintenanceClosedDate"
+                      value={form.maintenanceClosedDate}
+                      onChange={handleChange}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      In-charge Signature{" "}
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      name="maintenanceClosedSignature"
+                      value={form.maintenanceClosedSignature}
+                      onChange={handleChange}
+                      placeholder="Maintenance in-charge signature"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* --- Navigation/Actions --- */}
-          <div className="flex justify-between items-center mt-8 gap-4">
+          <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
             <button
               type="button"
-              className={`px-6 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition font-medium ${
-                step === 1 ? "opacity-50 cursor-not-allowed" : ""
+              className={`px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-all font-medium ${
+                currentStep === 1 ? "opacity-50 cursor-not-allowed" : ""
               }`}
               onClick={prevStep}
-              disabled={step === 1}
+              disabled={currentStep === 1}
             >
-              Back
+              ← Previous
             </button>
-            <div className="flex gap-4">
-              {step >= 3 && (
+
+            <div className="flex gap-3">
+              {currentStep >= 3 && currentStep < 5 && (
                 <button
                   type="button"
-                  className="px-6 py-2 bg-yellow-500 text-white rounded shadow hover:bg-yellow-600 font-semibold"
-                  onClick={handleSaveDetails}
+                  className="px-6 py-2 bg-yellow-500 text-white rounded-lg shadow hover:bg-yellow-600 transition-all font-medium"
+                  onClick={handleSaveProgress}
                 >
-                  Save Details
+                  💾 Save Progress
                 </button>
               )}
-              {step < steps.length ? (
+
+              {currentStep === 3 && (
+                <button
+                  type="button"
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-all font-medium"
+                  onClick={handleCompleteVerification}
+                >
+                  ✓ Complete Verification
+                </button>
+              )}
+              {currentStep === 4 && (
+                <button
+                  type="button"
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-all font-medium"
+                  onClick={handleCompleteAction}
+                >
+                  ✓ Complete Action
+                </button>
+              )}
+
+              {currentStep === 5 && (
+                <>
+                  <button
+                    type="button"
+                    className="px-6 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition-all font-medium"
+                    onClick={handleCompleteClosure}
+                  >
+                    ✓ Close Request
+                  </button>
+                  <button
+                    type="button"
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-all font-medium"
+                    onClick={downloadPDF}
+                  >
+                    📄 Download Report
+                  </button>
+                </>
+              )}
+
+              {currentStep < 5 && currentStep >= 1 && currentStep !== 5 && (
                 <button
                   type="button"
                   onClick={nextStep}
-                  className="px-8 py-2 bg-green-600 text-white rounded shadow hover:bg-green-700 font-semibold"
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-all font-medium"
                 >
-                  Next
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={downloadPDF}
-                  className="px-8 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 font-semibold"
-                >
-                  Download PDF
+                  Next →
                 </button>
               )}
             </div>
           </div>
-
         </div>
       </div>
     </div>
