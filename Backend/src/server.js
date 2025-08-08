@@ -12,7 +12,8 @@ const settingAdminRoute = require('./routes/setting/settingadmin');
 const labsRoute = require('./routes/Admin/labs');
 const settingLabInchargeRoute = require('./routes/setting/labincharge');
 const settingLabAssistantRoute = require('./routes/setting/assistantsetting');
-
+const Request = require('./routes/Request/request');
+const notificationRoute = require('./routes/Notification/notification');
 
 
 app.use(cors());
@@ -33,6 +34,8 @@ app.use('/api/settings', settingAdminRoute);
 app.use('/api/labs', labsRoute);
 app.use('/api/settings', settingLabInchargeRoute);
 app.use('/api/settings', settingLabAssistantRoute);
+app.use('/api/requests', Request);
+app.use('/api/notifications', notificationRoute);
 
 
 

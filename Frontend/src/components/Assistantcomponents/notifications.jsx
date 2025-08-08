@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Bell,
   AlertTriangle,
@@ -9,7 +10,60 @@ import {
   Trash2,
 } from "lucide-react";
 
-const Notifications = ({ notifications = [], onMarkAsRead, onDelete }) => {
+const Notifications = () => {
+  const [notifications, setNotifications] = useState([]);
+  const navigate = useNavigate();
+  const staffId = localStorage.getItem("staffId");
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const res = await fetch(
+          `/api/notifications/labassistant/${staffId}?t=${Date.now()}`
+        );
+
+        const data = await res.json();
+        setNotifications(data);
+      } catch (err) {
+        console.error("Failed to fetch notifications", err);
+      }
+    };
+
+    fetchNotifications();
+  }, [staffId]);
+
+  const handleMarkAsRead = async (notificationId) => {
+    try {
+      await fetch(`/api/notifications/${notificationId}/read`, {
+        method: "PUT",
+      });
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((notif) =>
+          notif.id === notificationId ? { ...notif, isRead: true } : notif
+        )
+      );
+    } catch (err) {
+      console.error("Failed to mark as read", err);
+    }
+  };
+
+  const handleDelete = async (notificationId) => {
+    try {
+      await fetch(`/api/notifications/${notificationId}`, {
+        method: "DELETE",
+      });
+      setNotifications((prevNotifications) =>
+        prevNotifications.filter((notif) => notif.id !== notificationId)
+      );
+    } catch (err) {
+      console.error("Failed to delete notification", err);
+    }
+  };
+
+  const handleNotificationClick = (notif) => {
+    navigate(`/requests/${notif.request_id}`);
+  };
+
   const getNotificationIcon = (type) => {
     switch (type) {
       case "query":
@@ -46,7 +100,6 @@ const Notifications = ({ notifications = [], onMarkAsRead, onDelete }) => {
     const diffInHours = Math.floor(
       (now.getTime() - date.getTime()) / (1000 * 60 * 60)
     );
-
     if (diffInHours < 1) {
       return "Just now";
     } else if (diffInHours < 24) {
@@ -132,6 +185,7 @@ const Notifications = ({ notifications = [], onMarkAsRead, onDelete }) => {
                   className={`p-6 hover:bg-gray-50 transition-colors ${
                     !notification.isRead ? "bg-blue-50" : ""
                   }`}
+                  onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex items-start space-x-4">
                     <div className={`p-2 rounded-lg border ${colorClass}`}>
@@ -162,7 +216,10 @@ const Notifications = ({ notifications = [], onMarkAsRead, onDelete }) => {
                         <div className="flex items-center space-x-2 ml-4">
                           {!notification.isRead && (
                             <button
-                              onClick={() => onMarkAsRead(notification.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMarkAsRead(notification.id);
+                              }}
                               className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors"
                               title="Mark as read"
                             >
@@ -170,7 +227,10 @@ const Notifications = ({ notifications = [], onMarkAsRead, onDelete }) => {
                             </button>
                           )}
                           <button
-                            onClick={() => onDelete(notification.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(notification.id);
+                            }}
                             className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
                             title="Delete notification"
                           >

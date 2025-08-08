@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import jsPDF from "jspdf";
 import {
   CheckCircle,
@@ -54,7 +54,6 @@ const steps = [
   },
 ];
 
-// Professional Modal Component
 function Modal({ isOpen, onClose, type, title, message }) {
   if (!isOpen) return null;
 
@@ -81,7 +80,7 @@ function Modal({ isOpen, onClose, type, title, message }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
@@ -113,12 +112,10 @@ function Modal({ isOpen, onClose, type, title, message }) {
   );
 }
 
-// Professional Progress Bar Component
 function ProgressBar({ currentStep, completedSteps = 2 }) {
   return (
     <div className="w-full max-w-4xl mx-auto mb-8">
       <div className="relative">
-        {/* Progress Line */}
         <div className="absolute top-6 left-0 w-full h-0.5 bg-gray-200"></div>
         <div
           className="absolute top-6 left-0 h-0.5 bg-blue-600 transition-all duration-500 ease-in-out"
@@ -126,18 +123,14 @@ function ProgressBar({ currentStep, completedSteps = 2 }) {
             width: `${((completedSteps - 1) / (steps.length - 1)) * 100}%`,
           }}
         ></div>
-
-        {/* Steps */}
         <div className="relative flex justify-between">
           {steps.map((step, index) => {
             const StepIcon = step.icon;
             const isCompleted = step.id <= completedSteps;
             const isCurrent = step.id === currentStep;
-            const isAccessible = step.id <= Math.max(completedSteps, 2); // Lab in-charge can access first 2 steps
-
+            const isAccessible = step.id <= Math.max(completedSteps, 2);
             return (
               <div key={step.id} className="flex flex-col items-center group">
-                {/* Step Circle */}
                 <div
                   className={`
                     relative z-10 w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all duration-300
@@ -160,8 +153,6 @@ function ProgressBar({ currentStep, completedSteps = 2 }) {
                     <StepIcon className="w-5 h-5" />
                   )}
                 </div>
-
-                {/* Step Info */}
                 <div className="mt-3 text-center max-w-24">
                   <p
                     className={`text-sm font-semibold ${
@@ -207,8 +198,9 @@ function ProgressBar({ currentStep, completedSteps = 2 }) {
 }
 
 function LabInchargeForm() {
+  const [requests, setRequests] = useState([]);
   const [currentStep, setCurrentStep] = useState(1);
-  const [completedSteps, setCompletedSteps] = useState(0); // Tracks how many steps are actually completed
+  const [completedSteps, setCompletedSteps] = useState(0);
   const [modal, setModal] = useState({
     isOpen: false,
     type: "",
@@ -245,15 +237,37 @@ function LabInchargeForm() {
     );
   };
 
-  const handleSubmitRequest = () => {
-    // Mark first two steps as completed and move to verification
-    setCompletedSteps(2);
-    setCurrentStep(3);
-    showModal(
-      "info",
-      "Request Submitted Successfully",
-      "Your maintenance request has been submitted and forwarded to the Maintenance Team for verification. You will be notified of any updates on the progress."
-    );
+  const handleSubmitRequest = async () => {
+    const staffId = localStorage.getItem("staffId");
+    const cleanedForm = {
+      ...form,
+      recurringTimes:
+        form.recurringComplaint === "yes" ? form.recurringTimes : null,
+    };
+    try {
+      const response = await fetch("/api/requests/lic/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          form: cleanedForm,
+          staff_id: staffId,
+        }),
+      });
+      if (!response.ok) throw new Error("Submission failed");
+      const data = await response.json();
+      setCompletedSteps(2);
+      setCurrentStep(3);
+      showModal(
+        "info",
+        "Request Submitted Successfully",
+        `Your maintenance request has been submitted (Request ID: ${data.requestId}).`
+      );
+    } catch (error) {
+      console.error("Submit error:", error);
+      showModal("info", "Submission Failed", "Please try again.");
+    }
   };
 
   const handleChange = (e) => {
@@ -273,14 +287,23 @@ function LabInchargeForm() {
     }
   };
 
-  const canNavigateToStep = (stepId) => {
-    return stepId <= Math.max(completedSteps, 2);
-  };
+  useEffect(() => {
+    const fetchRequests = async () => {
+      try {
+        const staff_id = localStorage.getItem("staffId");
+        const res = await fetch(`/api/requests/lic/${staff_id}`);
+        const data = await res.json();
+        setRequests(data);
+      } catch (err) {
+        console.error("Error fetching LIC requests", err);
+      }
+    };
+    fetchRequests();
+  }, []);
 
   const downloadPDF = () => {
     const doc = new jsPDF();
     let y = 20;
-
     const addText = (label, value, isBold = false) => {
       doc.setFont("helvetica", isBold ? "bold" : "normal");
       doc.setFontSize(11);
@@ -288,7 +311,6 @@ function LabInchargeForm() {
       y += 7;
     };
 
-    // Header
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
     doc.text("Maintenance Request Form - Lab In-charge Copy", 14, y);
@@ -297,7 +319,6 @@ function LabInchargeForm() {
     doc.line(14, y, 195, y);
     y += 10;
 
-    // Form Details
     addText("Type of Problem", form.typeOfProblem, true);
     addText("Date", form.date);
     addText("Department", form.department);
@@ -317,7 +338,6 @@ function LabInchargeForm() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
-      {/* Modal */}
       <Modal
         isOpen={modal.isOpen}
         onClose={closeModal}
@@ -325,17 +345,12 @@ function LabInchargeForm() {
         title={modal.title}
         message={modal.message}
       />
-
       <div className="max-w-4xl mx-auto">
-        {/* Progress Bar */}
         <ProgressBar
           currentStep={currentStep}
           completedSteps={completedSteps}
         />
-
-        {/* Form Container */}
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-          {/* Step 1: Problem Details */}
           {currentStep === 1 && (
             <div className="space-y-6">
               <div className="border-b border-gray-200 pb-4">
@@ -348,7 +363,6 @@ function LabInchargeForm() {
                   issue
                 </p>
               </div>
-
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -369,7 +383,6 @@ function LabInchargeForm() {
                     <option value="Workshop">Workshop</option>
                   </select>
                 </div>
-
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Date <span className="text-red-500">*</span>
@@ -387,7 +400,6 @@ function LabInchargeForm() {
             </div>
           )}
 
-          {/* Step 2: Submit Request */}
           {currentStep === 2 && (
             <div className="space-y-6">
               <div className="border-b border-gray-200 pb-4">
@@ -399,7 +411,6 @@ function LabInchargeForm() {
                   Complete the request information and submit for processing
                 </p>
               </div>
-
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -428,7 +439,6 @@ function LabInchargeForm() {
                   />
                 </div>
               </div>
-
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Complaint Details <span className="text-red-500">*</span>
@@ -443,7 +453,6 @@ function LabInchargeForm() {
                   rows={4}
                 />
               </div>
-
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -476,7 +485,6 @@ function LabInchargeForm() {
                   </div>
                 )}
               </div>
-
               <div className="bg-gray-50 rounded-xl p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
                   Approval Information
@@ -535,7 +543,6 @@ function LabInchargeForm() {
             </div>
           )}
 
-          {/* Step 3: Verification - View Only */}
           {currentStep === 3 && (
             <div className="space-y-6">
               <div className="border-b border-gray-200 pb-4">
@@ -547,7 +554,6 @@ function LabInchargeForm() {
                   Your request is being reviewed by the maintenance team
                 </p>
               </div>
-
               <div className="bg-orange-50 border border-orange-200 rounded-xl p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <Clock className="w-6 h-6 text-orange-600" />
@@ -561,7 +567,6 @@ function LabInchargeForm() {
                   personnel. You will be notified once this step is completed.
                 </p>
               </div>
-
               <div className="grid md:grid-cols-2 gap-6 opacity-50">
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-2">
@@ -589,7 +594,6 @@ function LabInchargeForm() {
             </div>
           )}
 
-          {/* Step 4: Corrective Action - View Only */}
           {currentStep === 4 && (
             <div className="space-y-6">
               <div className="border-b border-gray-200 pb-4">
@@ -601,7 +605,6 @@ function LabInchargeForm() {
                   Maintenance work is in progress
                 </p>
               </div>
-
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <Settings className="w-6 h-6 text-blue-600" />
@@ -615,7 +618,6 @@ function LabInchargeForm() {
                   progress details.
                 </p>
               </div>
-
               <div className="grid md:grid-cols-2 gap-6 opacity-50">
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-2">
@@ -645,7 +647,6 @@ function LabInchargeForm() {
             </div>
           )}
 
-          {/* Step 5: Closure - View Only */}
           {currentStep === 5 && (
             <div className="space-y-6">
               <div className="border-b border-gray-200 pb-4">
@@ -657,7 +658,6 @@ function LabInchargeForm() {
                   Final completion and sign-off
                 </p>
               </div>
-
               <div className="bg-green-50 border border-green-200 rounded-xl p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <CheckSquare className="w-6 h-6 text-green-600" />
@@ -671,7 +671,6 @@ function LabInchargeForm() {
                   and maintenance teams.
                 </p>
               </div>
-
               <div className="space-y-4 opacity-50">
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-2">
@@ -713,7 +712,6 @@ function LabInchargeForm() {
             </div>
           )}
 
-          {/* Navigation */}
           <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
             <button
               type="button"
@@ -725,18 +723,7 @@ function LabInchargeForm() {
             >
               ← Previous
             </button>
-
             <div className="flex gap-3">
-              {currentStep <= 2 && (
-                <button
-                  type="button"
-                  className="px-6 py-2 bg-yellow-500 text-white rounded-lg shadow hover:bg-yellow-600 transition-all font-medium"
-                  onClick={handleSaveDetails}
-                >
-                  💾 Save Draft
-                </button>
-              )}
-
               {currentStep === 2 && (
                 <button
                   type="button"
@@ -746,7 +733,6 @@ function LabInchargeForm() {
                   🚀 Submit Request
                 </button>
               )}
-
               {currentStep < 5 && currentStep < 3 && (
                 <button
                   type="button"
@@ -756,7 +742,6 @@ function LabInchargeForm() {
                   Next →
                 </button>
               )}
-
               {completedSteps >= 2 && (
                 <button
                   type="button"

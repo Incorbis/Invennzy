@@ -43,12 +43,6 @@ exports.signup = async (req, res) => {
       [name, email, hashedPassword]
     );
 
-    // Save to settingsadmin as well
-    await db.query(
-      `INSERT INTO settingsadmin (full_name, adminemail, password) VALUES (?, ?, ?)`,
-      [name, email, hashedPassword]
-    );
-
     const adminId = result.insertId;
 
     res.status(201).json({ 
@@ -99,7 +93,8 @@ exports.login = async (req, res) => {
       user: { 
         email: user.email,
         id: user.id, 
-        name: user.name, 
+        name: user.name,
+        staff_id: user.staff_id || null,
         role 
       },
       redirectUrl: dashboardRoute
@@ -220,6 +215,7 @@ exports.googleSignIn = async (req, res) => {
         id: foundUser.id,
         name: foundUser.name || name,
         email: foundUser.email || email,
+        staff_id: foundUser.staff_id || null,
         role: userActualRole,
       },
       redirectUrl: dashboardRoute,

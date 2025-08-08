@@ -4,16 +4,12 @@ import {
   Home,
   Bell,
   Package,
-  ClipboardList,
   BarChart3,
   Settings,
   Menu,
   X,
-  Search,
   User,
-  ChevronDown,
   LogOut,
-  HelpCircle,
 } from "lucide-react";
 import logo2 from "../../assets/logo2.png";
 

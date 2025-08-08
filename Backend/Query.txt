@@ -163,3 +163,39 @@ CHANGE COLUMN `profile_picture` `profile_picture` LONGBLOB NULL DEFAULT NULL ;
 ALTER TABLE `invennzy`.`labincharge` 
 CHANGE COLUMN `profile_picture` `profile_picture` LONGBLOB NULL DEFAULT NULL ;
 
+CREATE TABLE requests (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  type_of_problem VARCHAR(255),
+  date DATE,
+  department VARCHAR(255),
+  location VARCHAR(255),
+  complaint_details TEXT,
+  recurring_complaint ENUM('yes', 'no'),
+  recurring_times INT,
+  lab_assistant VARCHAR(255),
+  lab_assistant_date DATE,
+  hod VARCHAR(255),
+  hod_date DATE,
+  current_step INT DEFAULT 1,
+  completed_steps INT DEFAULT 0,
+  created_by VARCHAR(255)
+);
+
+
+CREATE TABLE notifications (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_role ENUM('labincharge', 'labassistant'),
+  type ENUM('info', 'alert', 'maintenance'),
+  title VARCHAR(255),
+  message TEXT,
+  is_read BOOLEAN DEFAULT FALSE,
+  request_id INT,
+  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE requests ADD COLUMN staff_id BIGINT UNSIGNED;
+
+ALTER TABLE requests
+ADD CONSTRAINT fk_staff_id_requests
+FOREIGN KEY (staff_id) REFERENCES staff(id)
+ON DELETE SET NULL;
