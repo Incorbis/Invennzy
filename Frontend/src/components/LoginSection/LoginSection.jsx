@@ -192,9 +192,13 @@ const LoginSection = () => {
         localStorage.setItem(`token`, result.token);
         localStorage.setItem("userRole", result.user.role);
         localStorage.setItem("userName", result.user.name);
+        localStorage.setItem("staffId", result.user.staff_id);
         // ✅ Store adminId or user id
         if (result.user?.id) {
           localStorage.setItem(`${result.user.role}Id`, result.user.id);
+        }
+        if (result.user?.staff_id) {
+          localStorage.setItem(`${result.user.role}Id`, result.user.staff_id);
         }
 
         if (result.redirectUrl) {
@@ -238,17 +242,6 @@ const LoginSection = () => {
         text: "signin_with",
         shape: "pill",
         width: "100%",
-      });
-    }
-  };
-
-  const handleGoogleSignIn = () => {
-    if (window.google && window.google.accounts) {
-      window.google.accounts.id.prompt();
-    } else {
-      setMessage({
-        text: "Google Sign-In is not available. Please try again.",
-        type: "error",
       });
     }
   };

@@ -1,25 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import {
   User,
   Bell,
-  Shield,
-  Database,
-  Download,
-  Upload,
-  Trash2,
   Save,
-  RefreshCw,
   Mail,
   Lock,
   Eye,
   EyeOff,
-  AlertTriangle,
   Check,
-  Package,
-  Globe,
-  Smartphone,
-  Monitor,
   Camera,
 } from "lucide-react";
 
@@ -35,15 +26,10 @@ const SettingsPage = () => {
     new: "",
     confirm: "",
   });
-
   const [notifications, setNotifications] = useState({
-    email: true,
+    email: false,
     push: false,
-    sms: true,
-    lowStock: true,
-    newRequests: true,
-    systemUpdates: false,
-    weeklyReports: true,
+    sms: false,
   });
   const [profile, setProfile] = useState({
     name: "",
@@ -58,7 +44,7 @@ const SettingsPage = () => {
     const fetchProfileData = async () => {
       try {
         const token = localStorage.getItem("token");
-        if (!token) return console.warn("No token found");
+        if (!token) return toast.warn("No token found");
 
         const response = await axios.get("/api/settings/admin/profile", {
           headers: {
@@ -66,9 +52,8 @@ const SettingsPage = () => {
             userId: localStorage.getItem("userId"),
           },
         });
-
-        console.log("✅ Received:", response.data);
         const p = response.data.profile;
+
         setProfile({
           name: p.name || "",
           email: p.email || "",
@@ -77,25 +62,55 @@ const SettingsPage = () => {
           role: p.role || "",
         });
 
-        if (p.profile_picture) {
-          setProfileImagePreview(`http://localhost:3000${p.profile_picture}`);
+        if (p.profile_picture && p.profile_picture.data) {
+          const byteArray = new Uint8Array(p.profile_picture.data);
+          const blob = new Blob([byteArray], { type: "image/jpeg" }); // or image/png
+          const imageUrl = URL.createObjectURL(blob);
+          setProfileImagePreview(imageUrl);
         }
       } catch (err) {
         console.error("❌ Error fetching profile:", err);
+        toast.error("Error fetching profile data");
       }
     };
-
     fetchProfileData();
   }, []);
 
+  useEffect(() => {
+    const fetchNotificationSettings = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get("/api/settings/admin/notifications", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = response.data.notifications;
+
+        // Map database values to boolean and rename keys
+        setNotifications({
+          email: Boolean(data.notify_email),
+          push: Boolean(data.notify_push),
+          sms: Boolean(data.notify_sms),
+        });
+      } catch (error) {
+        console.error("Error fetching notification settings:", error);
+      }
+    };
+
+    if (activeSection === "notifications") {
+      fetchNotificationSettings();
+    }
+  }, [activeSection]);
+
   const handleUpdatePassword = async () => {
     if (!passwords.current || !passwords.new || !passwords.confirm) {
-      return alert("All password fields are required.");
+      return toast.error("All password fields are required.");
     }
     if (passwords.new !== passwords.confirm) {
-      return alert("New passwords do not match.");
+      return toast.error("New passwords do not match.");
     }
-
     try {
       const token = localStorage.getItem("token");
       const response = await axios.put(
@@ -110,12 +125,13 @@ const SettingsPage = () => {
           },
         }
       );
-
-      alert(response.data.message || "Password updated successfully");
+      toast.success(response.data.message || "Password updated successfully");
       setPasswords({ current: "", new: "", confirm: "" });
     } catch (error) {
       console.error("Error updating password:", error);
-      alert(error?.response?.data?.message || "Failed to update password");
+      toast.error(
+        error?.response?.data?.message || "Failed to update password"
+      );
     }
   };
 
@@ -125,18 +141,15 @@ const SettingsPage = () => {
     if (file) {
       // Validate file type
       if (!file.type.startsWith("image/")) {
-        alert("Please select a valid image file");
+        toast.error("Please select a valid image file");
         return;
       }
-
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert("File size must be less than 5MB");
+        toast.error("File size must be less than 5MB");
         return;
       }
-
       setProfileImage(file);
-
       // Create preview
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -175,16 +188,14 @@ const SettingsPage = () => {
   const handleSaveSettings = async () => {
     // Validate required fields
     if (!profile.name.trim() || !profile.email.trim()) {
-      alert("Name and email are required fields");
+      toast.error("Name and email are required fields");
       return;
     }
-
     setIsLoading(true);
     try {
       // Create FormData for multipart/form-data if there's an image
       let requestData;
       let headers = {};
-
       if (profileImage) {
         requestData = new FormData();
         requestData.append("name", profile.name.trim());
@@ -204,14 +215,28 @@ const SettingsPage = () => {
         };
         headers["Content-Type"] = "application/json";
       }
-
-      axios.put("/api/settings/settingadmin", requestData, {
+      await axios.put("/api/settings/settingadmin", requestData, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          ...headers,
         },
       });
-      alert("Settings saved successfully!");
 
+      await axios.put(
+        "/api/settings/admin/notifications",
+        {
+          notify_email: notifications.email,
+          notify_push: notifications.push,
+          notify_sms: notifications.sms,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      toast.success("Settings saved successfully!");
       // Reset the file input after successful save
       if (profileImage) {
         setProfileImage(null);
@@ -221,67 +246,11 @@ const SettingsPage = () => {
       }
     } catch (error) {
       console.error("Error saving settings:", error);
-      alert("Failed to save settings. Please try again.");
+      toast.error("Failed to save settings. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
-
-  const renderGeneralSettings = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-          <Globe className="mr-2" size={20} />
-          System Preferences
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Currency
-            </label>
-            <select className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-              <option value="USD">USD ($)</option>
-              <option value="EUR">EUR (€)</option>
-              <option value="GBP">GBP (£)</option>
-              <option value="INR">INR (₹)</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Timezone
-            </label>
-            <select className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-              <option value="UTC-5">UTC-5 (Eastern)</option>
-              <option value="UTC-6">UTC-6 (Central)</option>
-              <option value="UTC-7">UTC-7 (Mountain)</option>
-              <option value="UTC-8">UTC-8 (Pacific)</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Language
-            </label>
-            <select className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-              <option value="English">English</option>
-              <option value="Spanish">Spanish</option>
-              <option value="French">French</option>
-              <option value="German">German</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Theme
-            </label>
-            <select className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-              <option value="auto">Auto</option>
-            </select>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
   const renderProfileSettings = () => (
     <div className="space-y-6">
@@ -399,7 +368,6 @@ const SettingsPage = () => {
           </div>
         </div>
       </div>
-
       <div className="bg-white rounded-xl p-6 border border-gray-200">
         <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
           <Lock className="mr-2" size={20} />
@@ -433,7 +401,6 @@ const SettingsPage = () => {
               </button>
             </div>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -464,7 +431,6 @@ const SettingsPage = () => {
               />
             </div>
           </div>
-
           <button
             onClick={handleUpdatePassword}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
@@ -521,181 +487,6 @@ const SettingsPage = () => {
     </div>
   );
 
-  const renderInventorySettings = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-          <Package className="mr-2" size={20} />
-          Inventory Configuration
-        </h3>
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Low Stock Threshold
-              </label>
-              <input
-                type="number"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                min="1"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Alert when stock falls below this number
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Items Per Page
-              </label>
-              <select className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                <option value={10}>10 items</option>
-                <option value={25}>25 items</option>
-                <option value={50}>50 items</option>
-                <option value={100}>100 items</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium text-blue-800">Auto Reorder</h4>
-                <p className="text-sm text-blue-600">
-                  Automatically reorder items when stock is low
-                </p>
-              </div>
-              <button className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors bg-gray-300">
-                <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1" />
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Default Reorder Quantity
-            </label>
-            <input
-              type="number"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              min="1"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderSecuritySettings = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-          <Shield className="mr-2" size={20} />
-          Security Settings
-        </h3>
-        <div className="space-y-6">
-          <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium text-red-800">
-                  Two-Factor Authentication
-                </h4>
-                <p className="text-sm text-red-600">
-                  Add an extra layer of security to your account
-                </p>
-              </div>
-              <button className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors bg-gray-300">
-                <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1" />
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Session Timeout (minutes)
-              </label>
-              <select className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                <option value={15}>15 minutes</option>
-                <option value={30}>30 minutes</option>
-                <option value={60}>1 hour</option>
-                <option value={120}>2 hours</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Max Login Attempts
-              </label>
-              <select className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                <option value={3}>3 attempts</option>
-                <option value={5}>5 attempts</option>
-                <option value={10}>10 attempts</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-          Active Sessions
-        </h3>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div className="flex items-center space-x-3">
-              <Monitor size={20} className="text-gray-600" />
-              <div>
-                <p className="font-medium text-gray-800">Current Session</p>
-                <p className="text-sm text-gray-500">
-                  Chrome on Windows • 192.168.1.100
-                </p>
-              </div>
-            </div>
-            <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-              Active
-            </span>
-          </div>
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div className="flex items-center space-x-3">
-              <Smartphone size={20} className="text-gray-600" />
-              <div>
-                <p className="font-medium text-gray-800">Mobile App</p>
-                <p className="text-sm text-gray-500">
-                  iPhone • Last active 2 hours ago
-                </p>
-              </div>
-            </div>
-            <button className="text-red-600 hover:text-red-700 text-sm">
-              Revoke
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderDataSettings = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-          <Database className="mr-2" size={20} />
-          Data Management
-        </h3>
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button className="flex items-center justify-center space-x-2 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50">
-              <Download size={20} className="text-gray-600" />
-              <span className="text-gray-700">Export All Data</span>
-            </button>
-            <button className="flex items-center justify-center space-x-2 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50">
-              <Upload size={20} className="text-gray-600" />
-              <span className="text-gray-700">Import Data</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
   const renderContent = () => {
     switch (activeSection) {
       case "profile":
@@ -709,6 +500,7 @@ const SettingsPage = () => {
 
   return (
     <div className="max-w-7xl mx-auto">
+      <ToastContainer />
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Settings Navigation */}
         <div className="lg:w-64 flex-shrink-0">
@@ -732,11 +524,9 @@ const SettingsPage = () => {
             </nav>
           </div>
         </div>
-
         {/* Settings Content */}
         <div className="flex-1">
           {renderContent()}
-
           {/* Save Button */}
           <div className="mt-6 bg-white rounded-xl p-6 border border-gray-200">
             <div className="flex items-center justify-between">

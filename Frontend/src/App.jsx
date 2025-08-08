@@ -31,6 +31,7 @@ import LAReports from "./components/Assistantcomponents/Reports.jsx";
 import LASettings from "./components/Assistantcomponents/settings.jsx";
 import LAOverview from "./components/Assistantcomponents/overview.jsx";
 import LANotification from "./components/Assistantcomponents/notifications.jsx";
+import LabAssistantForm from "./components/Assistantcomponents/requests.jsx";
 
 function App() {
   return (
@@ -91,6 +92,7 @@ function App() {
         <Route path="reports" element={<LAReports />} />
         <Route path="" element={<LAOverview />} />
         <Route path="settings" element={<LASettings />} />
+        <Route path="requests" element={<LabAssistantForm />} />
       </Route>
     </Routes>
   );

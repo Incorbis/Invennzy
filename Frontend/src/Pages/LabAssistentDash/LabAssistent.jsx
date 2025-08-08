@@ -84,7 +84,12 @@ const Dashboard = () => {
   const name = localStorage.getItem("userName");
 
   const menuItems = [
-    { id: "overview", label: "Overview", icon: Home, path: "/dashboard" },
+    {
+      id: "overview",
+      label: "Overview",
+      icon: Home,
+      path: "/labassistantdash",
+    },
     {
       id: "inventory",
       label: "Inventory",
@@ -105,7 +110,7 @@ const Dashboard = () => {
     },
     {
       id: "requests",
-      label: "Requests",
+      label: "Request Form",
       icon: ClipboardList,
       path: "/labassistantdash/requests",
     },

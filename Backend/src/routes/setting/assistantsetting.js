@@ -5,23 +5,22 @@ const multer = require('multer');
 const path = require('path');
 const verifyToken = require('../../middlewares/verifyToken'); // middleware to verify JWT token
 const bcrypt = require('bcrypt');
-const upload = require('../../middlewares/PhotoUploads'); 
-
+const upload = require('../../middlewares/PhotoUploads');
 /**
- * GET /api/settings/admin/profile
+ * GET /api/settings/labassistant/profile
  */
-router.get('/admin/profile', verifyToken, async (req, res) => {
+router.get('/labassistant/profile', verifyToken, async (req, res) => {
   const userId = req.user.id;
   console.log("🔎 Executing profile query for userId:", userId);
 
   try {
     const [rows] = await db.query(
-      `SELECT name, email, phone, department, role, profile_picture FROM admin WHERE id = ?`,
+      `SELECT name, email, phone, department, role, profile_picture FROM labassistant WHERE id = ?`,
       [userId]
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ message: 'Admin not found' });
+      return res.status(404).json({ message: 'labassistant not found' });
     }
 
     res.json({ profile: rows[0] });
@@ -31,8 +30,11 @@ router.get('/admin/profile', verifyToken, async (req, res) => {
   }
 });
 
-
-router.put('/settingadmin', verifyToken, upload.single('profileImage'), async (req, res) => {
+/**
+ * PUT /api/settinglabassistant
+ * Accepts JSON or multipart/form-data (with optional profileImage)
+ */
+router.put('/assistantsetting', verifyToken, upload.single('profileImage'), async (req, res) => {
   const userId = req.user.id;
 
   try {
@@ -41,21 +43,22 @@ router.put('/settingadmin', verifyToken, upload.single('profileImage'), async (r
 
     const fields = [name, email, phone || null, department || null, role];
     let query = `
-      UPDATE admin
+      UPDATE labassistant
       SET name = ?, email = ?, phone = ?, department = ?, role = ?`;
 
-    if (profileImageBuffer) {
+     if (profileImageBuffer) {
       query += `, profile_picture = ?`;
       fields.push(profileImageBuffer);
     }
     
+
     query += ` WHERE id = ?`;
     fields.push(userId);
 
     const [result] = await db.query(query, fields);
 
     if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Admin not found or no changes made' });
+      return res.status(404).json({ message: 'labassistant not found or no changes made' });
     }
 
     res.json({ message: 'Profile updated successfully' });
@@ -65,8 +68,7 @@ router.put('/settingadmin', verifyToken, upload.single('profileImage'), async (r
   }
 });
 
-
-router.put("/admin/password", verifyToken, async (req, res) => {
+router.put("/labassistant/password", verifyToken, async (req, res) => {
   const userId = req.user.id;
   const { currentPassword, newPassword } = req.body;
 
@@ -76,8 +78,8 @@ router.put("/admin/password", verifyToken, async (req, res) => {
 
   try {
     // 1. Get hashed password from DB
-    const [rows] = await db.query("SELECT password FROM admin WHERE id = ?", [userId]);
-    if (rows.length === 0) return res.status(404).json({ message: "Admin not found" });
+    const [rows] = await db.query("SELECT password FROM labassistant WHERE id = ?", [userId]);
+    if (rows.length === 0) return res.status(404).json({ message: "labassistant not found" });
 
     const isMatch = await bcrypt.compare(currentPassword, rows[0].password);
     if (!isMatch) return res.status(401).json({ message: "Current password is incorrect" });
@@ -87,7 +89,7 @@ router.put("/admin/password", verifyToken, async (req, res) => {
     const hashedNewPassword = await bcrypt.hash(newPassword, salt);
 
     // 3. Update password
-    await db.query("UPDATE admin SET password = ? WHERE id = ?", [hashedNewPassword, userId]);
+    await db.query("UPDATE labassistant SET password = ? WHERE id = ?", [hashedNewPassword, userId]);
 
     res.json({ message: "Password updated successfully" });
   } catch (err) {
@@ -97,16 +99,15 @@ router.put("/admin/password", verifyToken, async (req, res) => {
 });
 
 // GET notification preferences
-router.get("/admin/notifications", verifyToken, async (req, res) => {
+router.get("/labassistant/notifications", verifyToken, async (req, res) => {
   try {
-
     const [rows] = await db.query(
-      "SELECT notify_email, notify_push, notify_sms FROM admin WHERE id = ?",
+      "SELECT notify_email, notify_push, notify_sms FROM labassistant WHERE id = ?",
       [req.user.id]
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ message: "Admin not found" });
+      return res.status(404).json({ message: "labassistant not found" });
     }
 
     res.json({ notifications: rows[0] });
@@ -117,12 +118,12 @@ router.get("/admin/notifications", verifyToken, async (req, res) => {
 });
 
 // PUT update notification preferences
-router.put("/admin/notifications", verifyToken, async (req, res) => {
+router.put("/labassistant/notifications", verifyToken, async (req, res) => {
   const { notify_email, notify_push, notify_sms } = req.body;
 
   try {
     await db.query(
-      `UPDATE admin 
+      `UPDATE labassistant 
        SET notify_email = ?, 
            notify_push = ?, 
            notify_sms = ?
@@ -138,4 +139,3 @@ router.put("/admin/notifications", verifyToken, async (req, res) => {
 });
 
 module.exports = router;
-

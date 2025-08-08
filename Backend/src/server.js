@@ -4,12 +4,16 @@ const bodyParser = require('body-parser');
 const cors = require('cors'); 
 require('./db'); 
 const path = require('path');
-
+const app = express();
 
 const contactusRoute = require('./routes/Contactus/contactusRoute');
-const app = express();
 const authRoutes = require('./routes/auth/authRoutes');
 const settingAdminRoute = require('./routes/setting/settingadmin');
+const labsRoute = require('./routes/Admin/labs');
+const settingLabInchargeRoute = require('./routes/setting/labincharge');
+const settingLabAssistantRoute = require('./routes/setting/assistantsetting');
+const Request = require('./routes/Request/request');
+const notificationRoute = require('./routes/Notification/notification');
 const labStaffRoutes = require('./routes/LabStaff');
 
 
@@ -29,6 +33,12 @@ app.get('/', (req, res) => {
 app.use('/api', contactusRoute);
 app.use('/api/auth', authRoutes);
 app.use('/api/settings', settingAdminRoute);
+app.use('/api/labs', labsRoute);
+app.use('/api/settings', settingLabInchargeRoute);
+app.use('/api/settings', settingLabAssistantRoute);
+app.use('/api/requests', Request);
+app.use('/api/notifications', notificationRoute);
+
 app.use('/api/labs', require('./routes/labs'));
 app.use('/api/labstaff', labStaffRoutes);
 
