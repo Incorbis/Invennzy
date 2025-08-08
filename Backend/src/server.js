@@ -39,7 +39,6 @@ app.use('/api/settings', settingLabAssistantRoute);
 app.use('/api/requests', Request);
 app.use('/api/notifications', notificationRoute);
 
-app.use('/api/labs', require('./routes/labs'));
 app.use('/api/labstaff', labStaffRoutes);
 
 
