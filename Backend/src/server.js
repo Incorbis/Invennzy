@@ -10,6 +10,7 @@ const contactusRoute = require('./routes/Contactus/contactusRoute');
 const app = express();
 const authRoutes = require('./routes/auth/authRoutes');
 const settingAdminRoute = require('./routes/setting/settingadmin');
+const labStaffRoutes = require('./routes/LabStaff');
 
 
 
@@ -29,7 +30,7 @@ app.use('/api', contactusRoute);
 app.use('/api/auth', authRoutes);
 app.use('/api/settings', settingAdminRoute);
 app.use('/api/labs', require('./routes/labs'));
-
+app.use('/api/labstaff', labStaffRoutes);
 
 
 app.listen(3000, () => console.log('Server running on http://localhost:3000'));

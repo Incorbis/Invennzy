@@ -28,15 +28,6 @@ ALTER TABLE LabIncharge ADD COLUMN profile_picture VARCHAR(500) NULL;
 ALTER TABLE LabAssistant ADD COLUMN google_id VARCHAR(255) NULL;
 ALTER TABLE LabAssistant ADD COLUMN profile_picture VARCHAR(500) NULL;
 
-CREATE TABLE settingsadmin (
-  adminemail VARCHAR(225) PRIMARY KEY,
-  full_name VARCHAR(45),
-  phone_number INT,
-  Department VARCHAR(225),
-  password VARCHAR(225),
-  role VARCHAR(255) NOT NULL
-);
-
 USE invennzy;
 
 -- Create labs table
@@ -111,10 +102,10 @@ ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
 
 ALTER TABLE admin
-MODIFY COLUMN profile_picture TEXT;
+ADD COLUMN profile_picture TEXT;
 
 ALTER TABLE labincharge
-MODIFY COLUMN staff_id BIGINT UNSIGNED;
+ADD COLUMN staff_id BIGINT UNSIGNED;
 
 ALTER TABLE labincharge
 ADD CONSTRAINT fk_staff_id_labincharges
@@ -122,10 +113,29 @@ FOREIGN KEY (staff_id) REFERENCES staff(id)
 ON DELETE CASCADE;
 
 ALTER TABLE labassistant
-MODIFY COLUMN staff_id BIGINT UNSIGNED;
+ADD COLUMN staff_id BIGINT UNSIGNED;
 
 ALTER TABLE labassistant
-ADD CONSTRAINT fk_staff_id_labincharges
+ADD CONSTRAINT fk_staff_id_labassistant
 FOREIGN KEY (staff_id) REFERENCES staff(id)
 ON DELETE CASCADE;
 
+ALTER TABLE `invennzy`.`labs` 
+ADD COLUMN `admin_id` VARCHAR(255) NOT NULL AFTER `last_updated`;
+
+CREATE TABLE lab_equipment_details (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    type ENUM('monitor', 'projector', 'wifi_router', 'switch_board', 'fan') NOT NULL,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    description TEXT,
+    status ENUM('active', 'maintenance', 'damaged') DEFAULT 'active',
+    location VARCHAR(100),
+    password VARCHAR(100),
+    purchase_date DATE,
+    last_maintenance DATE,
+    warranty BOOLEAN DEFAULT TRUE,
+    notes TEXT,
+    lab_id BIGINT UNSIGNED, -- this matches labs.id
+    FOREIGN KEY (lab_id) REFERENCES labs(id) ON DELETE SET NULL
+);

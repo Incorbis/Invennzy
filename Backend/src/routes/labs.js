@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Lab = require('../models/Labs');
+const db = require('../db'); // Add DB connection here
 
 // ✅ GET labs by adminId
 router.get('/admin/:adminId', async (req, res) => {
@@ -21,6 +22,28 @@ router.get('/', async (req, res) => {
   } catch (error) {
     console.error('Error fetching all labs:', error);
     res.status(500).json({ error: 'Failed to fetch labs' });
+  }
+});
+
+// ✅ NEW: GET equipment for a specific lab by labId (MOVED BEFORE /:id route)
+router.get('/equipment/:labId', async (req, res) => {
+  const labId = req.params.labId;
+
+  try {
+    const [rows] = await db.query(`
+      SELECT monitors, projectors, switch_boards, fans, wifi
+      FROM equipment
+      WHERE lab_id = ?
+    `, [labId]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'No equipment found for this lab' });
+    }
+
+    res.status(200).json(rows[0]); // Return equipment object
+  } catch (error) {
+    console.error('Error fetching equipment:', error);
+    res.status(500).json({ error: 'Failed to fetch equipment' });
   }
 });
 
