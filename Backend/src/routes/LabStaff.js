@@ -4,7 +4,7 @@ const db = require('../db');
 
 // GET lab information for a lab incharge - Enhanced version
 router.get('/incharge/:userId/lab', async (req, res) => {
-  const userId = req.params.userId;
+  const userId = req.params.staffId;
 
   try {
     console.log('Looking for lab with userId:', userId);

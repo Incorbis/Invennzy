@@ -46,7 +46,7 @@ const LabEquipmentManager = () => {
     console.log('All localStorage keys:', localStorageKeys);
     
     // Check common key variations
-    const possibleKeys = ['userId', 'user_id', 'id', 'staffId', 'staff_id', 'userID'];
+    const possibleKeys = ['staffId', 'id'];
     const foundKeys = {};
     
     possibleKeys.forEach(key => {
@@ -58,10 +58,10 @@ const LabEquipmentManager = () => {
     });
 
     // Store user ID in localStorage
-    localStorage.setItem('userId', 7);
+    localStorage.setItem('staffId',4);
 
     // ✅ Verify it
-    console.log('User ID set to:', localStorage.getItem('userId'));
+    console.log('User ID set to:', localStorage.getItem('staffId'));
 
     
     setDebugInfo({
@@ -69,36 +69,34 @@ const LabEquipmentManager = () => {
       possibleUserKeys: foundKeys
     });
 
-    // Try to get userId with different possible key names
-    let userId = localStorage.getItem('userId') || 
-                 localStorage.getItem('user_id') || 
-                 localStorage.getItem('id') || 
-                 localStorage.getItem('staff_id');
+    // Try to get staffId with different possible key names
+    let staffId = localStorage.getItem('staffId') || 
+                 localStorage.getItem('id');
 
     // Also try to parse user object if stored as JSON
     const userObj = localStorage.getItem('user');
-    if (userObj && !userId) {
+    if (userObj && !staffId) {
       try {
         const parsed = JSON.parse(userObj);
-        userId = parsed.id || parsed.userId || parsed.user_id || parsed.staffId || parsed.staff_id;
+        staffId = parsed.id || parsed.staffId || parsed.staffId || parsed.staff_id;
         console.log('Parsed user object:', parsed);
-        console.log('Extracted userId from user object:', userId);
+        console.log('Extracted staffId from user object:', staffId);
       } catch (e) {
         console.log('Failed to parse user object:', e);
       }
     }
 
     // Try other possible JSON objects
-    if (!userId) {
+    if (!staffId) {
       const possibleJsonKeys = ['currentUser', 'loggedInUser', 'authUser', 'session'];
       for (const key of possibleJsonKeys) {
         const jsonStr = localStorage.getItem(key);
         if (jsonStr) {
           try {
             const parsed = JSON.parse(jsonStr);
-            userId = parsed.id || parsed.userId || parsed.user_id || parsed.staffId || parsed.staff_id;
-            if (userId) {
-              console.log(`Found userId in ${key}:`, userId);
+            staffId = parsed.id || parsed.staffId ||parsed.staffId || parsed.staff_id;
+            if (staffId) {
+              console.log(`Found staffId in ${key}:`, staffId);
               break;
             }
           } catch (e) {
@@ -108,8 +106,8 @@ const LabEquipmentManager = () => {
       }
     }
 
-    if (!userId) {
-      console.error('No userId found in localStorage');
+    if (!staffId) {
+      console.error('No staffId found in localStorage');
       console.log('Available localStorage keys:', localStorageKeys);
       console.log('Searched for keys:', possibleKeys);
       console.log('Found values:', foundKeys);
@@ -119,14 +117,14 @@ const LabEquipmentManager = () => {
       return;
     }
 
-    console.log('Using userId:', userId);
+    console.log('Using staffId:', staffId);
 
     const fetchEquipment = async () => {
       try {
         setLoading(true);
         
         // Step 1: Get lab information for this staff member
-        console.log('Fetching lab info for userId:', userId);
+        console.log('Fetching lab info for staffId:', staffId);
         
         // Try multiple possible endpoints based on your API structure
         let labRes;
@@ -134,7 +132,7 @@ const LabEquipmentManager = () => {
         
         // First try the existing endpoint
         try {
-          labRes = await fetch(`/api/labstaff/incharge/${userId}/lab`);
+          labRes = await fetch(`/api/labstaff/incharge/${staffId}/lab`);
           console.log('Lab response status (incharge endpoint):', labRes.status);
           
           if (labRes.ok) {
@@ -149,7 +147,7 @@ const LabEquipmentManager = () => {
         if (!labData || !labData.lab_id) {
           console.log('Trying staff endpoint...');
           try {
-            const staffRes = await fetch(`/api/labstaff/${userId}`);
+            const staffRes = await fetch(`/api/labstaff/${staffId}`);
             console.log('Staff response status:', staffRes.status);
             
             if (staffRes.ok) {
@@ -231,7 +229,7 @@ const LabEquipmentManager = () => {
         setError(null);
       } catch (err) {
         console.error('Error loading equipment:', err);
-        setError(err.message + ` (Debug: Looking for userId in localStorage, found keys: ${Object.keys(debugInfo.possibleUserKeys || {}).join(', ')})`);
+        setError(err.message + ` (Debug: Looking for staffId in localStorage, found keys: ${Object.keys(debugInfo.possibleUserKeys || {}).join(', ')})`);
       } finally {
         setLoading(false);
       }
