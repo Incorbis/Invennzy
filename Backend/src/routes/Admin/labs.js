@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Lab = require('../models/Labs');
 const db = require('../db'); // Add DB connection here
-const Lab = require('../../models/Labs');
+const Lab = require('../../models/labs');
 
 // ✅ GET labs by adminId
 router.get('/admin/:adminId', async (req, res) => {

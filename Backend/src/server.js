@@ -39,8 +39,6 @@ app.use('/api/settings', settingLabAssistantRoute);
 app.use('/api/requests', Request);
 app.use('/api/notifications', notificationRoute);
 
-app.use('/api/labs', require('./routes/labs'));
-app.use('/api/labstaff', labStaffRoutes);
 
 
 app.listen(3000, () => console.log('Server running on http://localhost:3000'));
