@@ -148,23 +148,6 @@ ON DELETE CASCADE;
 ALTER TABLE `invennzy`.`labs` 
 ADD COLUMN `admin_id` VARCHAR(255) NOT NULL AFTER `last_updated`;
 
-CREATE TABLE lab_equipment_details (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    type ENUM('monitor', 'projector', 'wifi_router', 'switch_board', 'fan') NOT NULL,
-    code VARCHAR(50) UNIQUE NOT NULL,
-    description TEXT,
-    status ENUM('active', 'maintenance', 'damaged') DEFAULT 'active',
-    location VARCHAR(100),
-    password VARCHAR(100),
-    purchase_date DATE,
-    last_maintenance DATE,
-    warranty BOOLEAN DEFAULT TRUE,
-    notes TEXT,
-    lab_id BIGINT UNSIGNED, -- this matches labs.id
-    FOREIGN KEY (lab_id) REFERENCES labs(id) ON DELETE SET NULL
-);
-
 ALTER TABLE `invennzy`.`admin` 
 CHANGE COLUMN `profile_picture` `profile_picture` LONGBLOB NULL DEFAULT NULL ;
 
@@ -209,3 +192,12 @@ ALTER TABLE requests
 ADD CONSTRAINT fk_staff_id_requests
 FOREIGN KEY (staff_id) REFERENCES staff(id)
 ON DELETE SET NULL;
+
+CREATE TABLE lab_equipment_details (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    equipment_name VARCHAR(100) NOT NULL,
+    equipment_code VARCHAR(50) UNIQUE NOT NULL,
+    status ENUM('Active', 'Maintenance', 'Damaged') DEFAULT 'Active',
+    password VARCHAR(255),
+    description TEXT
+);

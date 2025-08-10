@@ -131,17 +131,7 @@ const LabEquipmentManager = () => {
         let labData;
         
         // First try the existing endpoint
-        try {
-          labRes = await fetch(`/api/labstaff/incharge/${staffId}/lab`);
-          console.log('Lab response status (incharge endpoint):', labRes.status);
-          
-          if (labRes.ok) {
-            labData = await labRes.json();
-            console.log('Lab data from incharge endpoint:', labData);
-          }
-        } catch (e) {
-          console.log('Incharge endpoint failed:', e);
-        }
+        
         
         // If that fails, try getting staff info first
         if (!labData || !labData.lab_id) {
@@ -204,20 +194,16 @@ const LabEquipmentManager = () => {
           console.log(`${key}: ${count} items`);
           
           for (let i = 1; i <= count; i++) {
-            const hasPassword = key === 'wifi';
+            // Password only for wifi and monitors
+            const hasPassword = key === 'wifi' || key === 'monitors';
             equipmentList.push({
               id: `${key}_${i}`,
               type: key,
               name: `${displayName} ${i}`,
               code: `${key.toUpperCase()}-${String(i).padStart(3, '0')}`,
-              status: Math.random() > 0.8 ? (Math.random() > 0.5 ? 'maintenance' : 'damaged') : 'active',
-              location: `${labData.lab_name || `Lab ${labData.lab_no}`} (${labData.building} - Floor ${labData.floor})`,
-              password: hasPassword ? `wifi${String(i).padStart(3, '0')}@lab` : null,
+              status:'active',
+              password: hasPassword ? `${key}${String(i).padStart(3, '0')}@lab` : null,
               description: `${displayName} unit ${i} in ${labData.lab_name || `Lab ${labData.lab_no}`}`,
-              lastMaintenance: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000).toISOString(),
-              purchaseDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
-              warranty: Math.random() > 0.3,
-              notes: '',
               icon: icon,
               color: color
             });
@@ -296,8 +282,7 @@ const LabEquipmentManager = () => {
   const filteredEquipment = equipmentState.filter(item => {
     const matchesSearch = 
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.location.toLowerCase().includes(searchQuery.toLowerCase());
+      item.code.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesStatus = filterStatus === 'all' || item.status === filterStatus;
     const matchesType = filterType === 'all' || item.type === filterType;
@@ -444,7 +429,7 @@ const LabEquipmentManager = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
               <input
                 type="text"
-                placeholder="Search by name, code, or location..."
+                placeholder="Search by name or code..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -564,10 +549,6 @@ const LabEquipmentManager = () => {
                                     <span>Code:</span>
                                     <span className="font-mono">{item.code}</span>
                                   </div>
-                                  <div className="flex justify-between">
-                                    <span>Location:</span>
-                                    <span className="truncate ml-2">{item.location}</span>
-                                  </div>
                                   {item.password && (
                                     <div className="flex justify-between items-center">
                                       <span>Password:</span>
@@ -608,7 +589,7 @@ const LabEquipmentManager = () => {
           })}
         </div>
 
-        {/* Equipment Details Modal */}
+        {/* Equipment Details Modal - Simplified */}
         {showModal && selectedItem && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -656,15 +637,17 @@ const LabEquipmentManager = () => {
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Equipment Code</label>
-                    <p className="mt-1 text-gray-900 font-mono">{selectedItem.code}</p>
+                    {editMode ? (
+                      <input
+                        type="text"
+                        value={selectedItem.code}
+                        onChange={(e) => setSelectedItem({...selectedItem, code: e.target.value})}
+                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    ) : (
+                      <p className="mt-1 text-gray-900 font-mono">{selectedItem.code}</p>
+                    )}
                   </div>
-                  
-                  {selectedItem.description && (
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700">Description</label>
-                      <p className="mt-1 text-gray-900 text-sm">{selectedItem.description}</p>
-                    </div>
-                  )}
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Status</label>
@@ -683,73 +666,46 @@ const LabEquipmentManager = () => {
                     )}
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Location</label>
-                    {editMode ? (
-                      <input
-                        type="text"
-                        value={selectedItem.location}
-                        onChange={(e) => setSelectedItem({...selectedItem, location: e.target.value})}
-                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    ) : (
-                      <p className="mt-1 text-gray-900">{selectedItem.location}</p>
-                    )}
-                  </div>
-                  
+                  {/* Password field - only for wifi and monitors */}
                   {selectedItem.password && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Password</label>
-                      <div className="mt-1 flex items-center space-x-2">
-                        <span className="font-mono text-gray-900">
-                          {showPasswords[selectedItem.id] ? selectedItem.password : '••••••••'}
-                        </span>
-                        <button
-                          onClick={() => togglePasswordVisibility(selectedItem.id)}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          {showPasswords[selectedItem.id] ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                      </div>
+                      {editMode ? (
+                        <input
+                          type="text"
+                          value={selectedItem.password}
+                          onChange={(e) => setSelectedItem({...selectedItem, password: e.target.value})}
+                          className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      ) : (
+                        <div className="mt-1 flex items-center space-x-2">
+                          <span className="font-mono text-gray-900">
+                            {showPasswords[selectedItem.id] ? selectedItem.password : '••••••••'}
+                          </span>
+                          <button
+                            onClick={() => togglePasswordVisibility(selectedItem.id)}
+                            className="text-gray-400 hover:text-gray-600"
+                          >
+                            {showPasswords[selectedItem.id] ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Last Maintenance</label>
-                    <p className="mt-1 text-gray-900">
-                      {new Date(selectedItem.lastMaintenance).toLocaleDateString()}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Purchase Date</label>
-                    <p className="mt-1 text-gray-900">
-                      {new Date(selectedItem.purchaseDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Warranty Status</label>
-                    <p className="mt-1">
-                      <span className={`px-2 py-1 rounded-full text-xs ${selectedItem.warranty ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                        {selectedItem.warranty ? 'Under Warranty' : 'Warranty Expired'}
-                      </span>
-                    </p>
-                  </div>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Notes</label>
+                  <label className="block text-sm font-medium text-gray-700">Description</label>
                   {editMode ? (
                     <textarea
-                      value={selectedItem.notes}
-                      onChange={(e) => setSelectedItem({...selectedItem, notes: e.target.value})}
+                      value={selectedItem.description}
+                      onChange={(e) => setSelectedItem({...selectedItem, description: e.target.value})}
                       rows={3}
                       className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Add any notes about this equipment..."
+                      placeholder="Add description for this equipment..."
                     />
                   ) : (
-                    <p className="mt-1 text-gray-900">{selectedItem.notes || 'No notes available'}</p>
+                    <p className="mt-1 text-gray-900">{selectedItem.description || 'No description available'}</p>
                   )}
                 </div>
               </div>
