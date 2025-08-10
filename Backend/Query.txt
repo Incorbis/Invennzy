@@ -193,11 +193,18 @@ ADD CONSTRAINT fk_staff_id_requests
 FOREIGN KEY (staff_id) REFERENCES staff(id)
 ON DELETE SET NULL;
 
-CREATE TABLE lab_equipment_details (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    equipment_name VARCHAR(100) NOT NULL,
-    equipment_code VARCHAR(50) UNIQUE NOT NULL,
-    status ENUM('Active', 'Maintenance', 'Damaged') DEFAULT 'Active',
-    password VARCHAR(255),
-    description TEXT
-);
+CREATE TABLE `invennzy`.`equipment_details` (
+  `staff_id` INT NOT NULL,
+  `equipment_type` ENUM('monitor', 'projector', 'switch_board', 'wifi', 'fan') NOT NULL,
+  `equipment_name` VARCHAR(45) NOT NULL,
+  `equipment_code` VARCHAR(45) NOT NULL,
+  `equipment_status` ENUM('0', '1', '2') NOT NULL,
+  `equipment_password` VARCHAR(45) NULL,
+  `equipment_description` MEDIUMTEXT NULL,
+  UNIQUE INDEX `equipment_code_UNIQUE` (`equipment_code` ASC));
+ALTER TABLE `invennzy`.`equipment_details` 
+ADD COLUMN `equipment_id` INT NOT NULL AUTO_INCREMENT AFTER `equipment_description`,
+ADD PRIMARY KEY (`equipment_id`);
+;
+
+
