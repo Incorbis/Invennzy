@@ -194,7 +194,7 @@ FOREIGN KEY (staff_id) REFERENCES staff(id)
 ON DELETE SET NULL;
 
 CREATE TABLE `invennzy`.`equipment_details` (
-  `staff_id` INT NOT NULL,
+  `staff_id` BIGINT NOT NULL,
   `equipment_type` ENUM('monitor', 'projector', 'switch_board', 'wifi', 'fan') NOT NULL,
   `equipment_name` VARCHAR(45) NOT NULL,
   `equipment_code` VARCHAR(45) NOT NULL,

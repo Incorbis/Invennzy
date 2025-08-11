@@ -18,7 +18,9 @@ import {
   HardDrive,
   Router,
   Camera,
-  Laptop
+  Laptop,
+  Save,
+  Loader
 } from 'lucide-react';
 
 const LabEquipmentManager = () => {
@@ -33,6 +35,8 @@ const LabEquipmentManager = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [debugInfo, setDebugInfo] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
   
   // Initialize all categories as collapsed
   const [collapsedCategories, setCollapsedCategories] = useState(() => {
@@ -268,14 +272,17 @@ const LabEquipmentManager = () => {
           return 'active';
         };
 
+        // Password only for wifi and monitors
+        const hasPassword = key === 'wifi' || key === 'monitors';
+
         const item = {
           id: detail?.equipment_id ?? `${key}_${i}`,
           type: key,
-          name: detail?.equipment_name ?? '',
+          name: detail?.equipment_name ?? `${key === 'monitors' ? 'Monitor' : key === 'projectors' ? 'Projector' : key === 'switch_boards' ? 'Switch Board' : key === 'wifi' ? 'WiFi Router' : 'Fan'} ${i}`,
           code: detail?.equipment_code ?? generatedCode,
           status: mapStatus(detail?.equipment_status),
-          password: detail?.equipment_password ?? '',
-          description: detail?.equipment_description ?? '',
+          password: hasPassword ? (detail?.equipment_password ?? `${key}${String(i).padStart(3, '0')}@lab`) : '',
+          description: detail?.equipment_description ?? `${key === 'monitors' ? 'Monitor' : key === 'projectors' ? 'Projector' : key === 'switch_boards' ? 'Switch Board' : key === 'wifi' ? 'WiFi Router' : 'Fan'} unit ${i} in ${labData.lab_name || `Lab ${labData.lab_no}`}`,
           icon:
             key === 'monitors' ? Monitor :
             key === 'projectors' ? Projector :
@@ -346,19 +353,105 @@ const LabEquipmentManager = () => {
   };
 
   const handleItemClick = (item) => {
-    setSelectedItem(item);
+    setSelectedItem({...item}); // Create a copy to avoid direct mutation
     setShowModal(true);
     setEditMode(false);
+    setSaveError(null);
   };
 
-  const handleSaveEdit = () => {
-    if (selectedItem) {
-      setEquipmentState(prev => prev.map(item => 
-        item.id === selectedItem.id ? selectedItem : item
-      ));
-      setEditMode(false);
-    }
+  // Updated save function to integrate with backend API
+  const handleSaveEdit = async () => {
+  if (!selectedItem || !selectedItem.id) {
+  setSaveError('Invalid equipment selected');
+  return;
+}
+
+  setSaving(true);
+  setSaveError(null);
+
+  // Map equipment types to numeric codes
+  const typeCodeMap = {
+    monitor: 100,
+    projector: 200,
+    printer: 300,
+    scanner: 400
   };
+
+  try {
+    // Determine the numeric code based on type (fallback to original code if not found)
+    const numericCode = typeCodeMap[selectedItem.type?.toLowerCase()] || selectedItem.code;
+
+    // Prepare data for backend
+    const updateData = {
+      equipment_name: selectedItem.name,
+      equipment_code: numericCode, // <-- now uses numeric mapping
+      equipment_status: selectedItem.status,
+      equipment_password: selectedItem.password || null,
+      equipment_description: selectedItem.description || null
+    };
+
+    console.log('Updating equipment:', selectedItem.id, updateData);
+
+    const response = await fetch(`/api/labinchargeassistant/equipment/${selectedItem.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updateData)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Server error: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('Update successful:', result);
+
+    // Update local state with the response data
+    if (result.equipment) {
+      const updatedEquipment = {
+        id: result.equipment.id,
+        type: selectedItem.type,
+        name: result.equipment.equipment_name,
+        code: result.equipment.equipment_code,
+        status: result.equipment.status,
+        password: result.equipment.password || '',
+        description: result.equipment.description || '',
+        icon: selectedItem.icon,
+        color: selectedItem.color
+      };
+
+      setEquipmentState(prev =>
+        prev.map(item =>
+          item.id === selectedItem.id ? updatedEquipment : item
+        )
+      );
+
+      setSelectedItem(updatedEquipment);
+    } else {
+      setEquipmentState(prev =>
+        prev.map(item =>
+          item.id === selectedItem.id ? selectedItem : item
+        )
+      );
+    }
+
+    setEditMode(false);
+
+    setTimeout(() => {
+      setShowModal(false);
+      setSelectedItem(null);
+    }, 1500);
+
+  } catch (error) {
+    console.error('Error updating equipment:', error);
+    setSaveError(error.message || 'Failed to update equipment');
+  } finally {
+    setSaving(false);
+  }
+};
+
 
   const filteredEquipment = equipmentState.filter(item => {
     const matchesSearch = 
@@ -670,7 +763,7 @@ const LabEquipmentManager = () => {
           })}
         </div>
 
-        {/* Equipment Details Modal - Simplified */}
+        {/* Equipment Details Modal - Updated with backend integration */}
         {showModal && selectedItem && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -683,7 +776,9 @@ const LabEquipmentManager = () => {
                     <button
                       onClick={() => setEditMode(true)}
                       className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      disabled={saving}
                     >
+                      <Edit size={14} className="inline mr-1" />
                       Edit
                     </button>
                   )}
@@ -692,8 +787,10 @@ const LabEquipmentManager = () => {
                       setShowModal(false);
                       setEditMode(false);
                       setSelectedItem(null);
+                      setSaveError(null);
                     }}
                     className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                    disabled={saving}
                   >
                     Close
                   </button>
@@ -701,6 +798,26 @@ const LabEquipmentManager = () => {
               </div>
               
               <div className="p-6 space-y-4">
+                {/* Show save error if any */}
+                {saveError && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <div className="flex items-center space-x-2">
+                      <AlertTriangle className="text-red-500" size={16} />
+                      <span className="text-red-700 text-sm">{saveError}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Show success message briefly after save */}
+                {!editMode && !saveError && saving === false && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="text-green-500" size={16} />
+                      <span className="text-green-700 text-sm">Equipment updated successfully!</span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Equipment Name</label>
@@ -710,6 +827,7 @@ const LabEquipmentManager = () => {
                         value={selectedItem.name}
                         onChange={(e) => setSelectedItem({...selectedItem, name: e.target.value})}
                         className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={saving}
                       />
                     ) : (
                       <p className="mt-1 text-gray-900">{selectedItem.name}</p>
@@ -724,6 +842,7 @@ const LabEquipmentManager = () => {
                         value={selectedItem.code}
                         onChange={(e) => setSelectedItem({...selectedItem, code: e.target.value})}
                         className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={saving}
                       />
                     ) : (
                       <p className="mt-1 text-gray-900 font-mono">{selectedItem.code}</p>
@@ -737,13 +856,19 @@ const LabEquipmentManager = () => {
                         value={selectedItem.status}
                         onChange={(e) => setSelectedItem({...selectedItem, status: e.target.value})}
                         className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={saving}
                       >
                         <option value="active">Active</option>
                         <option value="maintenance">Maintenance</option>
                         <option value="damaged">Damaged</option>
                       </select>
                     ) : (
-                      <p className="mt-1 text-gray-900 capitalize">{selectedItem.status}</p>
+                      <div className="mt-1">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedItem.status)}`}>
+                          {React.createElement(getStatusIcon(selectedItem.status), { size: 12, className: "mr-1" })}
+                          <span className="capitalize">{selectedItem.status}</span>
+                        </span>
+                      </div>
                     )}
                   </div>
                   
@@ -757,6 +882,7 @@ const LabEquipmentManager = () => {
                           value={selectedItem.password}
                           onChange={(e) => setSelectedItem({...selectedItem, password: e.target.value})}
                           className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          disabled={saving}
                         />
                       ) : (
                         <div className="mt-1 flex items-center space-x-2">
@@ -779,11 +905,12 @@ const LabEquipmentManager = () => {
                   <label className="block text-sm font-medium text-gray-700">Description</label>
                   {editMode ? (
                     <textarea
-                      value={selectedItem.description}
+                      value={selectedItem.description || ''}
                       onChange={(e) => setSelectedItem({...selectedItem, description: e.target.value})}
                       rows={3}
                       className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Add description for this equipment..."
+                      disabled={saving}
                     />
                   ) : (
                     <p className="mt-1 text-gray-900">{selectedItem.description || 'No description available'}</p>
@@ -794,16 +921,36 @@ const LabEquipmentManager = () => {
               {editMode && (
                 <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">
                   <button
-                    onClick={() => setEditMode(false)}
+                    onClick={() => {
+                      setEditMode(false);
+                      setSaveError(null);
+                      // Reset selectedItem to original state by finding it in equipmentState
+                      const original = equipmentState.find(item => item.id === selectedItem.id);
+                      if (original) {
+                        setSelectedItem({...original});
+                      }
+                    }}
                     className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    disabled={saving}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSaveEdit}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    disabled={saving}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                   >
-                    Save Changes
+                    {saving ? (
+                      <>
+                        <Loader className="animate-spin" size={16} />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save size={16} />
+                        <span>Save Changes</span>
+                      </>
+                    )}
                   </button>
                 </div>
               )}
