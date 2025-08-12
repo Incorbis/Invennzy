@@ -7,7 +7,7 @@ const db = require("../../db");
 // =======================
 
 // Create a request
-router.post("/lic/create", async (req, res) => {
+router.post("/create", async (req, res) => {
   try {
     const { form, staff_id } = req.body;
 
