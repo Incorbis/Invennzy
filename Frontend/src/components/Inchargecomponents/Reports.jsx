@@ -1,19 +1,54 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import {
   BarChart3,
   FileText,
   Clock,
   CheckCircle,
   AlertTriangle,
-  Eye,
-  Download,
-  Filter,
   Calendar,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-const Reports = ({ reports = [] }) => {
-  const [selectedType, setSelectedType] = useState("all");
-  const [selectedStatus, setSelectedStatus] = useState("all");
+const Reports = () => {
+  const [reports, setReports] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchReports = async () => {
+      const storedStaffId = localStorage.getItem("staffId");
+      if (!storedStaffId) {
+        console.error("No staff_id found in localStorage");
+        return;
+      }
+      try {
+        const res = await axios.get(`/api/requests/lic/${storedStaffId}`);
+        const data = res.data.map((item) => ({
+          ...item,
+          title: item.type_of_problem || "Untitled",
+          description: item.complaint_details || "",
+          type: "maintenance",
+          status: getStatusFromSteps(item.current_step, item.completed_steps),
+          priority: "medium",
+          createdAt: item.date,
+          createdBy: item.created_by || "Unknown",
+          resolvedAt: item.maintenanceClosedDate || null,
+        }));
+        setReports(data);
+      } catch (err) {
+        console.error("Error fetching reports", err);
+      }
+    };
+    fetchReports();
+  }, []);
+
+  const getStatusFromSteps = (currentStep, completedSteps) => {
+    if (completedSteps >= 5) return "closed";
+    if (completedSteps >= 4) return "resolved";
+    if (completedSteps >= 2) return "in-progress";
+    return "open";
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -27,21 +62,6 @@ const Reports = ({ reports = [] }) => {
         return "text-gray-700 bg-gray-100";
       default:
         return "text-gray-700 bg-gray-100";
-    }
-  };
-
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case "low":
-        return "text-green-600 bg-green-100";
-      case "medium":
-        return "text-yellow-600 bg-yellow-100";
-      case "high":
-        return "text-orange-600 bg-orange-100";
-      case "critical":
-        return "text-red-600 bg-red-100";
-      default:
-        return "text-gray-600 bg-gray-100";
     }
   };
 
@@ -60,13 +80,6 @@ const Reports = ({ reports = [] }) => {
     }
   };
 
-  const filteredReports = reports.filter((report) => {
-    const matchesType = selectedType === "all" || report.type === selectedType;
-    const matchesStatus =
-      selectedStatus === "all" || report.status === selectedStatus;
-    return matchesType && matchesStatus;
-  });
-
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -74,6 +87,14 @@ const Reports = ({ reports = [] }) => {
       day: "numeric",
     });
   };
+
+  const filteredReports = reports
+    .filter(
+      (report) =>
+        report.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        report.description.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   const totalReports = reports.length;
   const openReports = reports.filter((r) => r.status === "open").length;
@@ -83,7 +104,7 @@ const Reports = ({ reports = [] }) => {
   const resolvedReports = reports.filter((r) => r.status === "resolved").length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -136,56 +157,21 @@ const Reports = ({ reports = [] }) => {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Search Bar */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">
-            Filter Reports
+            Search Reports
           </h3>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
-            <Download className="w-4 h-4" />
-            <span>Export</span>
-          </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Type
-            </label>
-            <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Types</option>
-              <option value="query">Query</option>
-              <option value="maintenance">Maintenance</option>
-              <option value="audit">Audit</option>
-              <option value="issue">Issue</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Status
-            </label>
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Status</option>
-              <option value="open">Open</option>
-              <option value="in-progress">In Progress</option>
-              <option value="resolved">Resolved</option>
-              <option value="closed">Closed</option>
-            </select>
-          </div>
-          <div className="flex items-end">
-            <button className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center space-x-2">
-              <Filter className="w-4 h-4" />
-              <span>Apply Filters</span>
-            </button>
-          </div>
+        <div>
+          <input
+            type="text"
+            placeholder="Search reports..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
         </div>
       </div>
 
@@ -213,9 +199,7 @@ const Reports = ({ reports = [] }) => {
               <h3 className="text-lg font-medium text-gray-900 mb-2">
                 No reports found
               </h3>
-              <p className="text-gray-600">
-                Try adjusting your filter criteria.
-              </p>
+              <p className="text-gray-600">Try adjusting your search query.</p>
             </div>
           ) : (
             filteredReports.map((report) => {
@@ -244,14 +228,6 @@ const Reports = ({ reports = [] }) => {
                               {report.status.charAt(0).toUpperCase() +
                                 report.status.slice(1).replace("-", " ")}
                             </span>
-                            <span
-                              className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(
-                                report.priority
-                              )}`}
-                            >
-                              {report.priority.charAt(0).toUpperCase() +
-                                report.priority.slice(1)}
-                            </span>
                           </div>
                           <p className="text-gray-600 mb-3">
                             {report.description}
@@ -263,7 +239,6 @@ const Reports = ({ reports = [] }) => {
                                 Created: {formatDate(report.createdAt)}
                               </span>
                             </div>
-                            <span>By: {report.createdBy}</span>
                             {report.resolvedAt && (
                               <span>
                                 Resolved: {formatDate(report.resolvedAt)}
@@ -272,8 +247,13 @@ const Reports = ({ reports = [] }) => {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2 ml-4">
-                          <button className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors">
-                            <Eye className="w-4 h-4" />
+                          <button
+                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                            onClick={() =>
+                              navigate(`/labinchargedash/requests/${report.id}`)
+                            }
+                          >
+                            Check Status
                           </button>
                         </div>
                       </div>

@@ -73,6 +73,7 @@ function App() {
         <Route path="notifications" element={<LICNotification />} />
         <Route path="inventory" element={<LICInventory />} />
         <Route path="requests" element={<LICRequests />} />
+        <Route path="requests/:requestId" element={<LICRequests />} />
         <Route path="reports" element={<LICReports />} />
         <Route path="" element={<LICoverview />} />
         <Route path="settings" element={<LICSettingsPage />} />
@@ -93,6 +94,7 @@ function App() {
         <Route path="" element={<LAOverview />} />
         <Route path="settings" element={<LASettings />} />
         <Route path="requests" element={<LabAssistantForm />} />
+        <Route path="requests/:requestId" element={<LabAssistantForm />} />
       </Route>
     </Routes>
   );
