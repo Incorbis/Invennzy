@@ -194,17 +194,17 @@ FOREIGN KEY (staff_id) REFERENCES staff(id)
 ON DELETE SET NULL;
 
 CREATE TABLE `invennzy`.`equipment_details` (
-  `staff_id` BIGINT NOT NULL,
+  `equipment_id` INT NOT NULL AUTO_INCREMENT,
+  `lab_id` BIGINT NOT NULL,
+  `staff_id` BIGINT NULL,
   `equipment_type` ENUM('monitor', 'projector', 'switch_board', 'wifi', 'fan') NOT NULL,
-  `equipment_name` VARCHAR(45) NOT NULL,
-  `equipment_code` VARCHAR(45) NOT NULL,
-  `equipment_status` ENUM('0', '1', '2') NOT NULL,
-  `equipment_password` VARCHAR(45) NULL,
+  `equipment_name` VARCHAR(100) NOT NULL,
+  `equipment_code` VARCHAR(100) NOT NULL UNIQUE,
+  `equipment_status` ENUM('0', '1', '2') NOT NULL DEFAULT '0', -- 0=working, 1=maintenance, 2=damaged
+  `equipment_password` VARCHAR(100) NULL,
   `equipment_description` MEDIUMTEXT NULL,
-  UNIQUE INDEX `equipment_code_UNIQUE` (`equipment_code` ASC));
-ALTER TABLE `invennzy`.`equipment_details` 
-ADD COLUMN `equipment_id` INT NOT NULL AUTO_INCREMENT AFTER `equipment_description`,
-ADD PRIMARY KEY (`equipment_id`);
-;
+  PRIMARY KEY (`equipment_id`)
+);
+
 
 
