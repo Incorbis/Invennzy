@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 import {
   Monitor,
@@ -43,6 +43,194 @@ const LabEquipmentManager = () => {
     const types = ['monitors', 'projectors', 'switch_boards', 'fans', 'wifi'];
     return Object.fromEntries(types.map(type => [type, true]));
   });
+
+  // Extract fetchEquipment into a separate function for reusability
+  const fetchEquipment = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      // --- get staffId (robust) ---
+      let staffId = localStorage.getItem('staffId') || localStorage.getItem('id');
+      const userObj = localStorage.getItem('user');
+      if (!staffId && userObj) {
+        try {
+          const parsed = JSON.parse(userObj);
+          staffId = parsed.id || parsed.staffId || parsed.staff_id;
+        } catch (e) { /* ignore */ }
+      }
+      if (!staffId) throw new Error('No staffId found in localStorage');
+
+      // --- find lab for staff (try a couple of endpoints) ---
+      console.log('Fetching lab info for staffId:', staffId);
+      let labData = null;
+      try {
+        const r1 = await fetch(`/api/labstaff/incharge/${staffId}/lab`);
+        if (r1.ok) labData = await r1.json();
+      } catch (e) { /* ignore */ }
+
+      if (!labData) {
+        try {
+          const r2 = await fetch(`/api/labstaff/${staffId}`);
+          if (r2.ok) {
+            const staff = await r2.json();
+            // expect staff to include lab_id (adapt fields as per your API)
+            labData = {
+              lab_id: staff.lab_id || staff.labId || staff.lab_id,
+              lab_name: staff.lab_name || staff.labName || staff.lab_name,
+              lab_no: staff.lab_no || staff.labNo
+            };
+          }
+        } catch (e) { /* ignore */ }
+      }
+
+      if (!labData || !labData.lab_id) {
+        throw new Error('No lab found for this user. Please check assignment.');
+      }
+
+      // --- fetch equipment info for the lab ---
+      console.log('Fetching equipment for lab_id:', labData.lab_id);
+      const equipRes = await fetch(`/api/labs/equipment/${labData.lab_id}`);
+      if (!equipRes.ok) {
+        const txt = await equipRes.text();
+        throw new Error(`Equipment endpoint failed: ${equipRes.status} ${txt}`);
+      }
+      const equipData = await equipRes.json();
+      console.log('Raw equipment response:', equipData);
+
+      // --- normalize backend response into countsByType and detailsByType ---
+      const types = ['monitors', 'projectors', 'switch_boards', 'fans', 'wifi'];
+      const countsByType = {};
+      const detailsByType = {};
+
+      // helper: group flat array by equipment_type (or type)
+      const groupArrayByType = (arr) => {
+        return arr.reduce((acc, it) => {
+          const t = it.equipment_type || it.type || it.type_name;
+          if (!t) return acc;
+          acc[t] = acc[t] || [];
+          acc[t].push(it);
+          return acc;
+        }, {});
+      };
+
+      if (Array.isArray(equipData)) {
+        // backend returned a flat array of items
+        Object.assign(detailsByType, groupArrayByType(equipData));
+        types.forEach(t => countsByType[t] = (detailsByType[t] || []).length);
+      } else if (typeof equipData === 'object' && equipData !== null) {
+        // If equipData has numeric counts or arrays per type
+        types.forEach(t => {
+          const val = equipData[t];
+          if (Array.isArray(val)) {
+            detailsByType[t] = val;
+            countsByType[t] = val.length;
+          } else if (typeof val === 'number') {
+            countsByType[t] = val;
+            detailsByType[t] = [];
+          } else {
+            countsByType[t] = countsByType[t] || 0;
+            detailsByType[t] = detailsByType[t] || [];
+          }
+        });
+
+        // Some APIs return { counts: {monitors:3,...}, items: [...] }
+        if (equipData.counts && typeof equipData.counts === 'object') {
+          types.forEach(t => {
+            if (typeof equipData.counts[t] === 'number') countsByType[t] = equipData.counts[t];
+          });
+        }
+        if (equipData.items && Array.isArray(equipData.items)) {
+          Object.assign(detailsByType, groupArrayByType(equipData.items));
+        }
+      }
+
+      // Ensure every type has numeric count
+      types.forEach(t => {
+        countsByType[t] = Number(countsByType[t] || 0);
+        detailsByType[t] = detailsByType[t] || [];
+      });
+
+      // --- Build final equipment list:
+      // For each type, create `count` items. If details are available use them (match by index), else leave fields blank/placeholder.
+      const equipmentList = [];
+      types.forEach((key) => {
+        const count = countsByType[key] || 0;
+        const detailsArr = detailsByType[key] || [];
+        const used = new Set();
+
+        for (let i = 1; i <= count; i++) {
+          // generated code fallback (if backend doesn't provide)
+          const generatedCode = `${key.toUpperCase()}-${String(i).padStart(3, '0')}`;
+
+          // Try to pick a matching detail record:
+          let detail = detailsArr[i - 1] ?? null;
+
+          // if not present at same index, try to find an unused record that matches generated code or equipment_code
+          if (!detail) {
+            const foundIdx = detailsArr.findIndex((it, idx) => {
+              if (used.has(idx)) return false;
+              const code = it.equipment_code || it.code || '';
+              return code === generatedCode || code.endsWith(String(i)) || code.includes(String(i));
+            });
+            if (foundIdx !== -1) {
+              detail = detailsArr[foundIdx];
+              used.add(foundIdx);
+            }
+          } else {
+            used.add(i - 1);
+          }
+
+          // Map DB status -> frontend status (adjust mapping to your DB convention)
+          const mapStatus = (dbStatus) => {
+            if (dbStatus === undefined || dbStatus === null || dbStatus === '') return 'active'; // default if unknown
+            // if DB uses numbers '0','1','2' -> map here:
+            if (dbStatus === '1' || dbStatus === 1) return 'active';
+            if (dbStatus === '2' || dbStatus === 2) return 'maintenance';
+            if (dbStatus === '0' || dbStatus === 0) return 'damaged';
+            // if DB uses words already:
+            if (['active','working','ok'].includes(String(dbStatus).toLowerCase())) return 'active';
+            if (['maintenance','repair'].includes(String(dbStatus).toLowerCase())) return 'maintenance';
+            if (['damaged','broken','inactive'].includes(String(dbStatus).toLowerCase())) return 'damaged';
+            return 'active';
+          };
+
+          // Password only for wifi and monitors
+          const hasPassword = key === 'wifi' || key === 'monitors';
+
+          const item = {
+            id: detail?.equipment_id ?? `${key}_${i}`,
+            type: key,
+            name: detail?.equipment_name ?? `${key === 'monitors' ? 'Monitor' : key === 'projectors' ? 'Projector' : key === 'switch_boards' ? 'Switch Board' : key === 'wifi' ? 'WiFi Router' : 'Fan'} ${i}`,
+            code: detail?.equipment_code ?? generatedCode,
+            status: mapStatus(detail?.equipment_status),
+            password: hasPassword ? (detail?.equipment_password ?? `${key}${String(i).padStart(3, '0')}@lab`) : '',
+            description: detail?.equipment_description ?? `${key === 'monitors' ? 'Monitor' : key === 'projectors' ? 'Projector' : key === 'switch_boards' ? 'Switch Board' : key === 'wifi' ? 'WiFi Router' : 'Fan'} unit ${i} in ${labData.lab_name || `Lab ${labData.lab_no}`}`,
+            icon:
+              key === 'monitors' ? Monitor :
+              key === 'projectors' ? Projector :
+              key === 'switch_boards' ? Zap :
+              key === 'wifi' ? Wifi : Fan,
+            color:
+              key === 'monitors' ? 'blue' :
+              key === 'projectors' ? 'purple' :
+              key === 'switch_boards' ? 'yellow' :
+              key === 'wifi' ? 'indigo' : 'green'
+          };
+
+          equipmentList.push(item);
+        }
+      });
+
+      console.log('Final equipment list:', equipmentList);
+      setEquipmentState(equipmentList);
+      setError(null);
+    } catch (err) {
+      console.error('Error loading equipment:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     // Debug: Check all localStorage keys
@@ -123,194 +311,8 @@ const LabEquipmentManager = () => {
 
     console.log('Using staffId:', staffId);
 
-    const fetchEquipment = async () => {
-  try {
-    setLoading(true);
-
-    // --- get staffId (robust) ---
-    let staffId = localStorage.getItem('staffId') || localStorage.getItem('id');
-    const userObj = localStorage.getItem('user');
-    if (!staffId && userObj) {
-      try {
-        const parsed = JSON.parse(userObj);
-        staffId = parsed.id || parsed.staffId || parsed.staff_id;
-      } catch (e) { /* ignore */ }
-    }
-    if (!staffId) throw new Error('No staffId found in localStorage');
-
-    // --- find lab for staff (try a couple of endpoints) ---
-    console.log('Fetching lab info for staffId:', staffId);
-    let labData = null;
-    try {
-      const r1 = await fetch(`/api/labstaff/incharge/${staffId}/lab`);
-      if (r1.ok) labData = await r1.json();
-    } catch (e) { /* ignore */ }
-
-    if (!labData) {
-      try {
-        const r2 = await fetch(`/api/labstaff/${staffId}`);
-        if (r2.ok) {
-          const staff = await r2.json();
-          // expect staff to include lab_id (adapt fields as per your API)
-          labData = {
-            lab_id: staff.lab_id || staff.labId || staff.lab_id,
-            lab_name: staff.lab_name || staff.labName || staff.lab_name,
-            lab_no: staff.lab_no || staff.labNo
-          };
-        }
-      } catch (e) { /* ignore */ }
-    }
-
-    if (!labData || !labData.lab_id) {
-      throw new Error('No lab found for this user. Please check assignment.');
-    }
-
-    // --- fetch equipment info for the lab ---
-    console.log('Fetching equipment for lab_id:', labData.lab_id);
-    const equipRes = await fetch(`/api/labs/equipment/${labData.lab_id}`);
-    if (!equipRes.ok) {
-      const txt = await equipRes.text();
-      throw new Error(`Equipment endpoint failed: ${equipRes.status} ${txt}`);
-    }
-    const equipData = await equipRes.json();
-    console.log('Raw equipment response:', equipData);
-
-    // --- normalize backend response into countsByType and detailsByType ---
-    const types = ['monitors', 'projectors', 'switch_boards', 'fans', 'wifi'];
-    const countsByType = {};
-    const detailsByType = {};
-
-    // helper: group flat array by equipment_type (or type)
-    const groupArrayByType = (arr) => {
-      return arr.reduce((acc, it) => {
-        const t = it.equipment_type || it.type || it.type_name;
-        if (!t) return acc;
-        acc[t] = acc[t] || [];
-        acc[t].push(it);
-        return acc;
-      }, {});
-    };
-
-    if (Array.isArray(equipData)) {
-      // backend returned a flat array of items
-      Object.assign(detailsByType, groupArrayByType(equipData));
-      types.forEach(t => countsByType[t] = (detailsByType[t] || []).length);
-    } else if (typeof equipData === 'object' && equipData !== null) {
-      // If equipData has numeric counts or arrays per type
-      types.forEach(t => {
-        const val = equipData[t];
-        if (Array.isArray(val)) {
-          detailsByType[t] = val;
-          countsByType[t] = val.length;
-        } else if (typeof val === 'number') {
-          countsByType[t] = val;
-          detailsByType[t] = [];
-        } else {
-          countsByType[t] = countsByType[t] || 0;
-          detailsByType[t] = detailsByType[t] || [];
-        }
-      });
-
-      // Some APIs return { counts: {monitors:3,...}, items: [...] }
-      if (equipData.counts && typeof equipData.counts === 'object') {
-        types.forEach(t => {
-          if (typeof equipData.counts[t] === 'number') countsByType[t] = equipData.counts[t];
-        });
-      }
-      if (equipData.items && Array.isArray(equipData.items)) {
-        Object.assign(detailsByType, groupArrayByType(equipData.items));
-      }
-    }
-
-    // Ensure every type has numeric count
-    types.forEach(t => {
-      countsByType[t] = Number(countsByType[t] || 0);
-      detailsByType[t] = detailsByType[t] || [];
-    });
-
-    // --- Build final equipment list:
-    // For each type, create `count` items. If details are available use them (match by index), else leave fields blank/placeholder.
-    const equipmentList = [];
-    types.forEach((key) => {
-      const count = countsByType[key] || 0;
-      const detailsArr = detailsByType[key] || [];
-      const used = new Set();
-
-      for (let i = 1; i <= count; i++) {
-        // generated code fallback (if backend doesn't provide)
-        const generatedCode = `${key.toUpperCase()}-${String(i).padStart(3, '0')}`;
-
-        // Try to pick a matching detail record:
-        let detail = detailsArr[i - 1] ?? null;
-
-        // if not present at same index, try to find an unused record that matches generated code or equipment_code
-        if (!detail) {
-          const foundIdx = detailsArr.findIndex((it, idx) => {
-            if (used.has(idx)) return false;
-            const code = it.equipment_code || it.code || '';
-            return code === generatedCode || code.endsWith(String(i)) || code.includes(String(i));
-          });
-          if (foundIdx !== -1) {
-            detail = detailsArr[foundIdx];
-            used.add(foundIdx);
-          }
-        } else {
-          used.add(i - 1);
-        }
-
-        // Map DB status -> frontend status (adjust mapping to your DB convention)
-        const mapStatus = (dbStatus) => {
-          if (dbStatus === undefined || dbStatus === null || dbStatus === '') return 'active'; // default if unknown
-          // if DB uses numbers '0','1','2' -> map here:
-          if (dbStatus === '1' || dbStatus === 1) return 'active';
-          if (dbStatus === '2' || dbStatus === 2) return 'maintenance';
-          if (dbStatus === '0' || dbStatus === 0) return 'damaged';
-          // if DB uses words already:
-          if (['active','working','ok'].includes(String(dbStatus).toLowerCase())) return 'active';
-          if (['maintenance','repair'].includes(String(dbStatus).toLowerCase())) return 'maintenance';
-          if (['damaged','broken','inactive'].includes(String(dbStatus).toLowerCase())) return 'damaged';
-          return 'active';
-        };
-
-        // Password only for wifi and monitors
-        const hasPassword = key === 'wifi' || key === 'monitors';
-
-        const item = {
-          id: detail?.equipment_id ?? `${key}_${i}`,
-          type: key,
-          name: detail?.equipment_name ?? `${key === 'monitors' ? 'Monitor' : key === 'projectors' ? 'Projector' : key === 'switch_boards' ? 'Switch Board' : key === 'wifi' ? 'WiFi Router' : 'Fan'} ${i}`,
-          code: detail?.equipment_code ?? generatedCode,
-          status: mapStatus(detail?.equipment_status),
-          password: hasPassword ? (detail?.equipment_password ?? `${key}${String(i).padStart(3, '0')}@lab`) : '',
-          description: detail?.equipment_description ?? `${key === 'monitors' ? 'Monitor' : key === 'projectors' ? 'Projector' : key === 'switch_boards' ? 'Switch Board' : key === 'wifi' ? 'WiFi Router' : 'Fan'} unit ${i} in ${labData.lab_name || `Lab ${labData.lab_no}`}`,
-          icon:
-            key === 'monitors' ? Monitor :
-            key === 'projectors' ? Projector :
-            key === 'switch_boards' ? Zap :
-            key === 'wifi' ? Wifi : Fan,
-          color:
-            key === 'monitors' ? 'blue' :
-            key === 'projectors' ? 'purple' :
-            key === 'switch_boards' ? 'yellow' :
-            key === 'wifi' ? 'indigo' : 'green'
-        };
-
-        equipmentList.push(item);
-      }
-    });
-
-    console.log('Final equipment list:', equipmentList);
-    setEquipmentState(equipmentList);
-    setError(null);
-  } catch (err) {
-    console.error('Error loading equipment:', err);
-    setError(err.message);
-  } finally {
-    setLoading(false);
-  }
-};
     fetchEquipment();
-  }, []);
+  }, [fetchEquipment]);
 
   const togglePasswordVisibility = (itemId) => {
     setShowPasswords(prev => ({
@@ -359,99 +361,100 @@ const LabEquipmentManager = () => {
     setSaveError(null);
   };
 
-  // Updated save function to integrate with backend API
+  // Updated save function with equipment refresh
   const handleSaveEdit = async () => {
-  if (!selectedItem || !selectedItem.id) {
-  setSaveError('Invalid equipment selected');
-  return;
-}
+    if (!selectedItem || !selectedItem.id) {
+      setSaveError('Invalid equipment selected');
+      return;
+    }
 
-  setSaving(true);
-  setSaveError(null);
+    setSaving(true);
+    setSaveError(null);
 
-  // Map equipment types to numeric codes
-  const typeCodeMap = {
-    monitor: 100,
-    projector: 200,
-    printer: 300,
-    scanner: 400
-  };
-
-  try {
-    // Determine the numeric code based on type (fallback to original code if not found)
-    const numericCode = typeCodeMap[selectedItem.type?.toLowerCase()] || selectedItem.code;
-
-    // Prepare data for backend
-    const updateData = {
-      equipment_name: selectedItem.name,
-      equipment_code: numericCode, // <-- now uses numeric mapping
-      equipment_status: selectedItem.status,
-      equipment_password: selectedItem.password || null,
-      equipment_description: selectedItem.description || null
+    // Map equipment types to numeric codes
+    const typeCodeMap = {
+      monitor: 100,
+      projector: 200,
+      printer: 300,
+      scanner: 400
     };
 
-    console.log('Updating equipment:', selectedItem.id, updateData);
+    try {
+      // Extract numeric ID from formatted ID (e.g., "monitors_1" -> "1")
+      let numericEquipmentId;
+      if (typeof selectedItem.id === 'string' && selectedItem.id.includes('_')) {
+        numericEquipmentId = selectedItem.id.split('_')[1];
+      } else {
+        numericEquipmentId = selectedItem.id;
+      }
 
-    const response = await fetch(`/api/labinchargeassistant/equipment/${selectedItem.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updateData)
-    });
+      // Validate that we have a numeric ID
+      if (!numericEquipmentId || isNaN(numericEquipmentId)) {
+        throw new Error(`Invalid equipment ID format: ${selectedItem.id}`);
+      }
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `Server error: ${response.status}`);
-    }
+      // Determine the numeric code based on type (fallback to original code if not found)
+      const numericCode = typeCodeMap[selectedItem.type?.toLowerCase()] || selectedItem.code;
 
-    const result = await response.json();
-    console.log('Update successful:', result);
-
-    // Update local state with the response data
-    if (result.equipment) {
-      const updatedEquipment = {
-        id: result.equipment.id,
-        type: selectedItem.type,
-        name: result.equipment.equipment_name,
-        code: result.equipment.equipment_code,
-        status: result.equipment.status,
-        password: result.equipment.password || '',
-        description: result.equipment.description || '',
-        icon: selectedItem.icon,
-        color: selectedItem.color
+      // Prepare data for backend
+      const updateData = {
+        equipment_name: selectedItem.name,
+        equipment_code: numericCode,
+        equipment_status: selectedItem.status,
+        equipment_password: selectedItem.password || null,
+        equipment_description: selectedItem.description || null
       };
 
-      setEquipmentState(prev =>
-        prev.map(item =>
-          item.id === selectedItem.id ? updatedEquipment : item
-        )
-      );
+      console.log('Updating equipment with numeric ID:', numericEquipmentId, updateData);
 
-      setSelectedItem(updatedEquipment);
-    } else {
-      setEquipmentState(prev =>
-        prev.map(item =>
-          item.id === selectedItem.id ? selectedItem : item
-        )
-      );
+      const response = await fetch(`/api/labinchargeassistant/equipment/${numericEquipmentId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Update successful:', result);
+
+      // ✅ REFRESH THE EQUIPMENT DATA AFTER SUCCESSFUL UPDATE
+      console.log('Refreshing equipment data after update...');
+      await fetchEquipment();
+
+      // Update the selectedItem with the returned data if available
+      if (result.equipment) {
+        const updatedItem = {
+          ...selectedItem,
+          name: result.equipment.equipment_name || selectedItem.name,
+          code: result.equipment.equipment_code || selectedItem.code,
+          status: result.equipment.status || selectedItem.status,
+          password: result.equipment.password || selectedItem.password,
+          description: result.equipment.description || selectedItem.description
+        };
+        setSelectedItem(updatedItem);
+      }
+    
+      setEditMode(false);
+
+      // Close modal after a brief delay to show success message
+      setTimeout(() => {
+        setShowModal(false);
+        setSelectedItem(null);
+      }, 1500);
+
+    } catch (error) {
+      console.error('Error updating equipment:', error);
+      setSaveError(error.message || 'Failed to update equipment');
+    } finally {
+      setSaving(false);
     }
-
-    setEditMode(false);
-
-    setTimeout(() => {
-      setShowModal(false);
-      setSelectedItem(null);
-    }, 1500);
-
-  } catch (error) {
-    console.error('Error updating equipment:', error);
-    setSaveError(error.message || 'Failed to update equipment');
-  } finally {
-    setSaving(false);
-  }
-};
-
+  };
 
   const filteredEquipment = equipmentState.filter(item => {
     const matchesSearch = 

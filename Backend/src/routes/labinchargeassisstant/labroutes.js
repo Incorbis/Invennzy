@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require('../../db'); // Add DB connection here
 
 // Get equipment for a specific lab
-router.get('/labs/equipment/:${labId}', (req, res) => {
+router.get('/labs/equipment/:labId', (req, res) => {
     const { labId } = req.params;
 
     const query = `
@@ -64,8 +64,9 @@ router.get('/labs/equipment/:${labId}', (req, res) => {
     });
 });
 
-// Update equipment details
+// Update equipment details - IMPROVED VERSION
 router.put('/equipment/:equipmentId', (req, res) => {
+    console.log(`API hit: PUT /equipment/${req.params.equipmentId}`);
     const { equipmentId } = req.params;
     const { 
         equipment_name, 
@@ -75,79 +76,128 @@ router.put('/equipment/:equipmentId', (req, res) => {
         equipment_description 
     } = req.body;
 
-    if (!equipment_name || !equipment_code || !equipment_status) {
-        return res.status(400).json({ 
-            error: 'Missing required fields: equipment_name, equipment_code, equipment_status' 
-        });
+    // Debug logging
+    console.log('PUT /equipment/:equipmentId called');
+    console.log('equipmentId:', equipmentId);
+    console.log('Request body:', req.body);
+
+    // Validate equipmentId is numeric
+    const numericId = parseInt(equipmentId);
+    if (isNaN(numericId)) {
+        return res.status(400).json({ error: 'Invalid equipment ID format' });
     }
 
-    const validStatuses = ['active', 'maintenance', 'damaged'];
-    if (!validStatuses.includes(equipment_status)) {
-        return res.status(400).json({ 
-            error: 'Invalid status. Must be one of: active, maintenance, damaged' 
-        });
-    }
-
-    const query = `
-        UPDATE equipment_details 
-        SET 
-            equipment_name = ?,
-            equipment_code = ?,
-            equipment_status = ?,
-            equipment_password = ?,
-            equipment_description = ?
+    // First, check if the equipment exists
+    const checkQuery = `
+        SELECT equipment_id, equipment_type
+        FROM equipment_details 
         WHERE equipment_id = ?
     `;
 
-    const values = [
-        equipment_name,
-        equipment_code,
-        equipment_status,
-        equipment_password || null,
-        equipment_description || null,
-        equipmentId
-    ];
-
-    db.query(query, values, (err, result) => {
-        if (err) {
-            console.error('Error updating equipment:', err);
-            return res.status(500).json({ error: 'Database error while updating equipment' });
+    db.query(checkQuery, [numericId], (checkErr, checkResults) => {
+        if (checkErr) {
+            console.error('Error checking equipment existence:', checkErr);
+            return res.status(500).json({ error: 'Database error while checking equipment' });
         }
 
-        if (result.affectedRows === 0) {
+        if (checkResults.length === 0) {
             return res.status(404).json({ error: 'Equipment not found' });
         }
 
-        const selectQuery = `
-            SELECT 
-                equipment_id as id,
-                equipment_name,
-                equipment_code,
-                equipment_type as type,
-                equipment_status as status,
-                equipment_password as password,
-                equipment_description as description
-            FROM equipment_details
+        const existingEquipment = checkResults[0];
+        
+        // Update the equipment
+        const updateQuery = `
+            UPDATE equipment_details 
+            SET 
+                equipment_name = ?,
+                equipment_code = ?,
+                equipment_status = ?,
+                equipment_password = ?,
+                equipment_description = ?,
+                updated_at = NOW()
             WHERE equipment_id = ?
         `;
 
-        db.query(selectQuery, [equipmentId], (err, updatedResults) => {
-            if (err) {
-                console.error('Error fetching updated equipment:', err);
-                return res.status(500).json({ error: 'Equipment updated but failed to fetch updated data' });
+        const values = [
+            equipment_name,
+            equipment_code,
+            equipment_status,
+            equipment_password || null,
+            equipment_description || null,
+            numericId
+        ];
+
+        db.query(updateQuery, values, (updateErr, updateResult) => {
+            if (updateErr) {
+                console.error('Error updating equipment:', updateErr);
+                return res.status(500).json({ error: 'Database error while updating equipment' });
             }
 
-            if (updatedResults.length === 0) {
-                return res.status(404).json({ error: 'Equipment updated but not found' });
+            if (updateResult.affectedRows === 0) {
+                return res.status(404).json({ error: 'Equipment not found or no changes made' });
             }
 
-            return res.json({
-                message: 'Equipment updated successfully',
-                equipment: updatedResults[0]
+            // Fetch the updated equipment details
+            const selectQuery = `
+                SELECT 
+                    equipment_id as id,
+                    equipment_name,
+                    equipment_code,
+                    equipment_type as type,
+                    equipment_status as status,
+                    equipment_password as password,
+                    equipment_description as description,
+                    lab_id,
+                    updated_at
+                FROM equipment_details
+                WHERE equipment_id = ?
+            `;
+
+            db.query(selectQuery, [numericId], (selectErr, updatedResults) => {
+                if (selectErr) {
+                    console.error('Error fetching updated equipment:', selectErr);
+                    return res.status(500).json({ 
+                        error: 'Equipment updated but failed to fetch updated data',
+                        success: true // Still indicate success since update worked
+                    });
+                }
+
+                if (updatedResults.length === 0) {
+                    return res.status(404).json({ 
+                        error: 'Equipment updated but not found in fetch',
+                        success: true // Still indicate success since update worked
+                    });
+                }
+
+                const updatedEquipment = updatedResults[0];
+                
+                console.log('Equipment updated successfully:', updatedEquipment);
+                
+                return res.json({
+                    success: true,
+                    message: 'Equipment updated successfully',
+                    equipment: {
+                        equipment_id: updatedEquipment.id,
+                        equipment_name: updatedEquipment.equipment_name,
+                        equipment_code: updatedEquipment.equipment_code,
+                        equipment_type: updatedEquipment.type,
+                        status: updatedEquipment.status,
+                        password: updatedEquipment.password,
+                        description: updatedEquipment.description,
+                        updated_at: updatedEquipment.updated_at
+                    }
+                });
             });
         });
     });
 });
 
+// Alternative endpoint for lab in-charge assistant (if needed)
+router.put('/labinchargeassistant/equipment/:equipmentId', (req, res) => {
+    // Redirect to the main equipment update endpoint
+    req.url = `/equipment/${req.params.equipmentId}`;
+    return router.handle(req, res);
+});
 
 module.exports = router;
