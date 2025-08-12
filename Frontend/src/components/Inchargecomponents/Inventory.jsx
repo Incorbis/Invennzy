@@ -18,7 +18,9 @@ import {
   HardDrive,
   Router,
   Camera,
-  Laptop
+  Laptop,
+  Save,
+  Loader
 } from 'lucide-react';
 
 const LabEquipmentManager = () => {
@@ -33,6 +35,8 @@ const LabEquipmentManager = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [debugInfo, setDebugInfo] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
   
   // Initialize all categories as collapsed
   const [collapsedCategories, setCollapsedCategories] = useState(() => {
@@ -46,7 +50,7 @@ const LabEquipmentManager = () => {
     console.log('All localStorage keys:', localStorageKeys);
     
     // Check common key variations
-    const possibleKeys = ['userId', 'user_id', 'id', 'staffId', 'staff_id', 'userID'];
+    const possibleKeys = ['staffId', 'id'];
     const foundKeys = {};
     
     possibleKeys.forEach(key => {
@@ -58,10 +62,10 @@ const LabEquipmentManager = () => {
     });
 
     // Store user ID in localStorage
-    localStorage.setItem('userId', 7);
+    localStorage.setItem('staffId',4);
 
     // ✅ Verify it
-    console.log('User ID set to:', localStorage.getItem('userId'));
+    console.log('User ID set to:', localStorage.getItem('staffId'));
 
     
     setDebugInfo({
@@ -69,36 +73,34 @@ const LabEquipmentManager = () => {
       possibleUserKeys: foundKeys
     });
 
-    // Try to get userId with different possible key names
-    let userId = localStorage.getItem('userId') || 
-                 localStorage.getItem('user_id') || 
-                 localStorage.getItem('id') || 
-                 localStorage.getItem('staff_id');
+    // Try to get staffId with different possible key names
+    let staffId = localStorage.getItem('staffId') || 
+                 localStorage.getItem('id');
 
     // Also try to parse user object if stored as JSON
     const userObj = localStorage.getItem('user');
-    if (userObj && !userId) {
+    if (userObj && !staffId) {
       try {
         const parsed = JSON.parse(userObj);
-        userId = parsed.id || parsed.userId || parsed.user_id || parsed.staffId || parsed.staff_id;
+        staffId = parsed.id || parsed.staffId || parsed.staffId || parsed.staff_id;
         console.log('Parsed user object:', parsed);
-        console.log('Extracted userId from user object:', userId);
+        console.log('Extracted staffId from user object:', staffId);
       } catch (e) {
         console.log('Failed to parse user object:', e);
       }
     }
 
     // Try other possible JSON objects
-    if (!userId) {
+    if (!staffId) {
       const possibleJsonKeys = ['currentUser', 'loggedInUser', 'authUser', 'session'];
       for (const key of possibleJsonKeys) {
         const jsonStr = localStorage.getItem(key);
         if (jsonStr) {
           try {
             const parsed = JSON.parse(jsonStr);
-            userId = parsed.id || parsed.userId || parsed.user_id || parsed.staffId || parsed.staff_id;
-            if (userId) {
-              console.log(`Found userId in ${key}:`, userId);
+            staffId = parsed.id || parsed.staffId ||parsed.staffId || parsed.staff_id;
+            if (staffId) {
+              console.log(`Found staffId in ${key}:`, staffId);
               break;
             }
           } catch (e) {
@@ -108,8 +110,8 @@ const LabEquipmentManager = () => {
       }
     }
 
-    if (!userId) {
-      console.error('No userId found in localStorage');
+    if (!staffId) {
+      console.error('No staffId found in localStorage');
       console.log('Available localStorage keys:', localStorageKeys);
       console.log('Searched for keys:', possibleKeys);
       console.log('Found values:', foundKeys);
@@ -119,124 +121,194 @@ const LabEquipmentManager = () => {
       return;
     }
 
-    console.log('Using userId:', userId);
+    console.log('Using staffId:', staffId);
 
     const fetchEquipment = async () => {
+  try {
+    setLoading(true);
+
+    // --- get staffId (robust) ---
+    let staffId = localStorage.getItem('staffId') || localStorage.getItem('id');
+    const userObj = localStorage.getItem('user');
+    if (!staffId && userObj) {
       try {
-        setLoading(true);
-        
-        // Step 1: Get lab information for this staff member
-        console.log('Fetching lab info for userId:', userId);
-        
-        // Try multiple possible endpoints based on your API structure
-        let labRes;
-        let labData;
-        
-        // First try the existing endpoint
-        try {
-          labRes = await fetch(`/api/labstaff/incharge/${userId}/lab`);
-          console.log('Lab response status (incharge endpoint):', labRes.status);
-          
-          if (labRes.ok) {
-            labData = await labRes.json();
-            console.log('Lab data from incharge endpoint:', labData);
-          }
-        } catch (e) {
-          console.log('Incharge endpoint failed:', e);
+        const parsed = JSON.parse(userObj);
+        staffId = parsed.id || parsed.staffId || parsed.staff_id;
+      } catch (e) { /* ignore */ }
+    }
+    if (!staffId) throw new Error('No staffId found in localStorage');
+
+    // --- find lab for staff (try a couple of endpoints) ---
+    console.log('Fetching lab info for staffId:', staffId);
+    let labData = null;
+    try {
+      const r1 = await fetch(`/api/labstaff/incharge/${staffId}/lab`);
+      if (r1.ok) labData = await r1.json();
+    } catch (e) { /* ignore */ }
+
+    if (!labData) {
+      try {
+        const r2 = await fetch(`/api/labstaff/${staffId}`);
+        if (r2.ok) {
+          const staff = await r2.json();
+          // expect staff to include lab_id (adapt fields as per your API)
+          labData = {
+            lab_id: staff.lab_id || staff.labId || staff.lab_id,
+            lab_name: staff.lab_name || staff.labName || staff.lab_name,
+            lab_no: staff.lab_no || staff.labNo
+          };
         }
-        
-        // If that fails, try getting staff info first
-        if (!labData || !labData.lab_id) {
-          console.log('Trying staff endpoint...');
-          try {
-            const staffRes = await fetch(`/api/labstaff/${userId}`);
-            console.log('Staff response status:', staffRes.status);
-            
-            if (staffRes.ok) {
-              const staffData = await staffRes.json();
-              console.log('Staff data:', staffData);
-              
-              if (staffData.lab_id) {
-                labData = {
-                  lab_id: staffData.lab_id,
-                  lab_name: staffData.lab_name,
-                  lab_no: staffData.lab_no,
-                  building: staffData.building,
-                  floor: staffData.floor
-                };
-                console.log('Constructed lab data from staff:', labData);
-              }
-            }
-          } catch (e) {
-            console.log('Staff endpoint failed:', e);
-          }
-        }
-        
-        if (!labData || !labData.lab_id) {
-          throw new Error('No lab found for this user. Please check if you are assigned to a lab.');
-        }
+      } catch (e) { /* ignore */ }
+    }
 
-        // Step 2: Get equipment for the lab
-        console.log('Fetching equipment for lab_id:', labData.lab_id);
-        const equipRes = await fetch(`/api/labs/equipment/${labData.lab_id}`);
-        console.log('Equipment response status:', equipRes.status);
-        
-        if (!equipRes.ok) {
-          const errorText = await equipRes.text();
-          console.error('Equipment fetch error:', errorText);
-          throw new Error(`Failed to fetch equipment data: ${equipRes.status} - ${errorText}`);
-        }
-        
-        const equipData = await equipRes.json();
-        console.log('Equipment data received:', equipData);
+    if (!labData || !labData.lab_id) {
+      throw new Error('No lab found for this user. Please check assignment.');
+    }
 
-        // Step 3: Convert equipment counts into individual equipment items
-        const equipmentTypes = [
-          { key: 'monitors', color: 'blue', icon: Monitor, displayName: 'Monitor' },
-          { key: 'projectors', color: 'purple', icon: Projector, displayName: 'Projector' },
-          { key: 'switch_boards', color: 'yellow', icon: Zap, displayName: 'Switch Board' },
-          { key: 'fans', color: 'green', icon: Fan, displayName: 'Fan' },
-          { key: 'wifi', color: 'indigo', icon: Wifi, displayName: 'WiFi Router' }
-        ];
+    // --- fetch equipment info for the lab ---
+    console.log('Fetching equipment for lab_id:', labData.lab_id);
+    const equipRes = await fetch(`/api/labs/equipment/${labData.lab_id}`);
+    if (!equipRes.ok) {
+      const txt = await equipRes.text();
+      throw new Error(`Equipment endpoint failed: ${equipRes.status} ${txt}`);
+    }
+    const equipData = await equipRes.json();
+    console.log('Raw equipment response:', equipData);
 
-        let equipmentList = [];
+    // --- normalize backend response into countsByType and detailsByType ---
+    const types = ['monitors', 'projectors', 'switch_boards', 'fans', 'wifi'];
+    const countsByType = {};
+    const detailsByType = {};
 
-        equipmentTypes.forEach(({ key, color, icon, displayName }) => {
-          const count = equipData[key] || 0;
-          console.log(`${key}: ${count} items`);
-          
-          for (let i = 1; i <= count; i++) {
-            const hasPassword = key === 'wifi';
-            equipmentList.push({
-              id: `${key}_${i}`,
-              type: key,
-              name: `${displayName} ${i}`,
-              code: `${key.toUpperCase()}-${String(i).padStart(3, '0')}`,
-              status: Math.random() > 0.8 ? (Math.random() > 0.5 ? 'maintenance' : 'damaged') : 'active',
-              location: `${labData.lab_name || `Lab ${labData.lab_no}`} (${labData.building} - Floor ${labData.floor})`,
-              password: hasPassword ? `wifi${String(i).padStart(3, '0')}@lab` : null,
-              description: `${displayName} unit ${i} in ${labData.lab_name || `Lab ${labData.lab_no}`}`,
-              lastMaintenance: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000).toISOString(),
-              purchaseDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
-              warranty: Math.random() > 0.3,
-              notes: '',
-              icon: icon,
-              color: color
-            });
-          }
-        });
-
-        console.log('Generated equipment list:', equipmentList);
-        setEquipmentState(equipmentList);
-        setError(null);
-      } catch (err) {
-        console.error('Error loading equipment:', err);
-        setError(err.message + ` (Debug: Looking for userId in localStorage, found keys: ${Object.keys(debugInfo.possibleUserKeys || {}).join(', ')})`);
-      } finally {
-        setLoading(false);
-      }
+    // helper: group flat array by equipment_type (or type)
+    const groupArrayByType = (arr) => {
+      return arr.reduce((acc, it) => {
+        const t = it.equipment_type || it.type || it.type_name;
+        if (!t) return acc;
+        acc[t] = acc[t] || [];
+        acc[t].push(it);
+        return acc;
+      }, {});
     };
 
+    if (Array.isArray(equipData)) {
+      // backend returned a flat array of items
+      Object.assign(detailsByType, groupArrayByType(equipData));
+      types.forEach(t => countsByType[t] = (detailsByType[t] || []).length);
+    } else if (typeof equipData === 'object' && equipData !== null) {
+      // If equipData has numeric counts or arrays per type
+      types.forEach(t => {
+        const val = equipData[t];
+        if (Array.isArray(val)) {
+          detailsByType[t] = val;
+          countsByType[t] = val.length;
+        } else if (typeof val === 'number') {
+          countsByType[t] = val;
+          detailsByType[t] = [];
+        } else {
+          countsByType[t] = countsByType[t] || 0;
+          detailsByType[t] = detailsByType[t] || [];
+        }
+      });
+
+      // Some APIs return { counts: {monitors:3,...}, items: [...] }
+      if (equipData.counts && typeof equipData.counts === 'object') {
+        types.forEach(t => {
+          if (typeof equipData.counts[t] === 'number') countsByType[t] = equipData.counts[t];
+        });
+      }
+      if (equipData.items && Array.isArray(equipData.items)) {
+        Object.assign(detailsByType, groupArrayByType(equipData.items));
+      }
+    }
+
+    // Ensure every type has numeric count
+    types.forEach(t => {
+      countsByType[t] = Number(countsByType[t] || 0);
+      detailsByType[t] = detailsByType[t] || [];
+    });
+
+    // --- Build final equipment list:
+    // For each type, create `count` items. If details are available use them (match by index), else leave fields blank/placeholder.
+    const equipmentList = [];
+    types.forEach((key) => {
+      const count = countsByType[key] || 0;
+      const detailsArr = detailsByType[key] || [];
+      const used = new Set();
+
+      for (let i = 1; i <= count; i++) {
+        // generated code fallback (if backend doesn't provide)
+        const generatedCode = `${key.toUpperCase()}-${String(i).padStart(3, '0')}`;
+
+        // Try to pick a matching detail record:
+        let detail = detailsArr[i - 1] ?? null;
+
+        // if not present at same index, try to find an unused record that matches generated code or equipment_code
+        if (!detail) {
+          const foundIdx = detailsArr.findIndex((it, idx) => {
+            if (used.has(idx)) return false;
+            const code = it.equipment_code || it.code || '';
+            return code === generatedCode || code.endsWith(String(i)) || code.includes(String(i));
+          });
+          if (foundIdx !== -1) {
+            detail = detailsArr[foundIdx];
+            used.add(foundIdx);
+          }
+        } else {
+          used.add(i - 1);
+        }
+
+        // Map DB status -> frontend status (adjust mapping to your DB convention)
+        const mapStatus = (dbStatus) => {
+          if (dbStatus === undefined || dbStatus === null || dbStatus === '') return 'active'; // default if unknown
+          // if DB uses numbers '0','1','2' -> map here:
+          if (dbStatus === '1' || dbStatus === 1) return 'active';
+          if (dbStatus === '2' || dbStatus === 2) return 'maintenance';
+          if (dbStatus === '0' || dbStatus === 0) return 'damaged';
+          // if DB uses words already:
+          if (['active','working','ok'].includes(String(dbStatus).toLowerCase())) return 'active';
+          if (['maintenance','repair'].includes(String(dbStatus).toLowerCase())) return 'maintenance';
+          if (['damaged','broken','inactive'].includes(String(dbStatus).toLowerCase())) return 'damaged';
+          return 'active';
+        };
+
+        // Password only for wifi and monitors
+        const hasPassword = key === 'wifi' || key === 'monitors';
+
+        const item = {
+          id: detail?.equipment_id ?? `${key}_${i}`,
+          type: key,
+          name: detail?.equipment_name ?? `${key === 'monitors' ? 'Monitor' : key === 'projectors' ? 'Projector' : key === 'switch_boards' ? 'Switch Board' : key === 'wifi' ? 'WiFi Router' : 'Fan'} ${i}`,
+          code: detail?.equipment_code ?? generatedCode,
+          status: mapStatus(detail?.equipment_status),
+          password: hasPassword ? (detail?.equipment_password ?? `${key}${String(i).padStart(3, '0')}@lab`) : '',
+          description: detail?.equipment_description ?? `${key === 'monitors' ? 'Monitor' : key === 'projectors' ? 'Projector' : key === 'switch_boards' ? 'Switch Board' : key === 'wifi' ? 'WiFi Router' : 'Fan'} unit ${i} in ${labData.lab_name || `Lab ${labData.lab_no}`}`,
+          icon:
+            key === 'monitors' ? Monitor :
+            key === 'projectors' ? Projector :
+            key === 'switch_boards' ? Zap :
+            key === 'wifi' ? Wifi : Fan,
+          color:
+            key === 'monitors' ? 'blue' :
+            key === 'projectors' ? 'purple' :
+            key === 'switch_boards' ? 'yellow' :
+            key === 'wifi' ? 'indigo' : 'green'
+        };
+
+        equipmentList.push(item);
+      }
+    });
+
+    console.log('Final equipment list:', equipmentList);
+    setEquipmentState(equipmentList);
+    setError(null);
+  } catch (err) {
+    console.error('Error loading equipment:', err);
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
     fetchEquipment();
   }, []);
 
@@ -281,25 +353,110 @@ const LabEquipmentManager = () => {
   };
 
   const handleItemClick = (item) => {
-    setSelectedItem(item);
+    setSelectedItem({...item}); // Create a copy to avoid direct mutation
     setShowModal(true);
     setEditMode(false);
+    setSaveError(null);
   };
 
-  const handleSaveEdit = () => {
-    if (selectedItem) {
-      setEquipmentState(prev => prev.map(item => 
-        item.id === selectedItem.id ? selectedItem : item
-      ));
-      setEditMode(false);
-    }
+  // Updated save function to integrate with backend API
+  const handleSaveEdit = async () => {
+  if (!selectedItem || !selectedItem.id) {
+  setSaveError('Invalid equipment selected');
+  return;
+}
+
+  setSaving(true);
+  setSaveError(null);
+
+  // Map equipment types to numeric codes
+  const typeCodeMap = {
+    monitor: 100,
+    projector: 200,
+    printer: 300,
+    scanner: 400
   };
+
+  try {
+    // Determine the numeric code based on type (fallback to original code if not found)
+    const numericCode = typeCodeMap[selectedItem.type?.toLowerCase()] || selectedItem.code;
+
+    // Prepare data for backend
+    const updateData = {
+      equipment_name: selectedItem.name,
+      equipment_code: numericCode, // <-- now uses numeric mapping
+      equipment_status: selectedItem.status,
+      equipment_password: selectedItem.password || null,
+      equipment_description: selectedItem.description || null
+    };
+
+    console.log('Updating equipment:', selectedItem.id, updateData);
+
+    const response = await fetch(`/api/labinchargeassistant/equipment/${selectedItem.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updateData)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Server error: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('Update successful:', result);
+
+    // Update local state with the response data
+    if (result.equipment) {
+      const updatedEquipment = {
+        id: result.equipment.id,
+        type: selectedItem.type,
+        name: result.equipment.equipment_name,
+        code: result.equipment.equipment_code,
+        status: result.equipment.status,
+        password: result.equipment.password || '',
+        description: result.equipment.description || '',
+        icon: selectedItem.icon,
+        color: selectedItem.color
+      };
+
+      setEquipmentState(prev =>
+        prev.map(item =>
+          item.id === selectedItem.id ? updatedEquipment : item
+        )
+      );
+
+      setSelectedItem(updatedEquipment);
+    } else {
+      setEquipmentState(prev =>
+        prev.map(item =>
+          item.id === selectedItem.id ? selectedItem : item
+        )
+      );
+    }
+
+    setEditMode(false);
+
+    setTimeout(() => {
+      setShowModal(false);
+      setSelectedItem(null);
+    }, 1500);
+
+  } catch (error) {
+    console.error('Error updating equipment:', error);
+    setSaveError(error.message || 'Failed to update equipment');
+  } finally {
+    setSaving(false);
+  }
+};
+
 
   const filteredEquipment = equipmentState.filter(item => {
     const matchesSearch = 
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.location.toLowerCase().includes(searchQuery.toLowerCase());
+      item.code.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesStatus = filterStatus === 'all' || item.status === filterStatus;
     const matchesType = filterType === 'all' || item.type === filterType;
@@ -446,7 +603,7 @@ const LabEquipmentManager = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
               <input
                 type="text"
-                placeholder="Search by name, code, or location..."
+                placeholder="Search by name or code..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -566,10 +723,6 @@ const LabEquipmentManager = () => {
                                     <span>Code:</span>
                                     <span className="font-mono">{item.code}</span>
                                   </div>
-                                  <div className="flex justify-between">
-                                    <span>Location:</span>
-                                    <span className="truncate ml-2">{item.location}</span>
-                                  </div>
                                   {item.password && (
                                     <div className="flex justify-between items-center">
                                       <span>Password:</span>
@@ -610,7 +763,7 @@ const LabEquipmentManager = () => {
           })}
         </div>
 
-        {/* Equipment Details Modal */}
+        {/* Equipment Details Modal - Updated with backend integration */}
         {showModal && selectedItem && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -623,7 +776,9 @@ const LabEquipmentManager = () => {
                     <button
                       onClick={() => setEditMode(true)}
                       className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      disabled={saving}
                     >
+                      <Edit size={14} className="inline mr-1" />
                       Edit
                     </button>
                   )}
@@ -632,8 +787,10 @@ const LabEquipmentManager = () => {
                       setShowModal(false);
                       setEditMode(false);
                       setSelectedItem(null);
+                      setSaveError(null);
                     }}
                     className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                    disabled={saving}
                   >
                     Close
                   </button>
@@ -641,6 +798,26 @@ const LabEquipmentManager = () => {
               </div>
               
               <div className="p-6 space-y-4">
+                {/* Show save error if any */}
+                {saveError && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <div className="flex items-center space-x-2">
+                      <AlertTriangle className="text-red-500" size={16} />
+                      <span className="text-red-700 text-sm">{saveError}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Show success message briefly after save */}
+                {!editMode && !saveError && saving === false && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="text-green-500" size={16} />
+                      <span className="text-green-700 text-sm">Equipment updated successfully!</span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Equipment Name</label>
@@ -650,6 +827,7 @@ const LabEquipmentManager = () => {
                         value={selectedItem.name}
                         onChange={(e) => setSelectedItem({...selectedItem, name: e.target.value})}
                         className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={saving}
                       />
                     ) : (
                       <p className="mt-1 text-gray-900">{selectedItem.name}</p>
@@ -658,15 +836,18 @@ const LabEquipmentManager = () => {
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Equipment Code</label>
-                    <p className="mt-1 text-gray-900 font-mono">{selectedItem.code}</p>
+                    {editMode ? (
+                      <input
+                        type="text"
+                        value={selectedItem.code}
+                        onChange={(e) => setSelectedItem({...selectedItem, code: e.target.value})}
+                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={saving}
+                      />
+                    ) : (
+                      <p className="mt-1 text-gray-900 font-mono">{selectedItem.code}</p>
+                    )}
                   </div>
-                  
-                  {selectedItem.description && (
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700">Description</label>
-                      <p className="mt-1 text-gray-900 text-sm">{selectedItem.description}</p>
-                    </div>
-                  )}
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Status</label>
@@ -675,83 +856,64 @@ const LabEquipmentManager = () => {
                         value={selectedItem.status}
                         onChange={(e) => setSelectedItem({...selectedItem, status: e.target.value})}
                         className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={saving}
                       >
                         <option value="active">Active</option>
                         <option value="maintenance">Maintenance</option>
                         <option value="damaged">Damaged</option>
                       </select>
                     ) : (
-                      <p className="mt-1 text-gray-900 capitalize">{selectedItem.status}</p>
+                      <div className="mt-1">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedItem.status)}`}>
+                          {React.createElement(getStatusIcon(selectedItem.status), { size: 12, className: "mr-1" })}
+                          <span className="capitalize">{selectedItem.status}</span>
+                        </span>
+                      </div>
                     )}
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Location</label>
-                    {editMode ? (
-                      <input
-                        type="text"
-                        value={selectedItem.location}
-                        onChange={(e) => setSelectedItem({...selectedItem, location: e.target.value})}
-                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    ) : (
-                      <p className="mt-1 text-gray-900">{selectedItem.location}</p>
-                    )}
-                  </div>
-                  
+                  {/* Password field - only for wifi and monitors */}
                   {selectedItem.password && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Password</label>
-                      <div className="mt-1 flex items-center space-x-2">
-                        <span className="font-mono text-gray-900">
-                          {showPasswords[selectedItem.id] ? selectedItem.password : '••••••••'}
-                        </span>
-                        <button
-                          onClick={() => togglePasswordVisibility(selectedItem.id)}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          {showPasswords[selectedItem.id] ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                      </div>
+                      {editMode ? (
+                        <input
+                          type="text"
+                          value={selectedItem.password}
+                          onChange={(e) => setSelectedItem({...selectedItem, password: e.target.value})}
+                          className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          disabled={saving}
+                        />
+                      ) : (
+                        <div className="mt-1 flex items-center space-x-2">
+                          <span className="font-mono text-gray-900">
+                            {showPasswords[selectedItem.id] ? selectedItem.password : '••••••••'}
+                          </span>
+                          <button
+                            onClick={() => togglePasswordVisibility(selectedItem.id)}
+                            className="text-gray-400 hover:text-gray-600"
+                          >
+                            {showPasswords[selectedItem.id] ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Last Maintenance</label>
-                    <p className="mt-1 text-gray-900">
-                      {new Date(selectedItem.lastMaintenance).toLocaleDateString()}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Purchase Date</label>
-                    <p className="mt-1 text-gray-900">
-                      {new Date(selectedItem.purchaseDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Warranty Status</label>
-                    <p className="mt-1">
-                      <span className={`px-2 py-1 rounded-full text-xs ${selectedItem.warranty ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                        {selectedItem.warranty ? 'Under Warranty' : 'Warranty Expired'}
-                      </span>
-                    </p>
-                  </div>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Notes</label>
+                  <label className="block text-sm font-medium text-gray-700">Description</label>
                   {editMode ? (
                     <textarea
-                      value={selectedItem.notes}
-                      onChange={(e) => setSelectedItem({...selectedItem, notes: e.target.value})}
+                      value={selectedItem.description || ''}
+                      onChange={(e) => setSelectedItem({...selectedItem, description: e.target.value})}
                       rows={3}
                       className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Add any notes about this equipment..."
+                      placeholder="Add description for this equipment..."
+                      disabled={saving}
                     />
                   ) : (
-                    <p className="mt-1 text-gray-900">{selectedItem.notes || 'No notes available'}</p>
+                    <p className="mt-1 text-gray-900">{selectedItem.description || 'No description available'}</p>
                   )}
                 </div>
               </div>
@@ -759,16 +921,36 @@ const LabEquipmentManager = () => {
               {editMode && (
                 <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">
                   <button
-                    onClick={() => setEditMode(false)}
+                    onClick={() => {
+                      setEditMode(false);
+                      setSaveError(null);
+                      // Reset selectedItem to original state by finding it in equipmentState
+                      const original = equipmentState.find(item => item.id === selectedItem.id);
+                      if (original) {
+                        setSelectedItem({...original});
+                      }
+                    }}
                     className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    disabled={saving}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSaveEdit}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    disabled={saving}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                   >
-                    Save Changes
+                    {saving ? (
+                      <>
+                        <Loader className="animate-spin" size={16} />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save size={16} />
+                        <span>Save Changes</span>
+                      </>
+                    )}
                   </button>
                 </div>
               )}
