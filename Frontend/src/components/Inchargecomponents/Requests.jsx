@@ -10,6 +10,7 @@ import {
   Settings,
   CheckSquare,
 } from "lucide-react";
+import { useParams } from "react-router-dom";
 
 const steps = [
   {
@@ -220,6 +221,7 @@ function LabInchargeForm() {
     hod: "",
     hodDate: "",
   });
+  const { requestId } = useParams();
 
   const showModal = (type, title, message) => {
     setModal({ isOpen: true, type, title, message });
@@ -245,7 +247,7 @@ function LabInchargeForm() {
         form.recurringComplaint === "yes" ? form.recurringTimes : null,
     };
     try {
-      const response = await fetch("/api/requests/lic/create", {
+      const response = await fetch("/api/requests/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -288,18 +290,59 @@ function LabInchargeForm() {
   };
 
   useEffect(() => {
-    const fetchRequests = async () => {
+    const fetchRequest = async () => {
+      if (!requestId) return;
       try {
-        const staff_id = localStorage.getItem("staffId");
-        const res = await fetch(`/api/requests/lic/${staff_id}`);
-        const data = await res.json();
-        setRequests(data);
+        setLoading(true);
+        const res = await axios.get(`/api/requests/${requestId}`);
+        const data = res.data || {};
+
+        setFormData({
+          typeOfProblem: data.type_of_problem || "",
+          date: data.date ? data.date.split("T")[0] : "",
+          department: data.department || "",
+          location: data.location || "",
+          complaintDetails: data.complaint_details || "",
+          recurringComplaint: data.recurring_complaint || "no",
+          recurringTimes: data.recurring_times || "",
+          labAssistant: data.lab_assistant || "",
+          labAssistantDate: data.lab_assistant_date
+            ? data.lab_assistant_date.split("T")[0]
+            : "",
+          hod: data.hod || "",
+          hodDate: data.hod_date ? data.hod_date.split("T")[0] : "",
+          inChargeDate: data.inChargeDate || "",
+          inChargeSignature: data.inChargeSignature || "",
+          assignedPerson: data.assignedPerson || "",
+          verificationRemarks: data.verificationRemarks || "",
+          materialsUsed: data.materialsUsed || "",
+          resolvedInhouse: data.resolvedInhouse || "yes",
+          resolvedRemark: data.resolvedRemark || "",
+          consumablesNeeded: data.consumablesNeeded || "no",
+          consumableDetails: data.consumableDetails || "",
+          externalAgencyNeeded: data.externalAgencyNeeded || "no",
+          agencyName: data.agencyName || "",
+          approxExpenditure: data.approxExpenditure || "",
+          completionRemarkLab: data.completionRemarkLab || "",
+          labCompletionName: data.labCompletionName || "",
+          labCompletionSignature: data.labCompletionSignature || "",
+          labCompletionDate: data.labCompletionDate || "",
+          completionRemarkMaintenance: data.completionRemarkMaintenance || "",
+          maintenanceClosedDate: data.maintenanceClosedDate || "",
+          maintenanceClosedSignature: data.maintenanceClosedSignature || "",
+        });
+
+        setCompletedSteps(data.completed_steps || 0);
+        setCurrentStep(data.current_step || 1);
       } catch (err) {
-        console.error("Error fetching LIC requests", err);
+        console.error("Error fetching request:", err);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchRequests();
-  }, []);
+
+    fetchRequest();
+  }, [requestId]);
 
   const downloadPDF = () => {
     const doc = new jsPDF();

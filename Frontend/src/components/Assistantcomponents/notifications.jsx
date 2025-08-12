@@ -8,6 +8,7 @@ import {
   Clock,
   Eye,
   Trash2,
+  Eye as ViewIcon,
 } from "lucide-react";
 
 const Notifications = () => {
@@ -21,7 +22,6 @@ const Notifications = () => {
         const res = await fetch(
           `/api/notifications/labassistant/${staffId}?t=${Date.now()}`
         );
-
         const data = await res.json();
         setNotifications(data);
       } catch (err) {
@@ -39,7 +39,7 @@ const Notifications = () => {
       });
       setNotifications((prevNotifications) =>
         prevNotifications.map((notif) =>
-          notif.id === notificationId ? { ...notif, isRead: true } : notif
+          notif.id === notificationId ? { ...notif, is_read: true } : notif
         )
       );
     } catch (err) {
@@ -60,22 +60,22 @@ const Notifications = () => {
     }
   };
 
-  const handleNotificationClick = (notif) => {
-    navigate(`/requests/${notif.request_id}`);
+  const handleViewRequest = (notif) => {
+    navigate(`/labassistantdash/requests/${notif.request_id}`);
   };
 
   const getNotificationIcon = (type) => {
     switch (type) {
       case "query":
-        return Info;
+        return <Info className="w-5 h-5" />;
       case "maintenance":
-        return Clock;
+        return <Clock className="w-5 h-5" />;
       case "alert":
-        return AlertTriangle;
+        return <AlertTriangle className="w-5 h-5" />;
       case "info":
-        return Bell;
+        return <Bell className="w-5 h-5" />;
       default:
-        return Info;
+        return <Info className="w-5 h-5" />;
     }
   };
 
@@ -110,11 +110,11 @@ const Notifications = () => {
     }
   };
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
-  const readCount = notifications.filter((n) => n.isRead).length;
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+  const readCount = notifications.filter((n) => n.is_read).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -177,32 +177,30 @@ const Notifications = () => {
             </div>
           ) : (
             notifications.map((notification) => {
-              const Icon = getNotificationIcon(notification.type);
               const colorClass = getNotificationColor(notification.type);
               return (
                 <div
                   key={notification.id}
                   className={`p-6 hover:bg-gray-50 transition-colors ${
-                    !notification.isRead ? "bg-blue-50" : ""
+                    !notification.is_read ? "bg-blue-50" : ""
                   }`}
-                  onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex items-start space-x-4">
                     <div className={`p-2 rounded-lg border ${colorClass}`}>
-                      <Icon className="w-5 h-5" />
+                      {getNotificationIcon(notification.type)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <h4
                             className={`text-sm font-semibold ${
-                              !notification.isRead
+                              !notification.is_read
                                 ? "text-gray-900"
                                 : "text-gray-700"
                             }`}
                           >
                             {notification.title}
-                            {!notification.isRead && (
+                            {!notification.is_read && (
                               <span className="inline-block w-2 h-2 bg-blue-500 rounded-full ml-2"></span>
                             )}
                           </h4>
@@ -214,7 +212,7 @@ const Notifications = () => {
                           </p>
                         </div>
                         <div className="flex items-center space-x-2 ml-4">
-                          {!notification.isRead && (
+                          {!notification.is_read && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -235,6 +233,16 @@ const Notifications = () => {
                             title="Delete notification"
                           >
                             <Trash2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewRequest(notification);
+                            }}
+                            className="p-1 text-green-600 hover:bg-green-100 rounded transition-colors"
+                            title="View request"
+                          >
+                            <ViewIcon className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
