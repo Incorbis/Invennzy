@@ -85,6 +85,39 @@ router.post('/', async (req, res) => {
       status, adminId
     });
 
+    const labId = newLab.id; // assuming your Lab.create returns the inserted lab with id
+const equipmentInsert = [];
+
+const createEquipments = (type, count) => {
+  for (let i = 1; i <= count; i++) {
+    equipmentInsert.push([
+      labId,
+      null, // staff_id if needed
+      type,
+      `${type} ${i}`,
+      `${type}-${labId}-${i}`, // unique code
+      '0', // default status working
+      null, // password
+      null  // description
+    ]);
+  }
+};
+
+createEquipments('monitor', monitors);
+createEquipments('projector', projectors);
+createEquipments('switch_board', switchBoards);
+createEquipments('fan', fans);
+createEquipments('wifi', wifi);
+
+if (equipmentInsert.length > 0) {
+  await db.query(
+    `INSERT INTO equipment_details 
+     (lab_id, staff_id, equipment_type, equipment_name, equipment_code, equipment_status, equipment_password, equipment_description) 
+     VALUES ?`,
+    [equipmentInsert]
+  );
+}
+
     res.status(201).json(newLab);
   } catch (error) {
     console.error('Error creating lab:', error);
@@ -92,15 +125,83 @@ router.post('/', async (req, res) => {
   }
 });
 
-// ✅ PUT update lab
 router.put('/:id', async (req, res) => {
+  const labId = req.params.id;
+  const {
+    labNo, labName, building, floor, capacity,
+    monitors, projectors, switchBoards, fans, wifi,
+    inchargeName, inchargeEmail, inchargePhone,
+    assistantName, assistantEmail, assistantPhone,
+    status
+  } = req.body;
+
   try {
-    const updated = await Lab.update(req.params.id, req.body);
+    // First, update the lab basic details
+    const updated = await Lab.update(labId, {
+      labNo, labName, building, floor, capacity,
+      monitors, projectors, switchBoards, fans, wifi,
+      inchargeName, inchargeEmail, inchargePhone,
+      assistantName, assistantEmail, assistantPhone,
+      status
+    });
+
     if (!updated) {
       return res.status(404).json({ error: 'Lab not found' });
     }
-    const updatedLab = await Lab.findById(req.params.id);
+
+    // Function to sync equipment counts
+    const syncEquipment = async (type, newCount) => {
+      // Get current count from DB
+      const [rows] = await db.query(
+        `SELECT equipment_id FROM equipment_details WHERE lab_id = ? AND equipment_type = ? ORDER BY equipment_id ASC`,
+        [labId, type]
+      );
+      const currentCount = rows.length;
+
+      if (newCount > currentCount) {
+        // Add missing items
+        const equipmentInsert = [];
+        for (let i = currentCount + 1; i <= newCount; i++) {
+          equipmentInsert.push([
+            labId,
+            null,
+            type,
+            `${type} ${i}`,
+            `${type}-${labId}-${i}`,
+            '0',
+            null,
+            null
+          ]);
+        }
+        await db.query(
+          `INSERT INTO equipment_details 
+           (lab_id, staff_id, equipment_type, equipment_name, equipment_code, equipment_status, equipment_password, equipment_description)
+           VALUES ?`,
+          [equipmentInsert]
+        );
+      } else if (newCount < currentCount) {
+        // Delete extra items
+        const idsToDelete = rows.slice(newCount).map(r => r.equipment_id);
+        if (idsToDelete.length > 0) {
+          await db.query(
+            `DELETE FROM equipment_details WHERE equipment_id IN (?)`,
+            [idsToDelete]
+          );
+        }
+      }
+    };
+
+    // Sync each equipment type
+    await syncEquipment('monitor', monitors);
+    await syncEquipment('projector', projectors);
+    await syncEquipment('switch_board', switchBoards);
+    await syncEquipment('fan', fans);
+    await syncEquipment('wifi', wifi);
+
+    // Return updated lab
+    const updatedLab = await Lab.findById(labId);
     res.status(200).json(updatedLab);
+
   } catch (error) {
     console.error('Error updating lab:', error);
     res.status(500).json({ error: 'Failed to update lab' });
@@ -109,16 +210,23 @@ router.put('/:id', async (req, res) => {
 
 // ✅ DELETE lab
 router.delete('/:id', async (req, res) => {
+  const labId = req.params.id;
   try {
-    const deleted = await Lab.delete(req.params.id);
+    // First delete equipment for this lab
+    await db.query(`DELETE FROM equipment_details WHERE lab_id = ?`, [labId]);
+
+    // Then delete the lab
+    const deleted = await Lab.delete(labId);
     if (!deleted) {
       return res.status(404).json({ error: 'Lab not found' });
     }
-    res.status(200).json({ message: 'Lab deleted successfully' });
+
+    res.status(200).json({ message: 'Lab and related equipment deleted successfully' });
   } catch (error) {
     console.error('Error deleting lab:', error);
     res.status(500).json({ error: 'Failed to delete lab' });
   }
 });
+
 
 module.exports = router;
