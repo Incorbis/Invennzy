@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 
 import {
   Monitor,
@@ -111,6 +112,7 @@ const LabEquipmentManager = () => {
         }
       }
     }
+    localStorage.setItem("staffId", "4");
 
     if (!staffId) {
       console.error("No staffId found in localStorage");
@@ -149,27 +151,20 @@ const LabEquipmentManager = () => {
         // --- find lab for staff (try a couple of endpoints) ---
         console.log("Fetching lab info for staffId:", staffId);
         let labData = null;
-        try {
-          const r1 = await fetch(`/api/labstaff/incharge/${staffId}/lab`);
-          if (r1.ok) labData = await r1.json();
-        } catch (e) {
-          /* ignore */
-        }
+        
 
         if (!labData) {
           try {
-            const r2 = await fetch(`/api/labstaff/${staffId}`);
-            if (r2.ok) {
-              const staff = await r2.json();
-              // expect staff to include lab_id (adapt fields as per your API)
-              labData = {
-                lab_id: staff.lab_id || staff.labId || staff.lab_id,
-                lab_name: staff.lab_name || staff.labName || staff.lab_name,
-                lab_no: staff.lab_no || staff.labNo,
-              };
-            }
-          } catch (e) {
-            /* ignore */
+            const response = await axios.get(`/api/labstaff/${staffId}`);
+            const staff = response.data;
+            // expect staff to include lab_id (adapt fields as per your API)
+            labData = {
+              lab_id: staff.lab_id || staff.labId || staff.lab_id,
+              lab_name: staff.lab_name || staff.labName || staff.lab_name,
+              lab_no: staff.lab_no || staff.labNo,
+            };
+          } catch (error) {
+            console.log("Error fetching lab staff:", error);
           }
         }
 
@@ -181,14 +176,8 @@ const LabEquipmentManager = () => {
 
         // --- fetch equipment info for the lab ---
         console.log("Fetching equipment for lab_id:", labData.lab_id);
-        const equipRes = await fetch(`/api/labs/equipment/${labData.lab_id}`);
-        if (!equipRes.ok) {
-          const txt = await equipRes.text();
-          throw new Error(
-            `Equipment endpoint failed: ${equipRes.status} ${txt}`
-          );
-        }
-        const equipData = await equipRes.json();
+        const equipResponse = await axios.get(`/api/labs/equipment/${labData.lab_id}`);
+        const equipData = equipResponse.data;
         console.log("Raw equipment response:", equipData);
 
         // --- normalize backend response into countsByType and detailsByType ---
@@ -393,95 +382,13 @@ const LabEquipmentManager = () => {
         setError(null);
       } catch (err) {
         console.error("Error loading equipment:", err);
-        setError(err.message);
+        setError(err.response?.data?.message || err.message);
       } finally {
         setLoading(false);
       }
     };
     fetchEquipment();
   }, []);
-
-  useEffect(() => {
-    // Debug: Check all localStorage keys
-    const localStorageKeys = Object.keys(localStorage);
-    console.log('All localStorage keys:', localStorageKeys);
-    
-    // Check common key variations
-    const possibleKeys = ['staffId', 'id'];
-    const foundKeys = {};
-    
-    possibleKeys.forEach(key => {
-      const value = localStorage.getItem(key);
-      if (value) {
-        foundKeys[key] = value;
-        console.log(`Found ${key}:`, value);
-      }
-    });
-
-    // Store user ID in localStorage
-    localStorage.setItem('staffId',4);
-
-    // ✅ Verify it
-    console.log('User ID set to:', localStorage.getItem('staffId'));
-
-    
-    setDebugInfo({
-      allKeys: localStorageKeys,
-      possibleUserKeys: foundKeys
-    });
-
-    // Try to get staffId with different possible key names
-    let staffId = localStorage.getItem('staffId') || 
-                 localStorage.getItem('id');
-
-    // Also try to parse user object if stored as JSON
-    const userObj = localStorage.getItem('user');
-    if (userObj && !staffId) {
-      try {
-        const parsed = JSON.parse(userObj);
-        staffId = parsed.id || parsed.staffId || parsed.staffId || parsed.staff_id;
-        console.log('Parsed user object:', parsed);
-        console.log('Extracted staffId from user object:', staffId);
-      } catch (e) {
-        console.log('Failed to parse user object:', e);
-      }
-    }
-
-    // Try other possible JSON objects
-    if (!staffId) {
-      const possibleJsonKeys = ['currentUser', 'loggedInUser', 'authUser', 'session'];
-      for (const key of possibleJsonKeys) {
-        const jsonStr = localStorage.getItem(key);
-        if (jsonStr) {
-          try {
-            const parsed = JSON.parse(jsonStr);
-            staffId = parsed.id || parsed.staffId ||parsed.staffId || parsed.staff_id;
-            if (staffId) {
-              console.log(`Found staffId in ${key}:`, staffId);
-              break;
-            }
-          } catch (e) {
-            console.log(`Failed to parse ${key}:`, e);
-          }
-        }
-      }
-    }
-
-    if (!staffId) {
-      console.error('No staffId found in localStorage');
-      console.log('Available localStorage keys:', localStorageKeys);
-      console.log('Searched for keys:', possibleKeys);
-      console.log('Found values:', foundKeys);
-      
-      setError('No user ID found. Please login again. Debug info: ' + JSON.stringify(foundKeys));
-      setLoading(false);
-      return;
-    }
-
-    console.log('Using staffId:', staffId);
-
-    fetchEquipment();
-  }, [fetchEquipment]);
 
   const togglePasswordVisibility = (itemId) => {
     setShowPasswords((prev) => ({
@@ -538,101 +445,101 @@ const LabEquipmentManager = () => {
     setSaveError(null);
   };
 
-  // Updated save function with equipment refresh
+  // Updated save function to integrate with backend API using axios
+  // Updated save function to integrate with backend API using axios
   const handleSaveEdit = async () => {
     if (!selectedItem || !selectedItem.id) {
-      setSaveError("Invalid equipment selected");
-      return;
+        setSaveError("Invalid equipment selected");
+        return;
     }
 
     setSaving(true);
     setSaveError(null);
 
-    // Map equipment types to numeric codes
-    const typeCodeMap = {
-      monitor: 100,
-      projector: 200,
-      printer: 300,
-      scanner: 400,
-    };
+    let numericId;
+    if (typeof selectedItem.id === 'string' && selectedItem.id.includes('_')) {
+        numericId = parseInt(selectedItem.id.split('_')[1], 10);
+    } else {
+        numericId = parseInt(selectedItem.id.toString().replace(/[^\d]/g, ''), 10);
+    }
+    
+    if (isNaN(numericId)) {
+        setSaveError("Invalid equipment ID format");
+        setSaving(false);
+        return;
+    }
 
     try {
-      // Determine the numeric code based on type (fallback to original code if not found)
-      const numericCode =
-        typeCodeMap[selectedItem.type?.toLowerCase()] || selectedItem.code;
-
-      // Prepare data for backend
-      const updateData = {
-        equipment_name: selectedItem.name,
-        equipment_code: numericCode, // <-- now uses numeric mapping
-        equipment_status: selectedItem.status,
-        equipment_password: selectedItem.password || null,
-        equipment_description: selectedItem.description || null,
-      };
-
-      console.log("Updating equipment:", selectedItem.id, updateData);
-
-      const response = await fetch(
-        `/api/labinchargeassistant/equipment/${selectedItem.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(updateData),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Server error: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log("Update successful:", result);
-
-      // Update local state with the response data
-      if (result.equipment) {
-        const updatedEquipment = {
-          id: result.equipment.id,
-          type: selectedItem.type,
-          name: result.equipment.equipment_name,
-          code: result.equipment.equipment_code,
-          status: result.equipment.status,
-          password: result.equipment.password || "",
-          description: result.equipment.description || "",
-          icon: selectedItem.icon,
-          color: selectedItem.color,
+        const updateData = {
+            equipment_name: selectedItem.name,
+            equipment_code: selectedItem.code,
+            equipment_status: selectedItem.status,
+            equipment_password: selectedItem.password,
+            equipment_description: selectedItem.description 
         };
 
-        setEquipmentState((prev) =>
-          prev.map((item) =>
-            item.id === selectedItem.id ? updatedEquipment : item
-          )
+        const response = await axios.put(
+            `/api/labinchargeassistant/equipment/${numericId}`,
+            updateData,
+            { 
+              headers: { "Content-Type": "application/json" },
+              // Add a timeout to prevent the request from hanging indefinitely.
+            }
         );
 
-        setSelectedItem(updatedEquipment);
-      } else {
-        setEquipmentState((prev) =>
-          prev.map((item) =>
-            item.id === selectedItem.id ? selectedItem : item
-          )
-        );
-      }
+        const result = response.data;
+        
+        // Use optional chaining to safely check for success and equipment data.
+        if (result?.success && result?.equipment) {
+            console.log("Update successful:", result);
+            const updatedEquipment = {
+                id: selectedItem.id,
+                type: selectedItem.type,
+                name: result.equipment.equipment_name,
+                code: result.equipment.equipment_code,
+                status: result.equipment.status,
+                password: result.equipment.password ?? "",
+                description: result.equipment.description ?? "",
+                icon: selectedItem.icon,
+                color: selectedItem.color,
+            };
 
-      setEditMode(false);
+            setEquipmentState(prev =>
+              prev.map(item => item.id === updated.id ? updated : item)
+            );
+            setSelectedItem(updatedEquipment);
+            setEditMode(false);
+            
+            setTimeout(() => {
+                setShowModal(false);
+                setSelectedItem(null);
+            }, 2000);
+            
+        } else {
+            // Throw an error if the server indicates failure.
+            throw new Error(result?.message || 'Update failed');
+        }
 
-      setTimeout(() => {
-        setShowModal(false);
-        setSelectedItem(null);
-      }, 1500);
     } catch (error) {
-      console.error("Error updating equipment:", error);
-      setSaveError(error.message || "Failed to update equipment");
+        // Consolidated error handling for all potential failures.
+        console.error("Error updating equipment:", error);
+        
+        let errorMessage = "Failed to update equipment";
+        
+        if (error.response) {
+            errorMessage = error.response.data?.error || error.response.data?.message || errorMessage;
+        } else if (error.request) {
+            errorMessage = "No response from server. Please check your connection.";
+        } else {
+            errorMessage = error.message;
+        }
+        
+        setSaveError(errorMessage);
     } finally {
-      setSaving(false);
+        // This block is guaranteed to run, ensuring the saving state is always turned off.
+        setSaving(false);
     }
-  };
+};
 
   const filteredEquipment = equipmentState.filter((item) => {
     const matchesSearch =
