@@ -115,4 +115,155 @@ router.put("/assistant/:id/step", async (req, res) => {
   }
 });
 
+// Save Step 3 Verification
+router.put("/assistant/:id/verification", async (req, res) => {
+  try {
+    const requestId = req.params.id;
+    const {
+      assignedPerson,
+      inChargeDate,
+      verificationRemarks,
+      currentStep,
+      completedSteps,
+      message
+    } = req.body;
+
+    await db.query(`
+      UPDATE requests
+      SET assigned_person = ?, in_charge_date = ?, verification_remarks = ?,
+          current_step = ?, completed_steps = ?
+      WHERE id = ?
+    `, [
+      assignedPerson,
+      inChargeDate,
+      verificationRemarks,
+      currentStep,
+      completedSteps,
+      requestId
+    ]);
+
+    // Get staff_id for notification
+    const [request] = await db.query("SELECT staff_id FROM requests WHERE id = ?", [requestId]);
+    const staff_id = request[0].staff_id;
+
+    await db.query(`
+      INSERT INTO notifications (user_role, type, title, message, request_id, staff_id)
+      VALUES ('labincharge', 'maintenance', 'Verification Completed', ?, ?, ?)
+    `, [message, requestId, staff_id]);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Assistant Step 3 Error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Save Step 4 Corrective Action
+router.put("/assistant/:id/corrective", async (req, res) => {
+  try {
+    const requestId = req.params.id;
+    const {
+      materialsUsed,
+      resolvedInhouse,
+      resolvedRemark,
+      consumablesNeeded,
+      consumableDetails,
+      externalAgencyNeeded,
+      agencyName,
+      approxExpenditure,
+      currentStep,
+      completedSteps,
+      message
+    } = req.body;
+
+    await db.query(`
+      UPDATE requests
+      SET materials_used = ?, resolved_inhouse = ?, resolved_remark = ?,
+          consumables_needed = ?, consumable_details = ?, external_agency_needed = ?,
+          agency_name = ?, approx_expenditure = ?,
+          current_step = ?, completed_steps = ?
+      WHERE id = ?
+    `, [
+      materialsUsed,
+      resolvedInhouse,
+      resolvedRemark,
+      consumablesNeeded,
+      consumableDetails,
+      externalAgencyNeeded,
+      agencyName,
+      approxExpenditure,
+      currentStep,
+      completedSteps,
+      requestId
+    ]);
+
+    // Get staff_id for notification
+    const [request] = await db.query("SELECT staff_id FROM requests WHERE id = ?", [requestId]);
+    const staff_id = request[0].staff_id;
+
+    await db.query(`
+      INSERT INTO notifications (user_role, type, title, message, request_id, staff_id)
+      VALUES ('labincharge', 'maintenance', 'Corrective Action Completed', ?, ?, ?)
+    `, [message, requestId, staff_id]);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Assistant Step 4 Error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Save Step 5 Closure
+router.put("/assistant/:id/closure", async (req, res) => {
+  try {
+    const requestId = req.params.id;
+    const {
+      completionRemarkLab,
+      labCompletionName,
+      labCompletionSignature,
+      labCompletionDate,
+      completionRemarkMaintenance,
+      maintenanceClosedDate,
+      maintenanceClosedSignature,
+      currentStep,
+      completedSteps,
+      message
+    } = req.body;
+
+    await db.query(`
+      UPDATE requests
+      SET completion_remark_lab = ?, lab_completion_name = ?, lab_completion_signature = ?,
+          lab_completion_date = ?, completion_remark_maintenance = ?, maintenance_closed_date = ?,
+          maintenance_closed_signature = ?, current_step = ?, completed_steps = ?
+      WHERE id = ?
+    `, [
+      completionRemarkLab,
+      labCompletionName,
+      labCompletionSignature,
+      labCompletionDate,
+      completionRemarkMaintenance,
+      maintenanceClosedDate,
+      maintenanceClosedSignature,
+      currentStep,
+      completedSteps,
+      requestId
+    ]);
+
+    // Get staff_id for notification
+    const [request] = await db.query("SELECT staff_id FROM requests WHERE id = ?", [requestId]);
+    const staff_id = request[0].staff_id;
+
+    await db.query(`
+      INSERT INTO notifications (user_role, type, title, message, request_id, staff_id)
+      VALUES ('labincharge', 'maintenance', 'Closure Completed', ?, ?, ?)
+    `, [message, requestId, staff_id]);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Assistant Step 5 Error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+
 module.exports = router;
