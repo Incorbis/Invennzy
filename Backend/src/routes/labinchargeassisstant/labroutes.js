@@ -1,152 +1,203 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../../db'); // must support promise-based queries (mysql2/promise or similar)
+const db = require('../../db'); // Add DB connection here
 
-/**
- * GET /labs/equipment/:labId
- * Returns: { counts, items, grouped }
- */
-router.get('/labs/equipment/:labId', async (req, res) => {
-  try {
+// Get equipment for a specific lab
+router.get('/labs/equipment/:labId', (req, res) => {
     const { labId } = req.params;
-    if (!labId) return res.status(400).json({ error: 'labId required' });
 
     const query = `
-      SELECT
-        equipment_id AS id,
-        equipment_name,
-        equipment_code,
-        equipment_type AS type,
-        equipment_status AS status,
-        equipment_password AS password,
-        equipment_description AS description,
-        lab_id
-      FROM equipment_details
-      WHERE lab_id = ?
-      ORDER BY equipment_type, equipment_id
+        SELECT 
+            equipment_id as id,
+            equipment_name,
+            equipment_code,
+            equipment_type as type,
+            equipment_status as status,
+            equipment_password as password,
+            equipment_description as description
+        FROM equipment_details
+        WHERE lab_id = ?
+        ORDER BY equipment_type, equipment_code
     `;
-    const [rows] = await db.query(query, [labId]);
 
-    const grouped = {
-      monitor: [],
-      projector: [],
-      switch_board: [],
-      fan: [],
-      wifi: [],
-    };
+    db.query(query, [labId], (err, results) => {
+        if (err) {
+            console.error('Error fetching equipment:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
 
-    rows.forEach(r => {
-      if (!grouped[r.type]) grouped[r.type] = [];
-      grouped[r.type].push(r);
+        // Group data by type for frontend
+        const grouped = {
+            monitors: [],
+            projectors: [],
+            switch_boards: [],
+            fans: [],
+            wifi: []
+        };
+
+        results.forEach(equip => {
+            const equipmentType = equip.type;
+            if (grouped[equipmentType]) {
+                grouped[equipmentType].push({
+                    equipment_id: equip.id,
+                    equipment_name: equip.equipment_name,
+                    equipment_code: equip.equipment_code,
+                    equipment_type: equipmentType,
+                    equipment_status: equip.status,
+                    equipment_password: equip.password,
+                    equipment_description: equip.description
+                });
+            }
+        });
+
+        // Also return counts for each type
+        const counts = {};
+        Object.keys(grouped).forEach(type => {
+            counts[type] = grouped[type].length;
+        });
+
+        res.json({
+            counts: counts,
+            items: results,
+            grouped: grouped
+        });
     });
-
-    const counts = {};
-    Object.keys(grouped).forEach(k => (counts[k] = grouped[k].length));
-
-    res.json({ counts, items: rows, grouped });
-  } catch (err) {
-    console.error('GET /labs/equipment error:', err);
-    res.status(500).json({ error: 'Failed to fetch equipment' });
-  }
 });
 
-// Helper: map plural to DB enum type
-const typeMap = {
-  monitors: 'monitor',
-  monitor: 'monitor',
-  projectors: 'projector',
-  projector: 'projector',
-  switch_boards: 'switch_board',
-  switchboard: 'switch_board',
-  fans: 'fan',
-  fan: 'fan',
-  wifi: 'wifi'
-};
+// Update equipment details - IMPROVED VERSION
+router.put('/equipment/:equipmentId', (req, res) => {
+    console.log(`API hit: PUT /equipment/${req.params.equipmentId}`);
+    const { equipmentId } = req.params;
+    const { 
+        equipment_name, 
+        equipment_code, 
+        equipment_status, 
+        equipment_password, 
+        equipment_description 
+    } = req.body;
 
-// Helper: get lab_id from staff table
-const getLabIdFromStaff = async (staffId) => {
-  const [rows] = await db.query(`SELECT lab_id FROM staff WHERE staff_id = ? LIMIT 1`, [staffId]);
-  return rows.length ? rows[0].lab_id : null;
-};
+    // Debug logging
+    console.log('PUT /equipment/:equipmentId called');
+    console.log('equipmentId:', equipmentId);
+    console.log('Request body:', req.body);
 
-router.put('/equipment/:equipmentId', async (req, res) => {
-  const rawId = req.params.equipmentId;
-  const {
-    equipment_name,
-    equipment_code,
-    equipment_status,
-    equipment_password,
-    equipment_description
-  } = req.body;
+    // Validate equipmentId is numeric
+    const numericId = parseInt(equipmentId);
+    if (isNaN(numericId)) {
+        return res.status(400).json({ error: 'Invalid equipment ID format' });
+    }
 
-  // Get staffId from header
-  const staffId = req.headers['x-staff-id'];
+    // First, check if the equipment exists
+    const checkQuery = `
+        SELECT equipment_id, equipment_type
+        FROM equipment_details 
+        WHERE equipment_id = ?
+    `;
 
-  // Validate required fields
-  if (!equipment_name || !equipment_code || !equipment_status) {
-    return res.status(400).json({ error: 'Missing required fields' });
-  }
+    db.query(checkQuery, [numericId], (checkErr, checkResults) => {
+        if (checkErr) {
+            console.error('Error checking equipment existence:', checkErr);
+            return res.status(500).json({ error: 'Database error while checking equipment' });
+        }
 
-  // Map status text to DB enum
-  const statusMap = {
-    active: '0',
-    maintenance: '1',
-    damaged: '2'
-  };
-  const statusValue = statusMap[equipment_status.toLowerCase()];
-  if (statusValue === undefined) {
-    return res.status(400).json({ error: 'Invalid equipment_status' });
-  }
+        if (checkResults.length === 0) {
+            return res.status(404).json({ error: 'Equipment not found' });
+        }
 
-  let equipmentId = null;
+        const existingEquipment = checkResults[0];
+        
+        // Update the equipment
+        const updateQuery = `
+            UPDATE equipment_details 
+            SET 
+                equipment_name = ?,
+                equipment_code = ?,
+                equipment_status = ?,
+                equipment_password = ?,
+                equipment_description = ?,
+                updated_at = NOW()
+            WHERE equipment_id = ?
+        `;
 
-  // If numeric, use directly
-  if (/^\d+$/.test(rawId)) {
-    equipmentId = parseInt(rawId, 10);
-  } 
-  // Else if placeholder like monitors_1
-  else if (rawId.includes('_') && staffId) {
-    const labId = await getLabIdFromStaff(staffId);
-    if (!labId) return res.status(404).json({ error: 'Lab not found for staff' });
+        const values = [
+            equipment_name,
+            equipment_code,
+            equipment_status,
+            equipment_password || null,
+            equipment_description || null,
+            numericId
+        ];
 
-    const [typeKey, indexStr] = rawId.split('_');
-    const type = typeMap[typeKey];
-    const index = parseInt(indexStr, 10) - 1;
+        db.query(updateQuery, values, (updateErr, updateResult) => {
+            if (updateErr) {
+                console.error('Error updating equipment:', updateErr);
+                return res.status(500).json({ error: 'Database error while updating equipment' });
+            }
 
-    if (!type || index < 0) return res.status(400).json({ error: 'Invalid placeholder ID' });
+            if (updateResult.affectedRows === 0) {
+                return res.status(404).json({ error: 'Equipment not found or no changes made' });
+            }
 
-    const [rows] = await db.query(
-      `SELECT equipment_id FROM equipment_details 
-       WHERE lab_id = ? AND equipment_type = ? 
-       ORDER BY equipment_id ASC LIMIT 1 OFFSET ?`,
-      [labId, type, index]
-    );
-    if (!rows.length) return res.status(404).json({ error: 'Equipment not found' });
+            // Fetch the updated equipment details
+            const selectQuery = `
+                SELECT 
+                    equipment_id as id,
+                    equipment_name,
+                    equipment_code,
+                    equipment_type as type,
+                    equipment_status as status,
+                    equipment_password as password,
+                    equipment_description as description,
+                    lab_id,
+                    updated_at
+                FROM equipment_details
+                WHERE equipment_id = ?
+            `;
 
-    equipmentId = rows[0].equipment_id;
-  }
+            db.query(selectQuery, [numericId], (selectErr, updatedResults) => {
+                if (selectErr) {
+                    console.error('Error fetching updated equipment:', selectErr);
+                    return res.status(500).json({ 
+                        error: 'Equipment updated but failed to fetch updated data',
+                        success: true // Still indicate success since update worked
+                    });
+                }
 
-  if (!equipmentId) {
-    return res.status(404).json({ error: 'Could not resolve equipment ID' });
-  }
+                if (updatedResults.length === 0) {
+                    return res.status(404).json({ 
+                        error: 'Equipment updated but not found in fetch',
+                        success: true // Still indicate success since update worked
+                    });
+                }
 
-  // Update query
-  await db.query(
-    `UPDATE equipment_details 
-     SET equipment_name = ?, equipment_code = ?, equipment_status = ?, 
-         equipment_password = ?, equipment_description = ? 
-     WHERE equipment_id = ?`,
-    [
-      equipment_name,
-      equipment_code,
-      statusValue,
-      equipment_password || null,
-      equipment_description || null,
-      equipmentId
-    ]
-  );
+                const updatedEquipment = updatedResults[0];
+                
+                console.log('Equipment updated successfully:', updatedEquipment);
+                
+                return res.json({
+                    success: true,
+                    message: 'Equipment updated successfully',
+                    equipment: {
+                        equipment_id: updatedEquipment.id,
+                        equipment_name: updatedEquipment.equipment_name,
+                        equipment_code: updatedEquipment.equipment_code,
+                        equipment_type: updatedEquipment.type,
+                        status: updatedEquipment.status,
+                        password: updatedEquipment.password,
+                        description: updatedEquipment.description,
+                        updated_at: updatedEquipment.updated_at
+                    }
+                });
+            });
+        });
+    });
+});
 
-  res.json({ message: 'Equipment updated successfully', id: equipmentId });
+// Alternative endpoint for lab in-charge assistant (if needed)
+router.put('/labinchargeassistant/equipment/:equipmentId', (req, res) => {
+    // Redirect to the main equipment update endpoint
+    req.url = `/equipment/${req.params.equipmentId}`;
+    return router.handle(req, res);
 });
 
 module.exports = router;
