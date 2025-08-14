@@ -61,9 +61,6 @@ const LabEquipmentManager = () => {
       }
     });
 
-    // ✅ Verify it
-    console.log("User ID set to:", localStorage.getItem("staffId"));
-
     setDebugInfo({
       allKeys: localStorageKeys,
       possibleUserKeys: foundKeys,
@@ -401,88 +398,6 @@ const LabEquipmentManager = () => {
     fetchEquipment();
   }, []);
 
-  useEffect(() => {
-    // Debug: Check all localStorage keys
-    const localStorageKeys = Object.keys(localStorage);
-    console.log('All localStorage keys:', localStorageKeys);
-    
-    // Check common key variations
-    const possibleKeys = ['staffId', 'id'];
-    const foundKeys = {};
-    
-    possibleKeys.forEach(key => {
-      const value = localStorage.getItem(key);
-      if (value) {
-        foundKeys[key] = value;
-        console.log(`Found ${key}:`, value);
-      }
-    });
-
-    // Store user ID in localStorage
-    localStorage.setItem('staffId',4);
-
-    // ✅ Verify it
-    console.log('User ID set to:', localStorage.getItem('staffId'));
-
-    
-    setDebugInfo({
-      allKeys: localStorageKeys,
-      possibleUserKeys: foundKeys
-    });
-
-    // Try to get staffId with different possible key names
-    let staffId = localStorage.getItem('staffId') || 
-                 localStorage.getItem('id');
-
-    // Also try to parse user object if stored as JSON
-    const userObj = localStorage.getItem('user');
-    if (userObj && !staffId) {
-      try {
-        const parsed = JSON.parse(userObj);
-        staffId = parsed.id || parsed.staffId || parsed.staffId || parsed.staff_id;
-        console.log('Parsed user object:', parsed);
-        console.log('Extracted staffId from user object:', staffId);
-      } catch (e) {
-        console.log('Failed to parse user object:', e);
-      }
-    }
-
-    // Try other possible JSON objects
-    if (!staffId) {
-      const possibleJsonKeys = ['currentUser', 'loggedInUser', 'authUser', 'session'];
-      for (const key of possibleJsonKeys) {
-        const jsonStr = localStorage.getItem(key);
-        if (jsonStr) {
-          try {
-            const parsed = JSON.parse(jsonStr);
-            staffId = parsed.id || parsed.staffId ||parsed.staffId || parsed.staff_id;
-            if (staffId) {
-              console.log(`Found staffId in ${key}:`, staffId);
-              break;
-            }
-          } catch (e) {
-            console.log(`Failed to parse ${key}:`, e);
-          }
-        }
-      }
-    }
-
-    if (!staffId) {
-      console.error('No staffId found in localStorage');
-      console.log('Available localStorage keys:', localStorageKeys);
-      console.log('Searched for keys:', possibleKeys);
-      console.log('Found values:', foundKeys);
-      
-      setError('No user ID found. Please login again. Debug info: ' + JSON.stringify(foundKeys));
-      setLoading(false);
-      return;
-    }
-
-    console.log('Using staffId:', staffId);
-
-    fetchEquipment();
-  }, [fetchEquipment]);
-
   const togglePasswordVisibility = (itemId) => {
     setShowPasswords((prev) => ({
       ...prev,
@@ -538,7 +453,7 @@ const LabEquipmentManager = () => {
     setSaveError(null);
   };
 
-  // Updated save function with equipment refresh
+  // Updated save function to integrate with backend API
   const handleSaveEdit = async () => {
     if (!selectedItem || !selectedItem.id) {
       setSaveError("Invalid equipment selected");
