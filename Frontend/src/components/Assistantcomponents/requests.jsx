@@ -13,49 +13,6 @@ import {
 import { useParams } from "react-router-dom";
 import axios from "axios";
 
-const steps = [
-  {
-    id: 1,
-    title: "Problem Details",
-    subtitle: "Type & Date",
-    icon: FileText,
-    editable: true,
-    role: "Lab In-charge",
-  },
-  {
-    id: 2,
-    title: "Submit Request",
-    subtitle: "Originator Info",
-    icon: User,
-    editable: true,
-    role: "Lab In-charge",
-  },
-  {
-    id: 3,
-    title: "Verification",
-    subtitle: "Under Review",
-    icon: Clock,
-    editable: false,
-    role: "Maintenance Team",
-  },
-  {
-    id: 4,
-    title: "Corrective Action",
-    subtitle: "In Progress",
-    icon: Settings,
-    editable: false,
-    role: "Maintenance Team",
-  },
-  {
-    id: 5,
-    title: "Closure",
-    subtitle: "Completed",
-    icon: CheckSquare,
-    editable: false,
-    role: "Maintenance Team",
-  },
-];
-
 function Modal({ isOpen, onClose, type, title, message }) {
   if (!isOpen) return null;
 
@@ -114,7 +71,7 @@ function Modal({ isOpen, onClose, type, title, message }) {
   );
 }
 
-function ProgressBar({ currentStep, completedSteps = 0 }) {
+function ProgressBar({ steps, currentStep, completedSteps = 0 }) {
   const pct = useMemo(() => {
     // guard against negative widths when completedSteps is 0
     const clamped = Math.max(0, completedSteps - 1);
@@ -133,6 +90,7 @@ function ProgressBar({ currentStep, completedSteps = 0 }) {
           {steps.map((step) => {
             const StepIcon = step.icon;
             const isCompleted = step.id <= completedSteps;
+            const isActive = step.id === currentStep;
             const isCurrent = step.id === currentStep;
             const isAccessible = step.id <= Math.max(completedSteps, 2);
             return (
@@ -214,6 +172,14 @@ function LabAssistantForm() {
   });
 
   const isStepCompleted = (step) => {
+    if (step === 5) {
+      // ✅ Only count completed when Admin actually approves/rejects
+      return (
+        form?.adminApprovalStatus === "approved" ||
+        form?.adminApprovalStatus === "rejected"
+      );
+    }
+
     const fields = stepFields[step];
     return fields.every(
       (field) => form[field] && form[field].toString().trim() !== ""
@@ -253,6 +219,8 @@ function LabAssistantForm() {
     completionRemarkMaintenance: "",
     maintenanceClosedDate: "",
     maintenanceClosedSignature: "",
+    adminApprovalStatus: "",
+    adminApprovalDate: "",
   });
 
   const stepFields = {
@@ -268,7 +236,8 @@ function LabAssistantForm() {
     ],
     3: ["assignedPerson", "inChargeDate", "verificationRemarks"],
     4: ["materialsUsed", "resolvedInhouse", "resolvedRemark"],
-    5: [
+    5: ["adminApprovalStatus"], // NEW step
+    6: [
       "completionRemarkLab",
       "labCompletionName",
       "labCompletionDate",
@@ -276,6 +245,61 @@ function LabAssistantForm() {
       "maintenanceClosedDate",
     ],
   };
+
+  const steps = [
+    {
+      id: 1,
+      title: "Problem Details",
+      subtitle: "Type & Date",
+      icon: FileText,
+      editable: true,
+      role: "Lab In-charge",
+    },
+    {
+      id: 2,
+      title: "Submit Request",
+      subtitle: "Originator Info",
+      icon: User,
+      editable: true,
+      role: "Lab In-charge",
+    },
+    {
+      id: 3,
+      title: "Verification",
+      subtitle: "Under Review",
+      icon: Clock,
+      editable: false,
+      role: "Maintenance Team",
+    },
+    {
+      id: 4,
+      title: "Corrective Action",
+      subtitle: "In Progress",
+      icon: Settings,
+      editable: false,
+      role: "Maintenance Team",
+    },
+    {
+      id: 5,
+      title: "Admin Approval",
+      subtitle:
+        form?.adminApprovalStatus === "approved"
+          ? "Approved"
+          : form?.adminApprovalStatus === "rejected"
+          ? "Rejected"
+          : "Pending Review",
+      icon: AlertCircle,
+      role: "Admin",
+    },
+    {
+      id: 6,
+      title: "Closure",
+      subtitle: "Completed",
+      icon: CheckSquare,
+      editable: false,
+      role: "Maintenance Team",
+    },
+  ];
 
   const { requestId } = useParams();
   const isViewMode = !!requestId;
@@ -350,12 +374,12 @@ function LabAssistantForm() {
         completionRemarkMaintenance: form.completionRemarkMaintenance,
         maintenanceClosedDate: form.maintenanceClosedDate,
         maintenanceClosedSignature: form.maintenanceClosedSignature,
-        currentStep: 5, // stays 5 since closure is last
-        completedSteps: 5,
+        currentStep: 6, // stays 5 since closure is last
+        completedSteps: 6,
         message: "Closure completed successfully",
       });
 
-      setCompletedSteps(5);
+      setCompletedSteps(6);
       showModal(
         "success",
         "Closure Saved",
@@ -405,8 +429,15 @@ function LabAssistantForm() {
   };
 
   const nextStep = () => {
-    if (currentStep < 5) {
-      setCurrentStep((s) => s + 1);
+    if (currentStep < 6 && currentStep <= completedSteps) {
+      setCurrentStep((prev) => {
+        const next = prev + 1;
+        // ✅ ensure completedSteps catches up with current
+        if (next > completedSteps) {
+          setCompletedSteps(next - 1);
+        }
+        return next;
+      });
     }
   };
 
@@ -461,10 +492,14 @@ function LabAssistantForm() {
             ? String(data.maintenance_closed_date).split("T")[0]
             : "",
           maintenanceClosedSignature: data.maintenance_closed_signature || "",
+          adminApprovalStatus: data.admin_approval_status || "",
+          adminApprovalDate: data.admin_approval_date
+            ? String(data.admin_approval_date).split("T")[0]
+            : "",
         });
         // Determine completed steps
         let maxCompleted = 0;
-        for (let step = 1; step <= 5; step++) {
+        for (let step = 1; step <= 6; step++) {
           if (isStepCompleted(step)) {
             maxCompleted = step;
           } else {
@@ -484,7 +519,7 @@ function LabAssistantForm() {
 
   useEffect(() => {
     let maxCompleted = 0;
-    for (let step = 1; step <= 5; step++) {
+    for (let step = 1; step <= 6; step++) {
       if (isStepCompleted(step)) {
         maxCompleted = step;
       } else {
@@ -539,6 +574,7 @@ function LabAssistantForm() {
       />
       <div className="max-w-4xl mx-auto">
         <ProgressBar
+          steps={steps}
           currentStep={currentStep}
           completedSteps={completedSteps}
         />
@@ -1020,6 +1056,24 @@ function LabAssistantForm() {
 
               {currentStep === 5 && (
                 <div className="space-y-6">
+                  <div className="pb-4">
+                    <h2 className="text-2xl font-bold flex items-center gap-3">
+                      <AlertCircle className="w-7 h-7 text-purple-500" />
+                      Admin Approval
+                    </h2>
+                    <p className="text-gray-600 mt-2">
+                      {form?.adminApprovalStatus === "approved"
+                        ? "This request has been approved by Admin."
+                        : form?.adminApprovalStatus === "rejected"
+                        ? "This request was rejected by Admin."
+                        : "This request is pending admin approval."}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {currentStep === 6 && (
+                <div className="space-y-6">
                   <div className="border-b border-gray-200 pb-4">
                     <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
                       <CheckSquare className="w-7 h-7 text-green-500" />
@@ -1135,7 +1189,7 @@ function LabAssistantForm() {
                       🚀 Submit Request
                     </button>
                   )}
-                  {currentStep < 5 && isAssistant && (
+                  {currentStep < 6 && isAssistant && (
                     <button
                       type="button"
                       className="px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-all font-medium"
@@ -1162,7 +1216,7 @@ function LabAssistantForm() {
                       💾 Save Corrective Action
                     </button>
                   )}
-                  {currentStep === 5 && isAssistant && (
+                  {currentStep === 6 && isAssistant && (
                     <button
                       type="button"
                       className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all font-medium"

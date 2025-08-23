@@ -40,7 +40,7 @@ app.use('/api/requests', Request);
 app.use('/api/notifications', notificationRoute);
 
 app.use('/api/labstaff', labStaffRoutes);
-app.use('/api/labinchargeassistant', labInchargeAssistantRoutes);
+app.use('/api', labInchargeAssistantRoutes);
 
 
 app.listen(3000, () => console.log('Server running on http://localhost:3000'));
