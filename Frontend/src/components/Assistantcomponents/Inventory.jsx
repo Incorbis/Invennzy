@@ -62,9 +62,6 @@ const LabEquipmentManager = () => {
       }
     });
 
-    // ✅ Verify it
-    console.log("User ID set to:", localStorage.getItem("staffId"));
-
     setDebugInfo({
       allKeys: localStorageKeys,
       possibleUserKeys: foundKeys,
@@ -112,7 +109,6 @@ const LabEquipmentManager = () => {
         }
       }
     }
-    localStorage.setItem("staffId", "4");
 
     if (!staffId) {
       console.error("No staffId found in localStorage");
@@ -131,88 +127,120 @@ const LabEquipmentManager = () => {
     console.log("Using staffId:", staffId);
 
     const fetchEquipment = async () => {
-  try {
-    setLoading(true);
-
-    // --- get staffId (robust from localStorage) ---
-    let staffId = localStorage.getItem("staffId") || localStorage.getItem("id");
-    const userObj = localStorage.getItem("user");
-    if (!staffId && userObj) {
       try {
-        const parsed = JSON.parse(userObj);
-        staffId = parsed.id || parsed.staffId || parsed.staff_id;
-      } catch (e) {
-        /* ignore */
-      }
-    }
-    if (!staffId) throw new Error("No staffId found in localStorage");
+        setLoading(true);
 
-    // --- fetch equipment by staffId (new API) ---
-    console.log("Fetching equipment for staffId:", staffId);
-    const equipResponse = await axios.get(`/api/labinchargeassistant/labs/equipment/by-staff/${staffId}`);
-    const equipData = equipResponse.data;
-    console.log("Raw equipment response:", equipData);
+        // --- get staffId (robust from localStorage) ---
+        let staffId =
+          localStorage.getItem("staffId") || localStorage.getItem("id");
+        const userObj = localStorage.getItem("user");
+        if (!staffId && userObj) {
+          try {
+            const parsed = JSON.parse(userObj);
+            staffId = parsed.id || parsed.staffId || parsed.staff_id;
+          } catch (e) {
+            /* ignore */
+          }
+        }
+        if (!staffId) throw new Error("No staffId found in localStorage");
 
-    // --- normalize backend response into countsByType and detailsByType ---
-    const types = ["monitors", "projectors", "switch_boards", "fans", "wifi"];
-    const countsByType = equipData.counts || {};
-    const detailsByType = equipData.grouped || {};
+        // --- fetch equipment by staffId (new API) ---
 
-    // Ensure every type has numeric count and array
-    types.forEach((t) => {
-      countsByType[t] = Number(countsByType[t] || 0);
-      detailsByType[t] = detailsByType[t] || [];
-    });
+        const equipResponse = await axios.get(
+          `/api/labs/equipment/by-staff/${staffId}`
+        );
+        const equipData = equipResponse.data;
 
-    // --- Map DB status -> frontend status ---
-    const mapStatus = (dbStatus) => {
-      if (dbStatus === "0" || dbStatus === 0) return "active";
-      if (dbStatus === "2" || dbStatus === 2) return "maintenance";
-      if (dbStatus === "1" || dbStatus === 1) return "damaged";
-      if (["active", "working", "ok"].includes(String(dbStatus).toLowerCase())) return "active";
-      if (["maintenance", "repair"].includes(String(dbStatus).toLowerCase())) return "maintenance";
-      if (["damaged", "broken", "inactive"].includes(String(dbStatus).toLowerCase())) return "damaged";
-      return "active";
-    };
+        // --- normalize backend response into countsByType and detailsByType ---
+        const types = [
+          "monitors",
+          "projectors",
+          "switch_boards",
+          "fans",
+          "wifi",
+        ];
+        const countsByType = equipData.counts || {};
+        const detailsByType = equipData.grouped || {};
 
-    // --- Build final equipment list ---
-    const equipmentList = [];
-    types.forEach((key) => {
-      const detailsArr = detailsByType[key] || [];
-      detailsArr.forEach((detail, i) => {
-        const item = {
-          id: detail.equipment_id,
-          type: key,
-          name: detail.equipment_name || `${key} ${i + 1}`,
-          code: detail.equipment_code || `${key.toUpperCase()}-${String(i + 1).padStart(3, "0")}`,
-          status: mapStatus(detail.equipment_status || detail.status),
-          password: detail.equipment_password || "",
-          description: detail.equipment_description || `${key} unit ${i + 1}`,
-          icon:
-            key === "monitors" ? Monitor :
-            key === "projectors" ? Projector :
-            key === "switch_boards" ? Zap :
-            key === "wifi" ? Wifi : Fan,
-          color:
-            key === "monitors" ? "blue" :
-            key === "projectors" ? "purple" :
-            key === "switch_boards" ? "yellow" :
-            key === "wifi" ? "indigo" : "green",
+        // Ensure every type has numeric count and array
+        types.forEach((t) => {
+          countsByType[t] = Number(countsByType[t] || 0);
+          detailsByType[t] = detailsByType[t] || [];
+        });
+
+        // --- Map DB status -> frontend status ---
+        const mapStatus = (dbStatus) => {
+          if (dbStatus === "0" || dbStatus === 0) return "active";
+          if (dbStatus === "2" || dbStatus === 2) return "maintenance";
+          if (dbStatus === "1" || dbStatus === 1) return "damaged";
+          if (
+            ["active", "working", "ok"].includes(String(dbStatus).toLowerCase())
+          )
+            return "active";
+          if (
+            ["maintenance", "repair"].includes(String(dbStatus).toLowerCase())
+          )
+            return "maintenance";
+          if (
+            ["damaged", "broken", "inactive"].includes(
+              String(dbStatus).toLowerCase()
+            )
+          )
+            return "damaged";
+          return "active";
         };
-        equipmentList.push(item);
-      });
-    });
 
-    console.log("Final equipment list:", equipmentList);
-    setEquipmentState(equipmentList);
-    setError(null);
-  } catch (err) {
-    console.error("Error loading equipment:", err);
-    setError(err.response?.data?.message || err.message);
-  } finally {
-    setLoading(false);
-  }
-};
+        // --- Build final equipment list ---
+        const equipmentList = [];
+        types.forEach((key) => {
+          const detailsArr = detailsByType[key] || [];
+          detailsArr.forEach((detail, i) => {
+            const item = {
+              id: detail.equipment_id,
+              type: key,
+              name: detail.equipment_name || `${key} ${i + 1}`,
+              code:
+                detail.equipment_code ||
+                `${key.toUpperCase()}-${String(i + 1).padStart(3, "0")}`,
+              status: mapStatus(detail.equipment_status || detail.status),
+              password: detail.equipment_password || "",
+              description:
+                detail.equipment_description || `${key} unit ${i + 1}`,
+              icon:
+                key === "monitors"
+                  ? Monitor
+                  : key === "projectors"
+                  ? Projector
+                  : key === "switch_boards"
+                  ? Zap
+                  : key === "wifi"
+                  ? Wifi
+                  : Fan,
+              color:
+                key === "monitors"
+                  ? "blue"
+                  : key === "projectors"
+                  ? "purple"
+                  : key === "switch_boards"
+                  ? "yellow"
+                  : key === "wifi"
+                  ? "indigo"
+                  : "green",
+            };
+            equipmentList.push(item);
+          });
+        });
+
+        console.log("Final equipment list:", equipmentList);
+        setEquipmentState(equipmentList);
+        setError(null);
+      } catch (err) {
+        console.error("Error loading equipment:", err);
+        setError(err.response?.data?.message || err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
 
     fetchEquipment();
   }, []);
@@ -274,12 +302,16 @@ const LabEquipmentManager = () => {
 
   // Add this helper function inside your LabEquipmentManager component
   const mapBackendStatus = (dbStatus) => {
-      switch (String(dbStatus)) {
-          case '0': return 'active';
-          case '2': return 'maintenance';
-          case '1': return 'damaged';
-          default: return 'active';
-      }
+    switch (String(dbStatus)) {
+      case "0":
+        return "active";
+      case "2":
+        return "maintenance";
+      case "1":
+        return "damaged";
+      default:
+        return "active";
+    }
   };
 
   // Updated save function to integrate with backend API using axios
@@ -298,7 +330,7 @@ const LabEquipmentManager = () => {
 
     try {
       setTimeout(() => {
-      setSelectedItem(null);
+        setSelectedItem(null);
       }, 2000);
       console.log("Updating equipment:", numericId);
 
@@ -311,7 +343,7 @@ const LabEquipmentManager = () => {
       };
 
       const response = await axios.put(
-        `/api/labinchargeassistant/equipment/${numericId}`,
+        `/api/equipment/${numericId}`,
         updateData,
         { headers: { "Content-Type": "application/json" } }
       );
@@ -321,13 +353,13 @@ const LabEquipmentManager = () => {
         // ✅ close modal & edit mode instantly
         setEditMode(false);
         setShowModal(false);
+        fetchEquipment();
 
         // ✅ refresh the page after short delay (to get latest data from backend)
         setTimeout(() => {
           window.location.reload();
         }, 500);
-      }
-      else {
+      } else {
         throw new Error(result?.message || "Update failed");
       }
     } catch (error) {
@@ -336,7 +368,9 @@ const LabEquipmentManager = () => {
       let errorMessage = "Failed to update equipment";
       if (error.response) {
         errorMessage =
-          error.response.data?.error || error.response.data?.message || errorMessage;
+          error.response.data?.error ||
+          error.response.data?.message ||
+          errorMessage;
       } else if (error.request) {
         errorMessage = "No response from server. Please check your connection.";
       } else {
@@ -348,7 +382,6 @@ const LabEquipmentManager = () => {
       setSaving(false); // ✅ spinner always stops
     }
   };
-
 
   const filteredEquipment = equipmentState.filter((item) => {
     const matchesSearch =
@@ -368,8 +401,8 @@ const LabEquipmentManager = () => {
   };
 
   const groupEquipmentByType = (equipmentList) => {
-  const grouped = {};
-  const types = getUniqueTypes();
+    const grouped = {};
+    const types = getUniqueTypes();
 
     types.forEach((type) => {
       grouped[type] = equipmentList
@@ -390,7 +423,6 @@ const LabEquipmentManager = () => {
 
     return grouped;
   };
-
 
   const getTypeSummary = () => {
     const summary = {};
@@ -709,12 +741,14 @@ const LabEquipmentManager = () => {
                                       {item.code}
                                     </span>
                                   </div>
-                                  {(item.type === "monitors" || item.type === "projectors") && (
+                                  {(item.type === "monitors" ||
+                                    item.type === "wifi") && (
                                     <div className="flex justify-between items-center">
                                       <span>Password:</span>
                                       <div className="flex items-center space-x-1">
                                         <span className="font-mono">
-                                          {showPasswords[item.id] && item.password
+                                          {showPasswords[item.id] &&
+                                          item.password
                                             ? item.password
                                             : "••••••••"}
                                         </span>
@@ -725,7 +759,11 @@ const LabEquipmentManager = () => {
                                           }}
                                           className="text-gray-400 hover:text-gray-600"
                                         >
-                                          {showPasswords[item.id] ? <EyeOff size={10} /> : <Eye size={10} />}
+                                          {showPasswords[item.id] ? (
+                                            <EyeOff size={10} />
+                                          ) : (
+                                            <Eye size={10} />
+                                          )}
                                         </button>
                                       </div>
                                     </div>
@@ -895,7 +933,8 @@ const LabEquipmentManager = () => {
                   </div>
 
                   {/* Password field - only for wifi and monitors */}
-                  {(selectedItem.type === "monitors" || selectedItem.type === "wifi") && (
+                  {(selectedItem.type === "monitors" ||
+                    selectedItem.type === "wifi") && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700">
                         Password
@@ -916,15 +955,22 @@ const LabEquipmentManager = () => {
                       ) : (
                         <div className="mt-1 flex items-center space-x-2">
                           <span className="font-mono text-gray-900">
-                            {showPasswords[selectedItem.id] && selectedItem.password
+                            {showPasswords[selectedItem.id] &&
+                            selectedItem.password
                               ? selectedItem.password
                               : "••••••••"}
                           </span>
                           <button
-                            onClick={() => togglePasswordVisibility(selectedItem.id)}
+                            onClick={() =>
+                              togglePasswordVisibility(selectedItem.id)
+                            }
                             className="text-gray-400 hover:text-gray-600"
                           >
-                            {showPasswords[selectedItem.id] ? <EyeOff size={16} /> : <Eye size={16} />}
+                            {showPasswords[selectedItem.id] ? (
+                              <EyeOff size={16} />
+                            ) : (
+                              <Eye size={16} />
+                            )}
                           </button>
                         </div>
                       )}

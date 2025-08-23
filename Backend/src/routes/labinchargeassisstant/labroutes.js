@@ -62,6 +62,54 @@ router.get('/labs/equipment/:labId', (req, res) => {
     });
 });
 
+// Get labs assigned to a staff (incharge or assistant)
+// routes/labs.js
+router.get("/staff/:staffId", async (req, res) => {
+  try {
+    const { staffId } = req.params;
+
+    // Step 1: Get staff info (with role fields + lab id)
+    const [staffRows] = await db.query(
+      `SELECT id, lab_id, incharge_name, incharge_email, assistant_name, assistant_email
+       FROM staff WHERE id = ?`,
+      [staffId]
+    );
+
+    if (staffRows.length === 0) {
+      return res.status(404).json({ error: "Staff not found" });
+    }
+
+    const staff = staffRows[0];
+
+    // Step 2: Fetch lab details
+    const [labRows] = await db.query(
+      `SELECT * FROM labs WHERE id = ?`,
+      [staff.lab_id]
+    );
+
+    if (labRows.length === 0) {
+      return res.status(404).json({ error: "Lab not found" });
+    }
+
+    // Step 3: Attach role info from staff table
+    const response = {
+      staffId: staff.id,
+      lab: labRows[0],
+      incharge_name: staff.incharge_name,
+      incharge_email: staff.incharge_email,
+      assistant_name: staff.assistant_name,
+      assistant_email: staff.assistant_email,
+    };
+
+    res.json(response);
+  } catch (err) {
+    console.error("Error fetching assigned lab for staff:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+
 
 // Handler for updating equipment details
 const updateEquipmentHandler = (req, res) => {

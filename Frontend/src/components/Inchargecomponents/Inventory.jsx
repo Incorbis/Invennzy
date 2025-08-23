@@ -1,13 +1,39 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-export default function Inventory() {
-  const [equipmentData, setEquipmentData] = useState([]);
-  const [loading, setLoading] = useState(true);
+import {
+  Monitor,
+  Projector,
+  Zap,
+  Fan,
+  Wifi,
+  Search,
+  Filter,
+  Edit,
+  CheckCircle,
+  AlertTriangle,
+  Clock,
+  Eye,
+  EyeOff,
+  Printer,
+  HardDrive,
+  Router,
+  Camera,
+  Laptop,
+  Save,
+  Loader,
+} from "lucide-react";
+
+const LabEquipmentManager = () => {
+  const [equipmentState, setEquipmentState] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterType, setFilterType] = useState("all");
   const [selectedItem, setSelectedItem] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showPasswords, setShowPasswords] = useState({});
   const [editMode, setEditMode] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [debugInfo, setDebugInfo] = useState({});
   const [saving, setSaving] = useState(false);
@@ -83,7 +109,6 @@ export default function Inventory() {
         }
       }
     }
-    localStorage.setItem("staffId", "4");
 
     if (!staffId) {
       console.error("No staffId found in localStorage");
@@ -120,12 +145,11 @@ export default function Inventory() {
         if (!staffId) throw new Error("No staffId found in localStorage");
 
         // --- fetch equipment by staffId (new API) ---
-        console.log("Fetching equipment for staffId:", staffId);
+
         const equipResponse = await axios.get(
-          `/api/labinchargeassistant/labs/equipment/by-staff/${staffId}`
+          `/api/labs/equipment/by-staff/${staffId}`
         );
         const equipData = equipResponse.data;
-        console.log("Raw equipment response:", equipData);
 
         // --- normalize backend response into countsByType and detailsByType ---
         const types = [
@@ -319,7 +343,7 @@ export default function Inventory() {
       };
 
       const response = await axios.put(
-        `/api/labinchargeassistant/equipment/${numericId}`,
+        `/api/equipment/${numericId}`,
         updateData,
         { headers: { "Content-Type": "application/json" } }
       );
@@ -329,6 +353,7 @@ export default function Inventory() {
         // ✅ close modal & edit mode instantly
         setEditMode(false);
         setShowModal(false);
+        fetchEquipment();
 
         // ✅ refresh the page after short delay (to get latest data from backend)
         setTimeout(() => {
@@ -785,11 +810,15 @@ export default function Inventory() {
                   )}
                   <button
                     onClick={() => {
-                      setSelectedItem(eq);
-                      setModalOpen(true);
+                      setShowModal(false);
+                      setEditMode(false);
+                      setSelectedItem(null);
+                      setSaveError(null);
                     }}
+                    className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                    disabled={saving}
                   >
-                    Edit
+                    Close
                   </button>
                 </div>
               </div>
@@ -1019,4 +1048,6 @@ export default function Inventory() {
       </div>
     </div>
   );
-}
+};
+
+export default LabEquipmentManager;
