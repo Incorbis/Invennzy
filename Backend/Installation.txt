@@ -2,3 +2,4 @@ dotenv
 mysql2
 bcrypt
 google-auth-library
+multer

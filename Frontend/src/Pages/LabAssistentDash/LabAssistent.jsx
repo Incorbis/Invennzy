@@ -57,7 +57,7 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [notifications] = useState(5);
+  const [notifications, setNotifications] = useState([]);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const navigate = useNavigate();
@@ -66,6 +66,24 @@ const Dashboard = () => {
     const timer = setTimeout(() => setIsLoading(false), 1500);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const staffId = localStorage.getItem("staffId");
+        const res = await fetch(
+          `/api/notifications/labassistant/${staffId}?t=${Date.now()}`
+        );
+        const data = await res.json();
+        setNotifications(data);
+      } catch (err) {
+        console.error("Failed to fetch notifications", err);
+      }
+    };
+    fetchNotifications();
+  }, []);
+
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   useEffect(() => {
     const handleResize = () => {
@@ -251,12 +269,14 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center space-x-4">
               <button className="p-2 relative rounded-lg hover:bg-gray-100">
-                <Bell className="text-gray-500" size={20} />
-                {notifications > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {notifications}
-                  </span>
-                )}
+                <Link to="/labassistantdash/notifications">
+                  <Bell className="text-gray-500" size={20} />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Link>
               </button>
             </div>
           </div>

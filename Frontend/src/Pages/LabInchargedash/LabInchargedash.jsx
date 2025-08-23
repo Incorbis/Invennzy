@@ -58,7 +58,6 @@ const labinchargedash = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [notifications] = useState(5);
   const [isMobile, setIsMobile] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const navigate = useNavigate();
@@ -83,6 +82,26 @@ const labinchargedash = () => {
   }, []);
 
   const name = localStorage.getItem("userName");
+
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const staffId = localStorage.getItem("staffId");
+        const res = await fetch(
+          `/api/notifications/labincharge/${staffId}?t=${Date.now()}`
+        );
+        const data = await res.json();
+        setNotifications(data);
+      } catch (err) {
+        console.error("Failed to fetch notifications", err);
+      }
+    };
+    fetchNotifications();
+  }, []);
+
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   const menuItems = [
     { id: "overview", label: "Overview", icon: Home, path: "/labinchargedash" },
@@ -249,12 +268,15 @@ const labinchargedash = () => {
             <div className="flex items-center space-x-4">
               <div className="relative hidden md:block"></div>
               <button className="p-2 relative rounded-lg hover:bg-gray-100">
-                <Bell className="text-gray-500" size={20} />
-                {notifications > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {notifications}
-                  </span>
-                )}
+                <Link to="/labinchargedash/notifications">
+                  <Bell className="text-gray-500" size={20} />
+
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Link>
               </button>
             </div>
           </div>

@@ -206,5 +206,30 @@ CREATE TABLE `invennzy`.`equipment_details` (
   PRIMARY KEY (`equipment_id`)
 );
 
+ALTER TABLE requests
+-- Step 3: Verification stage
+ADD COLUMN in_charge_date DATE,
+ADD COLUMN in_charge_signature VARCHAR(255),
+ADD COLUMN assigned_person VARCHAR(255),
+ADD COLUMN verification_remarks TEXT,
+
+-- Step 4: Corrective action
+ADD COLUMN materials_used TEXT,
+ADD COLUMN resolved_inhouse ENUM('yes', 'no') DEFAULT 'yes',
+ADD COLUMN resolved_remark TEXT,
+ADD COLUMN consumables_needed ENUM('yes', 'no') DEFAULT 'no',
+ADD COLUMN consumable_details TEXT,
+ADD COLUMN external_agency_needed ENUM('yes', 'no') DEFAULT 'no',
+ADD COLUMN agency_name VARCHAR(255),
+ADD COLUMN approx_expenditure DECIMAL(10,2),
+
+-- Step 5: Closure
+ADD COLUMN completion_remark_lab TEXT,
+ADD COLUMN lab_completion_name VARCHAR(255),
+ADD COLUMN lab_completion_signature VARCHAR(255),
+ADD COLUMN lab_completion_date DATE,
+ADD COLUMN completion_remark_maintenance TEXT,
+ADD COLUMN maintenance_closed_date DATE,
+ADD COLUMN maintenance_closed_signature VARCHAR(255);
 
 

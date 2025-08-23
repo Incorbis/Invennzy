@@ -62,9 +62,6 @@ const LabEquipmentManager = () => {
       }
     });
 
-    // ✅ Verify it
-    console.log("User ID set to:", localStorage.getItem("staffId"));
-
     setDebugInfo({
       allKeys: localStorageKeys,
       possibleUserKeys: foundKeys,
