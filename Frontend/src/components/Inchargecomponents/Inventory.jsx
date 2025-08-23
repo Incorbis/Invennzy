@@ -131,262 +131,89 @@ const LabEquipmentManager = () => {
     console.log("Using staffId:", staffId);
 
     const fetchEquipment = async () => {
+  try {
+    setLoading(true);
+
+    // --- get staffId (robust from localStorage) ---
+    let staffId = localStorage.getItem("staffId") || localStorage.getItem("id");
+    const userObj = localStorage.getItem("user");
+    if (!staffId && userObj) {
       try {
-        setLoading(true);
-
-        // --- get staffId (robust) ---
-        let staffId =
-          localStorage.getItem("staffId") || localStorage.getItem("id");
-        const userObj = localStorage.getItem("user");
-        if (!staffId && userObj) {
-          try {
-            const parsed = JSON.parse(userObj);
-            staffId = parsed.id || parsed.staffId || parsed.staff_id;
-          } catch (e) {
-            /* ignore */
-          }
-        }
-        if (!staffId) throw new Error("No staffId found in localStorage");
-
-        // --- find lab for staff (try a couple of endpoints) ---
-        console.log("Fetching lab info for staffId:", staffId);
-        let labData = null;
-        
-
-        if (!labData) {
-          try {
-            const response = await axios.get(`/api/labstaff/${staffId}`);
-            const staff = response.data;
-            // expect staff to include lab_id (adapt fields as per your API)
-            labData = {
-              lab_id: staff.lab_id || staff.labId || staff.lab_id,
-              lab_name: staff.lab_name || staff.labName || staff.lab_name,
-              lab_no: staff.lab_no || staff.labNo,
-            };
-          } catch (error) {
-            console.log("Error fetching lab staff:", error);
-          }
-        }
-
-        if (!labData || !labData.lab_id) {
-          throw new Error(
-            "No lab found for this user. Please check assignment."
-          );
-        }
-
-        // --- fetch equipment info for the lab ---
-        console.log("Fetching equipment for lab_id:", labData.lab_id);
-        const equipResponse = await axios.get(`/api/labs/equipment/${labData.lab_id}`);
-        const equipData = equipResponse.data;
-        console.log("Raw equipment response:", equipData);
-
-        // --- normalize backend response into countsByType and detailsByType ---
-        const types = [
-          "monitors",
-          "projectors",
-          "switch_boards",
-          "fans",
-          "wifi",
-        ];
-        const countsByType = {};
-        const detailsByType = {};
-
-        // helper: group flat array by equipment_type (or type)
-        const groupArrayByType = (arr) => {
-          return arr.reduce((acc, it) => {
-            const t = it.equipment_type || it.type || it.type_name;
-            if (!t) return acc;
-            acc[t] = acc[t] || [];
-            acc[t].push(it);
-            return acc;
-          }, {});
-        };
-
-        if (Array.isArray(equipData)) {
-          // backend returned a flat array of items
-          Object.assign(detailsByType, groupArrayByType(equipData));
-          types.forEach(
-            (t) => (countsByType[t] = (detailsByType[t] || []).length)
-          );
-        } else if (typeof equipData === "object" && equipData !== null) {
-          // If equipData has numeric counts or arrays per type
-          types.forEach((t) => {
-            const val = equipData[t];
-            if (Array.isArray(val)) {
-              detailsByType[t] = val;
-              countsByType[t] = val.length;
-            } else if (typeof val === "number") {
-              countsByType[t] = val;
-              detailsByType[t] = [];
-            } else {
-              countsByType[t] = countsByType[t] || 0;
-              detailsByType[t] = detailsByType[t] || [];
-            }
-          });
-
-          // Some APIs return { counts: {monitors:3,...}, items: [...] }
-          if (equipData.counts && typeof equipData.counts === "object") {
-            types.forEach((t) => {
-              if (typeof equipData.counts[t] === "number")
-                countsByType[t] = equipData.counts[t];
-            });
-          }
-          if (equipData.items && Array.isArray(equipData.items)) {
-            Object.assign(detailsByType, groupArrayByType(equipData.items));
-          }
-        }
-
-        // Ensure every type has numeric count
-        types.forEach((t) => {
-          countsByType[t] = Number(countsByType[t] || 0);
-          detailsByType[t] = detailsByType[t] || [];
-        });
-
-        // --- Build final equipment list:
-        // For each type, create `count` items. If details are available use them (match by index), else leave fields blank/placeholder.
-        const equipmentList = [];
-        types.forEach((key) => {
-          const count = countsByType[key] || 0;
-          const detailsArr = detailsByType[key] || [];
-          const used = new Set();
-
-          for (let i = 1; i <= count; i++) {
-            // generated code fallback (if backend doesn't provide)
-            const generatedCode = `${key.toUpperCase()}-${String(i).padStart(
-              3,
-              "0"
-            )}`;
-
-            // Try to pick a matching detail record:
-            let detail = detailsArr[i - 1] ?? null;
-
-            // if not present at same index, try to find an unused record that matches generated code or equipment_code
-            if (!detail) {
-              const foundIdx = detailsArr.findIndex((it, idx) => {
-                if (used.has(idx)) return false;
-                const code = it.equipment_code || it.code || "";
-                return (
-                  code === generatedCode ||
-                  code.endsWith(String(i)) ||
-                  code.includes(String(i))
-                );
-              });
-              if (foundIdx !== -1) {
-                detail = detailsArr[foundIdx];
-                used.add(foundIdx);
-              }
-            } else {
-              used.add(i - 1);
-            }
-
-            // Map DB status -> frontend status (adjust mapping to your DB convention)
-            const mapStatus = (dbStatus) => {
-              if (
-                dbStatus === undefined ||
-                dbStatus === null ||
-                dbStatus === ""
-              )
-                return "active"; // default if unknown
-              // if DB uses numbers '0','1','2' -> map here:
-              if (dbStatus === "1" || dbStatus === 1) return "active";
-              if (dbStatus === "2" || dbStatus === 2) return "maintenance";
-              if (dbStatus === "0" || dbStatus === 0) return "damaged";
-              // if DB uses words already:
-              if (
-                ["active", "working", "ok"].includes(
-                  String(dbStatus).toLowerCase()
-                )
-              )
-                return "active";
-              if (
-                ["maintenance", "repair"].includes(
-                  String(dbStatus).toLowerCase()
-                )
-              )
-                return "maintenance";
-              if (
-                ["damaged", "broken", "inactive"].includes(
-                  String(dbStatus).toLowerCase()
-                )
-              )
-                return "damaged";
-              return "active";
-            };
-
-            // Password only for wifi and monitors
-            const hasPassword = key === "wifi" || key === "monitors";
-
-            const item = {
-              id: detail?.equipment_id ?? `${key}_${i}`,
-              type: key,
-              name:
-                detail?.equipment_name ??
-                `${
-                  key === "monitors"
-                    ? "Monitor"
-                    : key === "projectors"
-                    ? "Projector"
-                    : key === "switch_boards"
-                    ? "Switch Board"
-                    : key === "wifi"
-                    ? "WiFi Router"
-                    : "Fan"
-                } ${i}`,
-              code: detail?.equipment_code ?? generatedCode,
-              status: mapStatus(detail?.equipment_status),
-              password: hasPassword
-                ? detail?.equipment_password ??
-                  `${key}${String(i).padStart(3, "0")}@lab`
-                : "",
-              description:
-                detail?.equipment_description ??
-                `${
-                  key === "monitors"
-                    ? "Monitor"
-                    : key === "projectors"
-                    ? "Projector"
-                    : key === "switch_boards"
-                    ? "Switch Board"
-                    : key === "wifi"
-                    ? "WiFi Router"
-                    : "Fan"
-                } unit ${i} in ${labData.lab_name || `Lab ${labData.lab_no}`}`,
-              icon:
-                key === "monitors"
-                  ? Monitor
-                  : key === "projectors"
-                  ? Projector
-                  : key === "switch_boards"
-                  ? Zap
-                  : key === "wifi"
-                  ? Wifi
-                  : Fan,
-              color:
-                key === "monitors"
-                  ? "blue"
-                  : key === "projectors"
-                  ? "purple"
-                  : key === "switch_boards"
-                  ? "yellow"
-                  : key === "wifi"
-                  ? "indigo"
-                  : "green",
-            };
-
-            equipmentList.push(item);
-          }
-        });
-
-        console.log("Final equipment list:", equipmentList);
-        setEquipmentState(equipmentList);
-        setError(null);
-      } catch (err) {
-        console.error("Error loading equipment:", err);
-        setError(err.response?.data?.message || err.message);
-      } finally {
-        setLoading(false);
+        const parsed = JSON.parse(userObj);
+        staffId = parsed.id || parsed.staffId || parsed.staff_id;
+      } catch (e) {
+        /* ignore */
       }
+    }
+    if (!staffId) throw new Error("No staffId found in localStorage");
+
+    // --- fetch equipment by staffId (new API) ---
+    console.log("Fetching equipment for staffId:", staffId);
+    const equipResponse = await axios.get(`/api/labinchargeassistant/labs/equipment/by-staff/${staffId}`);
+    const equipData = equipResponse.data;
+    console.log("Raw equipment response:", equipData);
+
+    // --- normalize backend response into countsByType and detailsByType ---
+    const types = ["monitors", "projectors", "switch_boards", "fans", "wifi"];
+    const countsByType = equipData.counts || {};
+    const detailsByType = equipData.grouped || {};
+
+    // Ensure every type has numeric count and array
+    types.forEach((t) => {
+      countsByType[t] = Number(countsByType[t] || 0);
+      detailsByType[t] = detailsByType[t] || [];
+    });
+
+    // --- Map DB status -> frontend status ---
+    const mapStatus = (dbStatus) => {
+      if (dbStatus === "0" || dbStatus === 0) return "active";
+      if (dbStatus === "2" || dbStatus === 2) return "maintenance";
+      if (dbStatus === "1" || dbStatus === 1) return "damaged";
+      if (["active", "working", "ok"].includes(String(dbStatus).toLowerCase())) return "active";
+      if (["maintenance", "repair"].includes(String(dbStatus).toLowerCase())) return "maintenance";
+      if (["damaged", "broken", "inactive"].includes(String(dbStatus).toLowerCase())) return "damaged";
+      return "active";
     };
+
+    // --- Build final equipment list ---
+    const equipmentList = [];
+    types.forEach((key) => {
+      const detailsArr = detailsByType[key] || [];
+      detailsArr.forEach((detail, i) => {
+        const item = {
+          id: detail.equipment_id,
+          type: key,
+          name: detail.equipment_name || `${key} ${i + 1}`,
+          code: detail.equipment_code || `${key.toUpperCase()}-${String(i + 1).padStart(3, "0")}`,
+          status: mapStatus(detail.equipment_status || detail.status),
+          password: detail.equipment_password || "",
+          description: detail.equipment_description || `${key} unit ${i + 1}`,
+          icon:
+            key === "monitors" ? Monitor :
+            key === "projectors" ? Projector :
+            key === "switch_boards" ? Zap :
+            key === "wifi" ? Wifi : Fan,
+          color:
+            key === "monitors" ? "blue" :
+            key === "projectors" ? "purple" :
+            key === "switch_boards" ? "yellow" :
+            key === "wifi" ? "indigo" : "green",
+        };
+        equipmentList.push(item);
+      });
+    });
+
+    console.log("Final equipment list:", equipmentList);
+    setEquipmentState(equipmentList);
+    setError(null);
+  } catch (err) {
+    console.error("Error loading equipment:", err);
+    setError(err.response?.data?.message || err.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
     fetchEquipment();
   }, []);
 
@@ -445,101 +272,83 @@ const LabEquipmentManager = () => {
     setSaveError(null);
   };
 
+  // Add this helper function inside your LabEquipmentManager component
+  const mapBackendStatus = (dbStatus) => {
+      switch (String(dbStatus)) {
+          case '0': return 'active';
+          case '2': return 'maintenance';
+          case '1': return 'damaged';
+          default: return 'active';
+      }
+  };
+
   // Updated save function to integrate with backend API using axios
   // Updated save function to integrate with backend API using axios
   const handleSaveEdit = async () => {
+    if (saving) return; // ✅ prevents double save clicks
     if (!selectedItem || !selectedItem.id) {
-        setSaveError("Invalid equipment selected");
-        return;
+      setSaveError("Invalid equipment selected");
+      return;
     }
 
     setSaving(true);
     setSaveError(null);
 
-    let numericId;
-    if (typeof selectedItem.id === 'string' && selectedItem.id.includes('_')) {
-        numericId = parseInt(selectedItem.id.split('_')[1], 10);
-    } else {
-        numericId = parseInt(selectedItem.id.toString().replace(/[^\d]/g, ''), 10);
-    }
-    
-    if (isNaN(numericId)) {
-        setSaveError("Invalid equipment ID format");
-        setSaving(false);
-        return;
-    }
+    const numericId = selectedItem.id;
 
     try {
-        const updateData = {
-            equipment_name: selectedItem.name,
-            equipment_code: selectedItem.code,
-            equipment_status: selectedItem.status,
-            equipment_password: selectedItem.password,
-            equipment_description: selectedItem.description 
-        };
+      setTimeout(() => {
+      setSelectedItem(null);
+      }, 2000);
+      console.log("Updating equipment:", numericId);
 
-        const response = await axios.put(
-            `/api/labinchargeassistant/equipment/${numericId}`,
-            updateData,
-            { 
-              headers: { "Content-Type": "application/json" },
-              // Add a timeout to prevent the request from hanging indefinitely.
-            }
-        );
+      const updateData = {
+        equipment_name: selectedItem.name,
+        equipment_code: selectedItem.code,
+        equipment_status: selectedItem.status,
+        equipment_password: selectedItem.password,
+        equipment_description: selectedItem.description,
+      };
 
-        const result = response.data;
-        
-        // Use optional chaining to safely check for success and equipment data.
-        if (result?.success && result?.equipment) {
-            console.log("Update successful:", result);
-            const updatedEquipment = {
-                id: selectedItem.id,
-                type: selectedItem.type,
-                name: result.equipment.equipment_name,
-                code: result.equipment.equipment_code,
-                status: result.equipment.status,
-                password: result.equipment.password ?? "",
-                description: result.equipment.description ?? "",
-                icon: selectedItem.icon,
-                color: selectedItem.color,
-            };
+      const response = await axios.put(
+        `/api/labinchargeassistant/equipment/${numericId}`,
+        updateData,
+        { headers: { "Content-Type": "application/json" } }
+      );
 
-            setEquipmentState(prev =>
-              prev.map(item => item.id === updated.id ? updated : item)
-            );
-            setSelectedItem(updatedEquipment);
-            setEditMode(false);
-            
-            setTimeout(() => {
-                setShowModal(false);
-                setSelectedItem(null);
-            }, 2000);
-            
-        } else {
-            // Throw an error if the server indicates failure.
-            throw new Error(result?.message || 'Update failed');
-        }
+      const result = response.data;
+      if (result?.success && result?.equipment) {
+        // ✅ close modal & edit mode instantly
+        setEditMode(false);
+        setShowModal(false);
 
+        // ✅ refresh the page after short delay (to get latest data from backend)
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+      }
+      else {
+        throw new Error(result?.message || "Update failed");
+      }
     } catch (error) {
-        // Consolidated error handling for all potential failures.
-        console.error("Error updating equipment:", error);
-        
-        let errorMessage = "Failed to update equipment";
-        
-        if (error.response) {
-            errorMessage = error.response.data?.error || error.response.data?.message || errorMessage;
-        } else if (error.request) {
-            errorMessage = "No response from server. Please check your connection.";
-        } else {
-            errorMessage = error.message;
-        }
-        
-        setSaveError(errorMessage);
+      console.error("Error updating equipment:", error);
+
+      let errorMessage = "Failed to update equipment";
+      if (error.response) {
+        errorMessage =
+          error.response.data?.error || error.response.data?.message || errorMessage;
+      } else if (error.request) {
+        errorMessage = "No response from server. Please check your connection.";
+      } else {
+        errorMessage = error.message;
+      }
+
+      setSaveError(errorMessage);
     } finally {
-        // This block is guaranteed to run, ensuring the saving state is always turned off.
-        setSaving(false);
+      setSaving(false); // ✅ spinner always stops
     }
-};
+  };
+
 
   const filteredEquipment = equipmentState.filter((item) => {
     const matchesSearch =
@@ -559,15 +368,29 @@ const LabEquipmentManager = () => {
   };
 
   const groupEquipmentByType = (equipmentList) => {
-    const grouped = {};
-    const types = getUniqueTypes();
+  const grouped = {};
+  const types = getUniqueTypes();
 
     types.forEach((type) => {
-      grouped[type] = equipmentList.filter((item) => item.type === type);
+      grouped[type] = equipmentList
+        .filter((item) => item.type === type)
+        .sort((a, b) => {
+          // Extract number from name first, fallback to code
+          const numA =
+            parseInt(a.name.match(/\d+/)?.[0]) ||
+            parseInt(a.code.match(/\d+/)?.[0]) ||
+            0;
+          const numB =
+            parseInt(b.name.match(/\d+/)?.[0]) ||
+            parseInt(b.code.match(/\d+/)?.[0]) ||
+            0;
+          return numA - numB;
+        });
     });
 
     return grouped;
   };
+
 
   const getTypeSummary = () => {
     const summary = {};
@@ -886,12 +709,12 @@ const LabEquipmentManager = () => {
                                       {item.code}
                                     </span>
                                   </div>
-                                  {item.password && (
+                                  {(item.type === "monitors" || item.type === "wifi") && (
                                     <div className="flex justify-between items-center">
                                       <span>Password:</span>
                                       <div className="flex items-center space-x-1">
                                         <span className="font-mono">
-                                          {showPasswords[item.id]
+                                          {showPasswords[item.id] && item.password
                                             ? item.password
                                             : "••••••••"}
                                         </span>
@@ -902,11 +725,7 @@ const LabEquipmentManager = () => {
                                           }}
                                           className="text-gray-400 hover:text-gray-600"
                                         >
-                                          {showPasswords[item.id] ? (
-                                            <EyeOff size={10} />
-                                          ) : (
-                                            <Eye size={10} />
-                                          )}
+                                          {showPasswords[item.id] ? <EyeOff size={10} /> : <Eye size={10} />}
                                         </button>
                                       </div>
                                     </div>
@@ -934,7 +753,7 @@ const LabEquipmentManager = () => {
 
         {/* Equipment Details Modal - Updated with backend integration */}
         {showModal && selectedItem && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-xl font-semibold text-gray-900">
@@ -1076,7 +895,7 @@ const LabEquipmentManager = () => {
                   </div>
 
                   {/* Password field - only for wifi and monitors */}
-                  {selectedItem.password && (
+                  {(selectedItem.type === "monitors" || selectedItem.type === "wifi") && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700">
                         Password
@@ -1084,7 +903,7 @@ const LabEquipmentManager = () => {
                       {editMode ? (
                         <input
                           type="text"
-                          value={selectedItem.password}
+                          value={selectedItem.password || ""}
                           onChange={(e) =>
                             setSelectedItem({
                               ...selectedItem,
@@ -1097,21 +916,15 @@ const LabEquipmentManager = () => {
                       ) : (
                         <div className="mt-1 flex items-center space-x-2">
                           <span className="font-mono text-gray-900">
-                            {showPasswords[selectedItem.id]
+                            {showPasswords[selectedItem.id] && selectedItem.password
                               ? selectedItem.password
                               : "••••••••"}
                           </span>
                           <button
-                            onClick={() =>
-                              togglePasswordVisibility(selectedItem.id)
-                            }
+                            onClick={() => togglePasswordVisibility(selectedItem.id)}
                             className="text-gray-400 hover:text-gray-600"
                           >
-                            {showPasswords[selectedItem.id] ? (
-                              <EyeOff size={16} />
-                            ) : (
-                              <Eye size={16} />
-                            )}
+                            {showPasswords[selectedItem.id] ? <EyeOff size={16} /> : <Eye size={16} />}
                           </button>
                         </div>
                       )}
