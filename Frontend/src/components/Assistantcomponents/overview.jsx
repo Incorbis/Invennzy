@@ -343,34 +343,37 @@ const Overview = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header with refresh button */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Dashboard Overview
-          </h1>
-          <p className="text-gray-600">
-            Real-time equipment and lab statistics
-          </p>
-        </div>
-        <div className="flex items-center space-x-3">
-          {lastRefresh && (
-            <p className="text-sm text-gray-500">
-              Last updated: {lastRefresh.toLocaleTimeString()}
-            </p>
-          )}
-          <button
-            onClick={handleManualRefresh}
-            disabled={refreshing}
-            className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          >
-            <RefreshCw
-              className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
-            />
-            <span>{refreshing ? "Refreshing..." : "Refresh"}</span>
-          </button>
-        </div>
-      </div>
+      <div className="flex flex-col space-y-4 sm:flex-row sm:justify-between sm:items-center sm:space-y-0">
+              <div className="text-center sm:text-left">
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Dashboard Overview
+                </h1>
+                {/* Hide subtitle on mobile, show on sm and above */}
+                <p className="text-gray-600 hidden sm:block">
+                  Real-time equipment and lab statistics
+                </p>
+              </div>
+              
+              {/* Mobile: Stack timestamp and button vertically, Desktop: horizontal */}
+              <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-3">
+                {lastRefresh && (
+                  <p className="text-sm text-gray-500 text-center sm:text-left">
+                    Last updated: {lastRefresh.toLocaleTimeString()}
+                  </p>
+                )}
+                <button
+                  onClick={handleManualRefresh}
+                  disabled={refreshing}
+                  className="flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm w-3/4 mx-auto sm:w-auto sm:mx-0"
+                >
+                  <RefreshCw
+                    className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
+                  />
+                  <span>{refreshing ? "Refreshing..." : "Refresh"}</span>
+                </button>
+              </div>
+            </div>
+      
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -524,7 +524,7 @@ const LabEquipmentManager = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="bg-white p-6 rounded-xl border border-gray-200">
@@ -633,7 +633,8 @@ const LabEquipmentManager = () => {
                   className="p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
                   onClick={() => toggleCategory(type)}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    {/* Left Section */}
                     <div className="flex items-center space-x-3">
                       <div
                         className={`w-10 h-10 bg-${categoryEquipment[0]?.color}-100 rounded-lg flex items-center justify-center`}
@@ -652,33 +653,33 @@ const LabEquipmentManager = () => {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="flex space-x-2">
-                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                          {
-                            categoryEquipment.filter(
-                              (item) => item.status === "active"
-                            ).length
-                          }{" "}
-                          Active
-                        </span>
-                        <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
-                          {
-                            categoryEquipment.filter(
-                              (item) => item.status === "maintenance"
-                            ).length
-                          }{" "}
-                          Maintenance
-                        </span>
-                        <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
-                          {
-                            categoryEquipment.filter(
-                              (item) => item.status === "damaged"
-                            ).length
-                          }{" "}
-                          Damaged
-                        </span>
-                      </div>
+
+                    {/* Right Section */}
+                    <div className="flex flex-wrap items-center gap-2 justify-start sm:justify-end">
+                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                        {
+                          categoryEquipment.filter(
+                            (item) => item.status === "active"
+                          ).length
+                        }{" "}
+                        Active
+                      </span>
+                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                        {
+                          categoryEquipment.filter(
+                            (item) => item.status === "maintenance"
+                          ).length
+                        }{" "}
+                        Maintenance
+                      </span>
+                      <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
+                        {
+                          categoryEquipment.filter(
+                            (item) => item.status === "damaged"
+                          ).length
+                        }{" "}
+                        Damaged
+                      </span>
                       <div
                         className={`transform transition-transform ${
                           isCollapsed ? "rotate-180" : ""
@@ -689,7 +690,7 @@ const LabEquipmentManager = () => {
                     </div>
                   </div>
                 </div>
-
+                
                 {/* Category Content */}
                 {!isCollapsed && (
                   <div className="p-4">

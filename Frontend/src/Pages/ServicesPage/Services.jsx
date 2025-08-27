@@ -18,7 +18,7 @@ const Services = () => {
         "Barcode and QR code integration",
         "Location-based tracking",
       ],
-      image: "/lovable-uploads/ecfe848a-4f61-4a7b-a567-424b70adf584.png",
+      image: "/service-image1.png",
     },
     {
       icon: TrendingUp,
@@ -31,7 +31,7 @@ const Services = () => {
         "Budget tracking and alerts",
         "Approval workflow automation",
       ],
-      image: "/lovable-uploads/ecfe848a-4f61-4a7b-a567-424b70adf584.png",
+      image: "/service-image2.png",
     },
     {
       icon: BarChart3,
@@ -44,7 +44,8 @@ const Services = () => {
         "Predictive maintenance alerts",
         "Custom report generation",
       ],
-      image: "/lovable-uploads/ecfe848a-4f61-4a7b-a567-424b70adf584.png",
+      image: "/service-image3.png",
+      
     },
   ];
 
@@ -112,7 +113,7 @@ const Services = () => {
                   <img
                     src={service.image}
                     alt={service.title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-fill"
                   />
                 </div>
 

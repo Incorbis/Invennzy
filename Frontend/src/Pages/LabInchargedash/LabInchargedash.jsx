@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   Home,
   Bell,
@@ -55,7 +55,6 @@ const SkeletonLoader = () => {
 };
 
 const labinchargedash = () => {
-  const [activeTab, setActiveTab] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
@@ -138,6 +137,9 @@ const labinchargedash = () => {
     },
   ];
 
+  const location = useLocation();
+  const currentMenu = menuItems.find((item) => location.pathname.startsWith(item.path));
+
   const handleMenuClick = (item) => {
     setActiveTab(item.id);
     if (isMobile) {
@@ -196,20 +198,21 @@ const labinchargedash = () => {
           </div>
           <nav className="flex-1 overflow-y-auto p-4 space-y-2">
             {menuItems.map((item) => (
-              <Link
+              <NavLink
                 key={item.id}
                 to={item.path}
-                onClick={() => handleMenuClick(item)}
-                className={`flex items-center w-full p-3 rounded-lg transition-all duration-200
-                  ${
-                    activeTab === item.id
+                end
+                className={({ isActive }) =>
+                  `flex items-center w-full p-3 rounded-lg transition-all duration-200 ${
+                    isActive
                       ? "bg-blue-50 text-blue-600 border-r-2 border-blue-500"
                       : "text-gray-700 hover:bg-gray-50"
-                  }`}
+                  }`
+                }
               >
                 <item.icon size={20} className="flex-shrink-0" />
                 <span className="ml-3 font-medium">{item.label}</span>
-              </Link>
+              </NavLink>
             ))}
           </nav>
           <div className="p-4 border-t border-gray-200">
@@ -257,8 +260,7 @@ const labinchargedash = () => {
               </button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">
-                  {menuItems.find((item) => item.id === activeTab)?.label ||
-                    "Dashboard"}
+                  {currentMenu?.label || "Dashboard"}
                 </h1>
                 <p className="text-sm text-gray-500">
                   Welcome Back, {name || "LabInCharge"}!
@@ -268,15 +270,14 @@ const labinchargedash = () => {
             <div className="flex items-center space-x-4">
               <div className="relative hidden md:block"></div>
               <button className="p-2 relative rounded-lg hover:bg-gray-100">
-                <Link to="/labinchargedash/notifications">
+                <NavLink to="/labinchargedash/notifications" className="p-2 relative rounded-lg hover:bg-gray-100">
                   <Bell className="text-gray-500" size={20} />
-
                   {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                       {unreadCount}
                     </span>
                   )}
-                </Link>
+                </NavLink>
               </button>
             </div>
           </div>
