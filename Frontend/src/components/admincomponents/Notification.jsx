@@ -8,6 +8,12 @@ const Notification = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentAction, setCurrentAction] = useState(null);
+  const [confirmationModal, setConfirmationModal] = useState({
+    isOpen: false,
+    action: null,
+    requestId: null,
+    requestDetails: null
+  });
 
   // Fetch assistant-provided corrective action details
   useEffect(() => {
@@ -30,8 +36,8 @@ const Notification = () => {
   // Calculate summary statistics
   const totalNotifications = notifications.length;
   const approvedCount = notifications.filter(n => n.adminApprovalStatus === "approved").length;
-const rejectedCount = notifications.filter(n => n.adminApprovalStatus === "rejected").length;
-const pendingCount = notifications.filter(n => !n.adminApprovalStatus || n.adminApprovalStatus === "pending").length;
+  const rejectedCount = notifications.filter(n => n.adminApprovalStatus === "rejected").length;
+  const pendingCount = notifications.filter(n => !n.adminApprovalStatus || n.adminApprovalStatus === "pending").length;
 
   // Filter notifications based on search term
   const filteredNotifications = notifications.filter(n => 
@@ -40,27 +46,49 @@ const pendingCount = notifications.filter(n => !n.adminApprovalStatus || n.admin
     n.id.toString().includes(searchTerm)
   );
 
-  // Handle approval/rejection
-  const handleApproval = async (requestId, status) => {
-  try {
-    await fetch(`/api/assistant/details/${requestId}/approval`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ adminApprovalStatus: status }), // status is "approved" | "rejected"
+  // Open confirmation modal
+  const openConfirmationModal = (action, requestId) => {
+    const request = notifications.find(n => n.id === requestId);
+    setConfirmationModal({
+      isOpen: true,
+      action,
+      requestId,
+      requestDetails: request
     });
+  };
 
-    // Update local state instantly
-    setNotifications((prev) =>
-      prev.map((n) =>
-        n.id === requestId ? { ...n, adminApprovalStatus: status } : n
-      )
-    );
+  // Close confirmation modal
+  const closeConfirmationModal = () => {
+    setConfirmationModal({
+      isOpen: false,
+      action: null,
+      requestId: null,
+      requestDetails: null
+    });
+  };
 
-    setCurrentAction(null);
-  } catch (err) {
-    console.error("Approval error:", err);
-  }
-};
+  // Handle approval/rejection after confirmation
+  const handleApproval = async (requestId, status) => {
+    try {
+      await fetch(`/api/assistant/details/${requestId}/approval`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminApprovalStatus: status }),
+      });
+
+      // Update local state instantly
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.id === requestId ? { ...n, adminApprovalStatus: status } : n
+        )
+      );
+
+      setCurrentAction(null);
+      closeConfirmationModal();
+    } catch (err) {
+      console.error("Approval error:", err);
+    }
+  };
 
   const handleView = (request) => {
     setSelectedRequest(request);
@@ -211,41 +239,41 @@ const pendingCount = notifications.filter(n => !n.adminApprovalStatus || n.admin
                         <p className="text-xs text-gray-500 mt-1">Dept: {n.department || "-"}</p>
                       </div>
                     </td>
-                   <td className="px-6 py-4 whitespace-nowrap">
-  <div className="flex flex-col space-y-2">
-    {n.adminApprovalStatus === "approved" && (
-      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">
-        Approved
-      </span>
-    )}
-    {n.adminApprovalStatus === "rejected" && (
-      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-700">
-        Rejected
-      </span>
-    )}
-    {(!n.adminApprovalStatus || n.adminApprovalStatus === "pending") && (
-      <div className="space-y-1">
-        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-700 mb-2">
-          Pending
-        </span>
-        <div className="flex space-x-1">
-          <button
-            onClick={() => handleApproval(n.id, "approved")}
-            className="px-2 py-1 text-xs text-white bg-green-600 rounded hover:bg-green-700"
-          >
-            Approve
-          </button>
-          <button
-            onClick={() => handleApproval(n.id, "rejected")}
-            className="px-2 py-1 text-xs text-white bg-red-600 rounded hover:bg-red-700"
-          >
-            Reject
-          </button>
-        </div>
-      </div>
-    )}
-  </div>
-</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-col space-y-2">
+                        {n.adminApprovalStatus === "approved" && (
+                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">
+                            Approved
+                          </span>
+                        )}
+                        {n.adminApprovalStatus === "rejected" && (
+                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-700">
+                            Rejected
+                          </span>
+                        )}
+                        {(!n.adminApprovalStatus || n.adminApprovalStatus === "pending") && (
+                          <div className="space-y-1">
+                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-700 mb-2">
+                              Pending
+                            </span>
+                            <div className="flex space-x-1">
+                              <button
+                                onClick={() => openConfirmationModal("approved", n.id)}
+                                className="px-2 py-1 text-xs text-white bg-green-600 rounded hover:bg-green-700"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => openConfirmationModal("rejected", n.id)}
+                                className="px-2 py-1 text-xs text-white bg-red-600 rounded hover:bg-red-700"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </td>
 
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
@@ -263,9 +291,69 @@ const pendingCount = notifications.filter(n => !n.adminApprovalStatus || n.admin
         )}
       </div>
 
+      {/* Confirmation Modal */}
+      {confirmationModal.isOpen && (
+        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm z-50">
+          <div className="bg-white rounded-xl shadow-lg w-11/12 max-w-md p-6">
+            <div className="flex items-center mb-4">
+              {confirmationModal.action === "approved" ? (
+                <CheckCircle className="w-8 h-8 text-green-600 mr-3" />
+              ) : (
+                <XCircle className="w-8 h-8 text-red-600 mr-3" />
+              )}
+              <h2 className="text-xl font-bold text-gray-900">
+                Confirm {confirmationModal.action === "approved" ? "Approval" : "Rejection"}
+              </h2>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-gray-700 mb-4">
+                Are you sure you want to <strong>{confirmationModal.action === "approved" ? "approve" : "reject"}</strong> this corrective action?
+              </p>
+              
+              {confirmationModal.requestDetails && (
+                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                  <div className="text-sm">
+                    <span className="font-semibold">ID:</span> {confirmationModal.requestDetails.id}
+                  </div>
+                  <div className="text-sm">
+                    <span className="font-semibold">Department:</span> {confirmationModal.requestDetails.department || "-"}
+                  </div>
+                  <div className="text-sm">
+                    <span className="font-semibold">Details:</span> 
+                    <span className="block mt-1 text-gray-600">
+                      {confirmationModal.requestDetails.complaint_details || "No details available"}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={closeConfirmationModal}
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleApproval(confirmationModal.requestId, confirmationModal.action)}
+                className={`px-4 py-2 text-white rounded-lg transition-colors ${
+                  confirmationModal.action === "approved"
+                    ? "bg-green-600 hover:bg-green-700"
+                    : "bg-red-600 hover:bg-red-700"
+                }`}
+              >
+                {confirmationModal.action === "approved" ? "Approve" : "Reject"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal for Viewing Request Details */}
       {isModalOpen && selectedRequest && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm z-50">
           <div className="bg-white rounded-xl shadow-lg w-11/12 max-w-3xl p-6 overflow-y-auto max-h-[90vh]">
             <h2 className="text-xl font-bold mb-4">Request Details (ID: {selectedRequest.id})</h2>
             <div className="space-y-2 text-sm text-gray-700">

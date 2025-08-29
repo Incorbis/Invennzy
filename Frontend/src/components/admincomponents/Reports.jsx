@@ -123,8 +123,7 @@ ${JSON.stringify(report, null, 2)}
       year: 'numeric',
       month: 'short',
       day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      
     });
   };
 
@@ -228,7 +227,7 @@ ${JSON.stringify(report, null, 2)}
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date Processed
+                  Date
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -264,7 +263,7 @@ ${JSON.stringify(report, null, 2)}
                       <User size={16} className="text-gray-400 mr-2" />
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {report.assistant_name || 'Assistant'}
+                          {report.lab_assistant || 'Assistant'}
                         </div>
                         <div className="text-sm text-gray-500">Assistant</div>
                         <div className="text-xs text-gray-400">{report.department || 'N/A'}</div>
@@ -280,7 +279,7 @@ ${JSON.stringify(report, null, 2)}
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="flex items-center">
                       <Calendar size={16} className="mr-1" />
-                      {formatDate(report.updated_at)}
+                      {formatDate(report.date)}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -325,7 +324,7 @@ ${JSON.stringify(report, null, 2)}
 
       {/* Modal for Report Details */}
       {showModal && selectedReport && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div className="fixed inset-0 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold text-gray-900">Report Details</h3>
@@ -407,8 +406,10 @@ ${JSON.stringify(report, null, 2)}
                       <p className="text-sm text-gray-900">{formatDate(selectedReport.created_at)}</p>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Date Processed:</span>
-                      <p className="text-sm text-gray-900">{formatDate(selectedReport.updated_at)}</p>
+                      <p className="text-sm font-medium text-gray-600">Date Processed:</p>
+                      <p className="text-sm text-gray-900">
+                        {selectedReport.date ? selectedReport.date : "N/A"}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -416,21 +417,7 @@ ${JSON.stringify(report, null, 2)}
             </div>
 
             {/* Action Buttons */}
-            <div className="mt-6 flex justify-end space-x-3">
-              <button
-                onClick={() => handleExportPDF(selectedReport)}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center"
-              >
-                <Download size={16} className="mr-2" />
-                Export Report
-              </button>
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                Close
-              </button>
-            </div>
+            
           </div>
         </div>
       )}
