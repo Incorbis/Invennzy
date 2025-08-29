@@ -179,7 +179,12 @@ const LabInchargeNotifications = () => {
               return (
                 <div
                   key={notification.id}
-                  className={`p-6 hover:bg-gray-50 transition-colors ${
+                  onClick={() =>
+                    navigate(
+                      `/labinchargedash/requests/${notification.request_id}`
+                    )
+                  }
+                  className={`cursor-pointer p-6 hover:bg-gray-50 transition-colors ${
                     !notification.is_read ? "bg-blue-50" : ""
                   }`}
                 >
@@ -202,8 +207,10 @@ const LabInchargeNotifications = () => {
                               <span className="inline-block w-2 h-2 bg-blue-500 rounded-full ml-2"></span>
                             )}
                           </h4>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {notification.message}
+
+                          <p className="text-0.5xl text-gray-500 mt-1">
+                            Equipment: {notification.equipment_name} (ID:{" "}
+                            {notification.equipment_id})
                           </p>
                           <p className="text-xs text-gray-500 mt-2">
                             {formatTime(notification.timestamp)}

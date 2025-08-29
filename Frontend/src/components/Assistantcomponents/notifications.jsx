@@ -181,7 +181,8 @@ const Notifications = () => {
               return (
                 <div
                   key={notification.id}
-                  className={`p-6 hover:bg-gray-50 transition-colors ${
+                  onClick={() => handleViewRequest(notification)} // whole card clickable
+                  className={`cursor-pointer p-6 hover:bg-gray-50 transition-colors ${
                     !notification.is_read ? "bg-blue-50" : ""
                   }`}
                 >
@@ -204,8 +205,9 @@ const Notifications = () => {
                               <span className="inline-block w-2 h-2 bg-blue-500 rounded-full ml-2"></span>
                             )}
                           </h4>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {notification.message}
+                          <p className="text-0.5xl text-gray-500 mt-1">
+                            Equipment: {notification.equipment_name} (ID:{" "}
+                            {notification.equipment_id})
                           </p>
                           <p className="text-xs text-gray-500 mt-2">
                             {formatTime(notification.timestamp)}
@@ -215,7 +217,7 @@ const Notifications = () => {
                           {!notification.is_read && (
                             <button
                               onClick={(e) => {
-                                e.stopPropagation();
+                                e.stopPropagation(); // prevent card click
                                 handleMarkAsRead(notification.id);
                               }}
                               className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors"
@@ -226,23 +228,13 @@ const Notifications = () => {
                           )}
                           <button
                             onClick={(e) => {
-                              e.stopPropagation();
+                              e.stopPropagation(); // prevent card click
                               handleDelete(notification.id);
                             }}
                             className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
                             title="Delete notification"
                           >
                             <Trash2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleViewRequest(notification);
-                            }}
-                            className="p-1 text-green-600 hover:bg-green-100 rounded transition-colors"
-                            title="View request"
-                          >
-                            <ViewIcon className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
