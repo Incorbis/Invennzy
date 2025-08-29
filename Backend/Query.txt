@@ -232,4 +232,8 @@ ADD COLUMN completion_remark_maintenance TEXT,
 ADD COLUMN maintenance_closed_date DATE,
 ADD COLUMN maintenance_closed_signature VARCHAR(255);
 
+ALTER TABLE requests
+ADD COLUMN equipment_id INT NOT NULL AFTER staff_id;
+
+
 
