@@ -138,7 +138,9 @@ const labinchargedash = () => {
   ];
 
   const location = useLocation();
-  const currentMenu = menuItems.find((item) => location.pathname.startsWith(item.path));
+  const currentMenu = menuItems.find((item) =>
+    location.pathname.startsWith(item.path)
+  );
 
   const handleMenuClick = (item) => {
     setActiveTab(item.id);
@@ -270,7 +272,7 @@ const labinchargedash = () => {
             <div className="flex items-center space-x-4">
               <div className="relative hidden md:block"></div>
               <button className="p-2 relative rounded-lg hover:bg-gray-100">
-                <NavLink to="/labinchargedash/notifications" className="p-2 relative rounded-lg hover:bg-gray-100">
+                <NavLink to="/labinchargedash/notifications">
                   <Bell className="text-gray-500" size={20} />
                   {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">

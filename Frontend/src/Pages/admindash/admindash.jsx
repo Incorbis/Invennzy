@@ -179,7 +179,7 @@ const Dashboard = () => {
               <NavLink
                 key={item.id}
                 to={item.path}
-                end={item.id === "overview"}   // ✅ only Overview matches exactly
+                end={item.id === "overview"} // ✅ only Overview matches exactly
                 className={({ isActive }) =>
                   `flex items-center w-full p-3 rounded-lg transition-all duration-200 ${
                     isActive
