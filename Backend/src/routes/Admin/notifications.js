@@ -26,25 +26,35 @@ router.get("/admin/notifications", async (req, res) => {
         external_agency_needed,
         agency_name,
         approx_expenditure,
-        admin_approval_status
+        admin_approval_status AS adminApprovalStatus
       FROM requests
       ORDER BY id DESC;
     `;
 
     const [results] = await db.query(query);
 
-    res.json(results);
+    // ✅ keep enum values as-is
+    const normalized = results.map(r => ({
+      ...r,
+      adminApprovalStatus: r.adminApprovalStatus || "pending", // default
+    }));
+
+    res.json(normalized);
+
   } catch (error) {
     console.error("Error fetching notifications:", error);
     res.status(500).json({ error: "Server error" });
   }
 });
 
+
 router.put("/assistant/details/:id/approval", async (req, res) => {
   const { id } = req.params;
-  const { adminApprovalStatus } = req.body;
+  let { adminApprovalStatus } = req.body;
 
-  if (adminApprovalStatus !== 0 && adminApprovalStatus !== 1) {
+  // Only allow approved/rejected/pending
+  const validStatuses = ["approved", "rejected", "pending"];
+  if (!validStatuses.includes(adminApprovalStatus)) {
     return res.status(400).json({ error: "Invalid approval status" });
   }
 
@@ -61,10 +71,10 @@ router.put("/assistant/details/:id/approval", async (req, res) => {
       return res.status(404).json({ error: "Request not found" });
     }
 
-    res.json({ 
-      message: "Approval status updated successfully", 
-      requestId: id, 
-      adminApprovalStatus 
+    res.json({
+      message: "Approval status updated successfully",
+      requestId: id,
+      adminApprovalStatus,
     });
   } catch (error) {
     console.error("Error updating approval status:", error);

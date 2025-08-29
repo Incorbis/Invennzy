@@ -7,9 +7,7 @@ const Notification = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isRemarksModalOpen, setIsRemarksModalOpen] = useState(false);
   const [currentAction, setCurrentAction] = useState(null);
-  const [remarks, setRemarks] = useState("");
 
   // Fetch assistant-provided corrective action details
   useEffect(() => {
@@ -31,9 +29,9 @@ const Notification = () => {
 
   // Calculate summary statistics
   const totalNotifications = notifications.length;
-  const approvedCount = notifications.filter(n => n.adminApprovalStatus === 1).length;
-  const rejectedCount = notifications.filter(n => n.adminApprovalStatus === 0).length;
-  const pendingCount = notifications.filter(n => n.adminApprovalStatus == null).length;
+  const approvedCount = notifications.filter(n => n.adminApprovalStatus === "approved").length;
+const rejectedCount = notifications.filter(n => n.adminApprovalStatus === "rejected").length;
+const pendingCount = notifications.filter(n => !n.adminApprovalStatus || n.adminApprovalStatus === "pending").length;
 
   // Filter notifications based on search term
   const filteredNotifications = notifications.filter(n => 
@@ -42,43 +40,27 @@ const Notification = () => {
     n.id.toString().includes(searchTerm)
   );
 
-  // Handle approval/rejection with remarks
-  const handleApprovalWithRemarks = (requestId, status) => {
-    setCurrentAction({ requestId, status });
-    setIsRemarksModalOpen(true);
-  };
+  // Handle approval/rejection
+  const handleApproval = async (requestId, status) => {
+  try {
+    await fetch(`/api/assistant/details/${requestId}/approval`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adminApprovalStatus: status }), // status is "approved" | "rejected"
+    });
 
-  const confirmApproval = async () => {
-    if (!currentAction) return;
+    // Update local state instantly
+    setNotifications((prev) =>
+      prev.map((n) =>
+        n.id === requestId ? { ...n, adminApprovalStatus: status } : n
+      )
+    );
 
-    try {
-      await fetch(`/api/assistant/details/${currentAction.requestId}/approval`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          adminApprovalStatus: currentAction.status,
-          remarks: remarks
-        }),
-      });
-
-      // Update local state instantly
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.id === currentAction.requestId 
-            ? { ...n, adminApprovalStatus: currentAction.status, remarks: remarks } 
-            : n
-        )
-      );
-
-      setIsRemarksModalOpen(false);
-      setCurrentAction(null);
-      setRemarks("");
-    } catch (err) {
-      console.error("Approval error:", err);
-    }
-  };
+    setCurrentAction(null);
+  } catch (err) {
+    console.error("Approval error:", err);
+  }
+};
 
   const handleView = (request) => {
     setSelectedRequest(request);
@@ -101,12 +83,6 @@ const Notification = () => {
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedRequest(null);
-  };
-
-  const closeRemarksModal = () => {
-    setIsRemarksModalOpen(false);
-    setCurrentAction(null);
-    setRemarks("");
   };
 
   if (loading) {
@@ -235,41 +211,42 @@ const Notification = () => {
                         <p className="text-xs text-gray-500 mt-1">Dept: {n.department || "-"}</p>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-col space-y-2">
-                        {n.adminApprovalStatus === 1 && (
-                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">
-                            Approved
-                          </span>
-                        )}
-                        {n.adminApprovalStatus === 0 && (
-                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-700">
-                            Rejected
-                          </span>
-                        )}
-                        {n.adminApprovalStatus == null && (
-                          <div className="space-y-1">
-                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-700 mb-2">
-                              Pending
-                            </span>
-                            <div className="flex space-x-1">
-                              <button
-                                onClick={() => handleApprovalWithRemarks(n.id, 1)}
-                                className="px-2 py-1 text-xs text-white bg-green-600 rounded hover:bg-green-700"
-                              >
-                                Approve
-                              </button>
-                              <button
-                                onClick={() => handleApprovalWithRemarks(n.id, 0)}
-                                className="px-2 py-1 text-xs text-white bg-red-600 rounded hover:bg-red-700"
-                              >
-                                Reject
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </td>
+                   <td className="px-6 py-4 whitespace-nowrap">
+  <div className="flex flex-col space-y-2">
+    {n.adminApprovalStatus === "approved" && (
+      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">
+        Approved
+      </span>
+    )}
+    {n.adminApprovalStatus === "rejected" && (
+      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-700">
+        Rejected
+      </span>
+    )}
+    {(!n.adminApprovalStatus || n.adminApprovalStatus === "pending") && (
+      <div className="space-y-1">
+        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-700 mb-2">
+          Pending
+        </span>
+        <div className="flex space-x-1">
+          <button
+            onClick={() => handleApproval(n.id, "approved")}
+            className="px-2 py-1 text-xs text-white bg-green-600 rounded hover:bg-green-700"
+          >
+            Approve
+          </button>
+          <button
+            onClick={() => handleApproval(n.id, "rejected")}
+            className="px-2 py-1 text-xs text-white bg-red-600 rounded hover:bg-red-700"
+          >
+            Reject
+          </button>
+        </div>
+      </div>
+    )}
+  </div>
+</td>
+
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
                         onClick={() => handleView(n)}
@@ -277,17 +254,6 @@ const Notification = () => {
                       >
                         <Eye className="w-4 h-4 mr-1" /> View
                       </button>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      <div className="max-w-xs">
-                        {n.remarks ? (
-                          <p className="text-gray-700 truncate" title={n.remarks}>
-                            {n.remarks}
-                          </p>
-                        ) : (
-                          <span className="text-gray-400 italic">No remarks</span>
-                        )}
-                      </div>
                     </td>
                   </tr>
                 ))}
@@ -322,47 +288,6 @@ const Notification = () => {
                 className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
               >
                 Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Remarks Modal */}
-      {isRemarksModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white rounded-xl shadow-lg w-11/12 max-w-md p-6">
-            <h2 className="text-xl font-bold mb-4">
-              {currentAction?.status === 1 ? 'Approve' : 'Reject'} Notification
-            </h2>
-            <p className="text-gray-600 mb-4">
-              Please provide remarks for this action:
-            </p>
-            <textarea
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-              placeholder="Enter your remarks here..."
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              rows={4}
-              required
-            />
-            <div className="mt-6 flex justify-end space-x-2">
-              <button
-                onClick={closeRemarksModal}
-                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmApproval}
-                disabled={!remarks.trim()}
-                className={`px-4 py-2 text-white rounded-lg ${
-                  remarks.trim() 
-                    ? (currentAction?.status === 1 ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700')
-                    : 'bg-gray-300 cursor-not-allowed'
-                }`}
-              >
-                {currentAction?.status === 1 ? 'Approve' : 'Reject'}
               </button>
             </div>
           </div>

@@ -1,21 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { 
   FileText, 
   Download, 
-  Filter, 
   Search, 
   Eye, 
   CheckCircle, 
   Clock, 
   AlertCircle, 
-  Users, 
   Calendar,
   RefreshCw,
   User,
   Building,
-  Wrench,
   ChevronDown,
-  X
+  X,
+  XCircle
 } from 'lucide-react';
 
 const ReportsPage = () => {
@@ -23,120 +22,33 @@ const ReportsPage = () => {
   const [filteredReports, setFilteredReports] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all');
   const [selectedReport, setSelectedReport] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
 
-  // Mock data - replace with actual API calls
-  const mockReports = [
-    {
-      id: 'RPT-2025-001',
-      title: 'Network Equipment Malfunction',
-      description: 'Router in Lab A is not providing internet connectivity to workstations.',
-      submittedBy: 'Dr. Sarah Johnson',
-      role: 'Lab Incharge',
-      department: 'Computer Science',
-      lab: 'Computer Lab A',
-      priority: 'high',
-      status: 'pending',
-      dateSubmitted: '2025-01-15T09:30:00Z',
-      lastUpdated: '2025-01-15T09:30:00Z',
-      assignedTo: 'Mike Chen',
-      assignedRole: 'Lab Assistant',
-      equipment: 'Cisco Router WRT3200',
-      issueCategory: 'Network',
-      expectedResolution: '2025-01-16T17:00:00Z',
-      attachments: ['network-diagram.pdf', 'error-log.txt']
-    },
-    {
-      id: 'RPT-2025-002',
-      title: 'Microscope Calibration Issue',
-      description: 'Microscope Model XYZ-500 requires calibration. Focus mechanism is not working properly.',
-      submittedBy: 'Prof. Michael Brown',
-      role: 'Lab Incharge',
-      department: 'Biology',
-      lab: 'Biology Lab B',
-      priority: 'medium',
-      status: 'in_progress',
-      dateSubmitted: '2025-01-14T14:20:00Z',
-      lastUpdated: '2025-01-15T10:45:00Z',
-      assignedTo: 'Admin',
-      assignedRole: 'System Administrator',
-      equipment: 'Microscope XYZ-500',
-      issueCategory: 'Equipment',
-      expectedResolution: '2025-01-18T16:00:00Z',
-      attachments: ['microscope-manual.pdf']
-    },
-    {
-      id: 'RPT-2025-003',
-      title: 'Chemical Fume Hood Ventilation',
-      description: 'Fume hood ventilation system is making unusual noise and airflow seems reduced.',
-      submittedBy: 'Dr. Emily Davis',
-      role: 'Lab Incharge',
-      department: 'Chemistry',
-      lab: 'Chemistry Lab C',
-      priority: 'high',
-      status: 'completed',
-      dateSubmitted: '2025-01-13T11:15:00Z',
-      lastUpdated: '2025-01-15T16:30:00Z',
-      assignedTo: 'John Smith',
-      assignedRole: 'Lab Assistant',
-      equipment: 'Fume Hood FH-200',
-      issueCategory: 'Safety Equipment',
-      expectedResolution: '2025-01-15T17:00:00Z',
-      attachments: ['safety-report.pdf', 'ventilation-specs.pdf']
-    },
-    {
-      id: 'RPT-2025-004',
-      title: 'Projector Display Issues',
-      description: 'Classroom projector is showing distorted colors and flickering intermittently.',
-      submittedBy: 'Prof. Robert Wilson',
-      role: 'Lab Incharge',
-      department: 'Physics',
-      lab: 'Physics Lab D',
-      priority: 'low',
-      status: 'pending',
-      dateSubmitted: '2025-01-15T16:45:00Z',
-      lastUpdated: '2025-01-15T16:45:00Z',
-      assignedTo: 'Lisa Wang',
-      assignedRole: 'Lab Assistant',
-      equipment: 'Epson PowerLite 5050',
-      issueCategory: 'Audio/Visual',
-      expectedResolution: '2025-01-17T15:00:00Z',
-      attachments: ['projector-image.jpg']
-    },
-    {
-      id: 'RPT-2025-005',
-      title: 'Spectrometer Software Update',
-      description: 'Mass spectrometer requires software update and recalibration after recent maintenance.',
-      submittedBy: 'Dr. Amanda Lee',
-      role: 'Lab Assistant',
-      department: 'Chemistry',
-      lab: 'Advanced Chemistry Lab',
-      priority: 'medium',
-      status: 'escalated',
-      dateSubmitted: '2025-01-12T08:30:00Z',
-      lastUpdated: '2025-01-15T12:20:00Z',
-      assignedTo: 'Admin',
-      assignedRole: 'System Administrator',
-      equipment: 'Mass Spectrometer MS-400',
-      issueCategory: 'Software',
-      expectedResolution: '2025-01-19T14:00:00Z',
-      attachments: ['software-requirements.pdf', 'calibration-log.xlsx']
-    }
-  ];
-
+  // Fetch reports from the same API endpoint as notifications
   useEffect(() => {
-    // Simulate API call
-    const timer = setTimeout(() => {
-      setReports(mockReports);
-      setFilteredReports(mockReports);
-      setLoading(false);
-    }, 1000);
+    const fetchReports = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get('/api/admin/notifications');
+        
+        // Filter only approved or rejected reports (completed actions)
+        const completedReports = response.data.filter(
+          notification => notification.adminApprovalStatus === 'approved' || 
+                        notification.adminApprovalStatus === 'rejected'
+        );
+        
+        setReports(completedReports);
+        setFilteredReports(completedReports);
+      } catch (error) {
+        console.error("Error fetching reports:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    return () => clearTimeout(timer);
+    fetchReports();
   }, []);
 
   useEffect(() => {
@@ -145,93 +57,60 @@ const ReportsPage = () => {
     // Search filter
     if (searchQuery) {
       filtered = filtered.filter(report =>
-        report.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        report.submittedBy.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        report.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        report.equipment.toLowerCase().includes(searchQuery.toLowerCase())
+        report.complaint_details?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        report.department?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        report.assistant_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        report.id.toString().includes(searchQuery)
       );
     }
 
     // Status filter
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(report => report.status === statusFilter);
-    }
-
-    // Priority filter
-    if (priorityFilter !== 'all') {
-      filtered = filtered.filter(report => report.priority === priorityFilter);
+      filtered = filtered.filter(report => report.adminApprovalStatus === statusFilter);
     }
 
     setFilteredReports(filtered);
-  }, [searchQuery, statusFilter, priorityFilter, reports]);
+  }, [searchQuery, statusFilter, reports]);
 
   const getStatusColor = (status) => {
     const colors = {
-      pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      in_progress: 'bg-blue-100 text-blue-800 border-blue-200',
-      completed: 'bg-green-100 text-green-800 border-green-200',
-      escalated: 'bg-red-100 text-red-800 border-red-200'
+      approved: 'bg-green-100 text-green-800 border-green-200',
+      rejected: 'bg-red-100 text-red-800 border-red-200'
     };
     return colors[status] || 'bg-gray-100 text-gray-800 border-gray-200';
   };
 
-  const getPriorityColor = (priority) => {
-    const colors = {
-      high: 'text-red-600',
-      medium: 'text-yellow-600',
-      low: 'text-green-600'
-    };
-    return colors[priority] || 'text-gray-600';
-  };
-
   const getStatusIcon = (status) => {
     const icons = {
-      pending: Clock,
-      in_progress: RefreshCw,
-      completed: CheckCircle,
-      escalated: AlertCircle
+      approved: CheckCircle,
+      rejected: XCircle
     };
     const Icon = icons[status] || Clock;
     return <Icon size={16} />;
   };
 
-  const handleStatusChange = (reportId, newStatus) => {
-    setReports(prevReports =>
-      prevReports.map(report =>
-        report.id === reportId
-          ? { ...report, status: newStatus, lastUpdated: new Date().toISOString() }
-          : report
-      )
-    );
-    setShowModal(false);
-  };
-
   const handleExportPDF = (report) => {
-    // Simulate PDF generation and download
     const content = `
-      Report ID: ${report.id}
-      Title: ${report.title}
-      Submitted By: ${report.submittedBy} (${report.role})
-      Department: ${report.department}
-      Lab: ${report.lab}
-      Equipment: ${report.equipment}
-      Priority: ${report.priority}
-      Status: ${report.status}
-      
-      Description:
-      ${report.description}
-      
-      Date Submitted: ${new Date(report.dateSubmitted).toLocaleString()}
-      Last Updated: ${new Date(report.lastUpdated).toLocaleString()}
-      Assigned To: ${report.assignedTo} (${report.assignedRole})
-      Expected Resolution: ${new Date(report.expectedResolution).toLocaleString()}
+Report ID: ${report.id}
+Assistant Name: ${report.assistant_name || 'N/A'}
+Department: ${report.department || 'N/A'}
+Status: ${report.adminApprovalStatus}
+
+Complaint Details:
+${report.complaint_details || 'N/A'}
+
+Date Submitted: ${report.created_at ? new Date(report.created_at).toLocaleString() : 'N/A'}
+Date Processed: ${report.updated_at ? new Date(report.updated_at).toLocaleString() : 'N/A'}
+
+Additional Information:
+${JSON.stringify(report, null, 2)}
     `;
     
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${report.id}-report.txt`;
+    a.download = `report-${report.id}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -239,6 +118,7 @@ const ReportsPage = () => {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -266,12 +146,12 @@ const ReportsPage = () => {
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Issue Reports</h1>
-        <p className="text-gray-600">Manage and track laboratory equipment and facility issues</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Assistant Reports</h1>
+        <p className="text-gray-600">View processed corrective actions submitted by assistants</p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
@@ -284,34 +164,23 @@ const ReportsPage = () => {
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Pending</p>
-              <p className="text-2xl font-bold text-yellow-600">
-                {reports.filter(r => r.status === 'pending').length}
-              </p>
-            </div>
-            <Clock className="h-8 w-8 text-yellow-600" />
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">In Progress</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {reports.filter(r => r.status === 'in_progress').length}
-              </p>
-            </div>
-            <RefreshCw className="h-8 w-8 text-blue-600" />
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Completed</p>
+              <p className="text-sm font-medium text-gray-600">Approved</p>
               <p className="text-2xl font-bold text-green-600">
-                {reports.filter(r => r.status === 'completed').length}
+                {reports.filter(r => r.adminApprovalStatus === 'approved').length}
               </p>
             </div>
             <CheckCircle className="h-8 w-8 text-green-600" />
+          </div>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Rejected</p>
+              <p className="text-2xl font-bold text-red-600">
+                {reports.filter(r => r.adminApprovalStatus === 'rejected').length}
+              </p>
+            </div>
+            <XCircle className="h-8 w-8 text-red-600" />
           </div>
         </div>
       </div>
@@ -323,7 +192,7 @@ const ReportsPage = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             <input
               type="text"
-              placeholder="Search reports by title, submitter, department, or equipment..."
+              placeholder="Search reports by ID, complaint details, department, or assistant name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -336,20 +205,8 @@ const ReportsPage = () => {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="in_progress">In Progress</option>
-              <option value="completed">Completed</option>
-              <option value="escalated">Escalated</option>
-            </select>
-            <select
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Priority</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
             </select>
           </div>
         </div>
@@ -368,13 +225,10 @@ const ReportsPage = () => {
                   Submitter
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Priority
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date Submitted
+                  Date Processed
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -392,9 +246,16 @@ const ReportsPage = () => {
                         </div>
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{report.title}</div>
-                        <div className="text-sm text-gray-500">{report.id}</div>
-                        <div className="text-xs text-gray-400">{report.lab} - {report.equipment}</div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {report.complaint_details ? 
+                            (report.complaint_details.length > 50 ? 
+                              `${report.complaint_details.substring(0, 50)}...` : 
+                              report.complaint_details
+                            ) : 'No details available'
+                          }
+                        </div>
+                        <div className="text-sm text-gray-500">ID: {report.id}</div>
+                        <div className="text-xs text-gray-400">Dept: {report.department || 'N/A'}</div>
                       </div>
                     </div>
                   </td>
@@ -402,27 +263,24 @@ const ReportsPage = () => {
                     <div className="flex items-center">
                       <User size={16} className="text-gray-400 mr-2" />
                       <div>
-                        <div className="text-sm font-medium text-gray-900">{report.submittedBy}</div>
-                        <div className="text-sm text-gray-500">{report.role}</div>
-                        <div className="text-xs text-gray-400">{report.department}</div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {report.assistant_name || 'Assistant'}
+                        </div>
+                        <div className="text-sm text-gray-500">Assistant</div>
+                        <div className="text-xs text-gray-400">{report.department || 'N/A'}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`text-sm font-medium capitalize ${getPriorityColor(report.priority)}`}>
-                      {report.priority}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(report.status)}`}>
-                      {getStatusIcon(report.status)}
-                      <span className="ml-1 capitalize">{report.status.replace('_', ' ')}</span>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(report.adminApprovalStatus)}`}>
+                      {getStatusIcon(report.adminApprovalStatus)}
+                      <span className="ml-1 capitalize">{report.adminApprovalStatus}</span>
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="flex items-center">
                       <Calendar size={16} className="mr-1" />
-                      {formatDate(report.dateSubmitted)}
+                      {formatDate(report.updated_at)}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -440,7 +298,7 @@ const ReportsPage = () => {
                       <button
                         onClick={() => handleExportPDF(report)}
                         className="text-green-600 hover:text-green-900 p-1 rounded"
-                        title="Export PDF"
+                        title="Export Report"
                       >
                         <Download size={16} />
                       </button>
@@ -457,9 +315,9 @@ const ReportsPage = () => {
             <FileText className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">No reports found</h3>
             <p className="mt-1 text-sm text-gray-500">
-              {searchQuery || statusFilter !== 'all' || priorityFilter !== 'all'
+              {searchQuery || statusFilter !== 'all'
                 ? 'Try adjusting your search criteria.'
-                : 'No reports have been submitted yet.'}
+                : 'No processed reports available yet.'}
             </p>
           </div>
         )}
@@ -490,35 +348,30 @@ const ReportsPage = () => {
                       <p className="text-sm text-gray-900">{selectedReport.id}</p>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Title:</span>
-                      <p className="text-sm text-gray-900">{selectedReport.title}</p>
+                      <span className="text-sm font-medium text-gray-600">Complaint Details:</span>
+                      <p className="text-sm text-gray-900">{selectedReport.complaint_details || 'N/A'}</p>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Description:</span>
-                      <p className="text-sm text-gray-900">{selectedReport.description}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-600">Category:</span>
-                      <p className="text-sm text-gray-900">{selectedReport.issueCategory}</p>
+                      <span className="text-sm font-medium text-gray-600">Department:</span>
+                      <p className="text-sm text-gray-900">{selectedReport.department || 'N/A'}</p>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-800 mb-3">Equipment Details</h4>
-                  <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-                    <div>
-                      <span className="text-sm font-medium text-gray-600">Equipment:</span>
-                      <p className="text-sm text-gray-900">{selectedReport.equipment}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-600">Lab:</span>
-                      <p className="text-sm text-gray-900">{selectedReport.lab}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-600">Department:</span>
-                      <p className="text-sm text-gray-900">{selectedReport.department}</p>
-                    </div>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-3">Additional Details</h4>
+                  <div className="bg-gray-50 p-4 rounded-lg space-y-2 text-sm text-gray-700">
+                    {Object.entries(selectedReport).map(([key, value]) => {
+                      if (['id', 'complaint_details', 'department', 'assistant_name', 'adminApprovalStatus', 'created_at', 'updated_at'].includes(key)) {
+                        return null; // Skip already displayed fields
+                      }
+                      return (
+                        <div key={key} className="border-b border-gray-100 pb-2">
+                          <span className="font-semibold capitalize">{key.replace(/([A-Z])/g, ' $1')}: </span>
+                          <span>{value !== null ? value.toString() : "N/A"}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -526,27 +379,21 @@ const ReportsPage = () => {
               {/* Right Column */}
               <div className="space-y-6">
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-800 mb-3">Assignment & Status</h4>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-3">Submission Details</h4>
                   <div className="bg-gray-50 p-4 rounded-lg space-y-3">
                     <div>
                       <span className="text-sm font-medium text-gray-600">Submitted By:</span>
-                      <p className="text-sm text-gray-900">{selectedReport.submittedBy} ({selectedReport.role})</p>
+                      <p className="text-sm text-gray-900">{selectedReport.assistant_name || 'Assistant'}</p>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Assigned To:</span>
-                      <p className="text-sm text-gray-900">{selectedReport.assignedTo} ({selectedReport.assignedRole})</p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-600">Priority:</span>
-                      <span className={`ml-2 text-sm font-medium capitalize ${getPriorityColor(selectedReport.priority)}`}>
-                        {selectedReport.priority}
-                      </span>
+                      <span className="text-sm font-medium text-gray-600">Role:</span>
+                      <p className="text-sm text-gray-900">Assistant</p>
                     </div>
                     <div>
                       <span className="text-sm font-medium text-gray-600">Current Status:</span>
-                      <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(selectedReport.status)}`}>
-                        {getStatusIcon(selectedReport.status)}
-                        <span className="ml-1 capitalize">{selectedReport.status.replace('_', ' ')}</span>
+                      <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(selectedReport.adminApprovalStatus)}`}>
+                        {getStatusIcon(selectedReport.adminApprovalStatus)}
+                        <span className="ml-1 capitalize">{selectedReport.adminApprovalStatus}</span>
                       </span>
                     </div>
                   </div>
@@ -556,53 +403,15 @@ const ReportsPage = () => {
                   <h4 className="text-lg font-semibold text-gray-800 mb-3">Timeline</h4>
                   <div className="bg-gray-50 p-4 rounded-lg space-y-3">
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Date Submitted:</span>
-                      <p className="text-sm text-gray-900">{formatDate(selectedReport.dateSubmitted)}</p>
+                      <span className="text-sm font-medium text-gray-600">Date Created:</span>
+                      <p className="text-sm text-gray-900">{formatDate(selectedReport.created_at)}</p>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Last Updated:</span>
-                      <p className="text-sm text-gray-900">{formatDate(selectedReport.lastUpdated)}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-600">Expected Resolution:</span>
-                      <p className="text-sm text-gray-900">{formatDate(selectedReport.expectedResolution)}</p>
+                      <span className="text-sm font-medium text-gray-600">Date Processed:</span>
+                      <p className="text-sm text-gray-900">{formatDate(selectedReport.updated_at)}</p>
                     </div>
                   </div>
                 </div>
-
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-800 mb-3">Attachments</h4>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    {selectedReport.attachments.map((attachment, index) => (
-                      <div key={index} className="flex items-center justify-between py-2">
-                        <span className="text-sm text-gray-900">{attachment}</span>
-                        <button className="text-blue-600 hover:text-blue-900 text-sm">
-                          Download
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Status Update Section */}
-            <div className="mt-8 p-4 bg-blue-50 rounded-lg">
-              <h4 className="text-lg font-semibold text-gray-800 mb-4">Update Status</h4>
-              <div className="flex flex-wrap gap-3">
-                {['pending', 'in_progress', 'completed', 'escalated'].map((status) => (
-                  <button
-                    key={status}
-                    onClick={() => handleStatusChange(selectedReport.id, status)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      selectedReport.status === status
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-                    }`}
-                  >
-                    {status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
-                  </button>
-                ))}
               </div>
             </div>
 
@@ -613,7 +422,7 @@ const ReportsPage = () => {
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center"
               >
                 <Download size={16} className="mr-2" />
-                Export PDF
+                Export Report
               </button>
               <button
                 onClick={() => setShowModal(false)}
