@@ -235,5 +235,7 @@ ADD COLUMN maintenance_closed_signature VARCHAR(255);
 ALTER TABLE requests
 ADD COLUMN equipment_id INT NOT NULL AFTER staff_id;
 
+ALTER TABLE `invennzy`.`requests` 
+ADD COLUMN `equipment_status` ENUM('0', '1', '2') NULL DEFAULT '1' AFTER `equipment_id`;
 
 

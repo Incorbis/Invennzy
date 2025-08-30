@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
   Package,
@@ -13,16 +14,15 @@ import {
   Calendar,
   CheckCircle,
   XCircle,
-  Eye,
-  Download,
   Monitor,
   Projector,
   Zap,
   Fan,
-  Wifi
+  Wifi,
 } from "lucide-react";
 
 const Overview = () => {
+  const navigate = useNavigate();
   const [equipmentTotals, setEquipmentTotals] = useState({
     monitors: 0,
     projectors: 0,
@@ -30,7 +30,7 @@ const Overview = () => {
     fans: 0,
     wifi: 0,
     totalDevices: 0,
-    totalLabs: 0
+    totalLabs: 0,
   });
   const [labsData, setLabsData] = useState([]);
   const [reportsData, setReportsData] = useState([]);
@@ -44,7 +44,7 @@ const Overview = () => {
     try {
       // Get adminId from localStorage (same as Inventory component)
       const adminId = localStorage.getItem("adminId");
-      
+
       if (!adminId) {
         throw new Error("Admin ID not found. Please log in again.");
       }
@@ -53,9 +53,9 @@ const Overview = () => {
       const response = await axios.get(
         `http://localhost:3000/api/labs/admin/${adminId}`
       );
-      
+
       const labs = response.data;
-      
+
       // Calculate totals exactly like in Inventory component
       const totals = labs.reduce(
         (acc, lab) => ({
@@ -69,20 +69,24 @@ const Overview = () => {
       );
 
       // Calculate additional metrics
-      const totalDevices = totals.monitors + totals.projectors + totals.switchBoards + totals.fans + totals.wifi;
+      const totalDevices =
+        totals.monitors +
+        totals.projectors +
+        totals.switchBoards +
+        totals.fans +
+        totals.wifi;
       const totalLabs = labs.length;
-      const activeLabs = labs.filter(lab => lab.status === 'active').length;
+      const activeLabs = labs.filter((lab) => lab.status === "active").length;
 
       setEquipmentTotals({
         ...totals,
         totalDevices,
         totalLabs,
-        activeLabs
+        activeLabs,
       });
 
       setLabsData(labs);
       return { totals, labs };
-
     } catch (err) {
       console.error("Error fetching equipment totals:", err);
       throw err;
@@ -92,26 +96,36 @@ const Overview = () => {
   // Fetch reports data
   const fetchReportsData = async () => {
     try {
-      const response = await axios.get('http://localhost:3000/api/admin/notifications');
-      
+      const response = await axios.get(
+        "http://localhost:3000/api/admin/reports"
+      );
+
       // Filter only approved or rejected reports (completed actions)
       const completedReports = response.data.filter(
-        notification => notification.adminApprovalStatus === 'approved' || 
-                      notification.adminApprovalStatus === 'rejected'
+        (notification) =>
+          notification.adminApprovalStatus === "approved" ||
+          notification.adminApprovalStatus === "rejected"
       );
-      
+
       // Sort by date (newest first) and get only first 3
       const recentReports = completedReports
-        .sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date))
+        .sort(
+          (a, b) =>
+            new Date(b.created_at || b.date) - new Date(a.created_at || a.date)
+        )
         .slice(0, 3);
-      
+
       setReportsData(recentReports);
-      
+
       return {
         recent: recentReports,
         total: completedReports.length,
-        approved: completedReports.filter(r => r.adminApprovalStatus === 'approved').length,
-        rejected: completedReports.filter(r => r.adminApprovalStatus === 'rejected').length
+        approved: completedReports.filter(
+          (r) => r.adminApprovalStatus === "approved"
+        ).length,
+        rejected: completedReports.filter(
+          (r) => r.adminApprovalStatus === "rejected"
+        ).length,
       };
     } catch (err) {
       console.error("Error fetching reports:", err);
@@ -130,14 +144,10 @@ const Overview = () => {
       }
 
       // Fetch both equipment and reports data
-      await Promise.all([
-        fetchEquipmentTotals(),
-        fetchReportsData()
-      ]);
+      await Promise.all([fetchEquipmentTotals(), fetchReportsData()]);
 
       setLastRefresh(new Date());
       setError(null);
-
     } catch (err) {
       console.error("Error loading overview data:", err);
       setError(
@@ -180,7 +190,7 @@ const Overview = () => {
       trend: "up",
       icon: Package,
       color: "bg-blue-500",
-      description: "All registered equipment across labs"
+      description: "All registered equipment across labs",
     },
     {
       title: "Device Categories",
@@ -189,7 +199,7 @@ const Overview = () => {
       trend: "stable",
       icon: Building,
       color: "bg-purple-500",
-      description: "Monitors, Projectors, Switches, Fans, WiFi"
+      description: "Monitors, Projectors, Switches, Fans, WiFi",
     },
     {
       title: "Total Labs",
@@ -198,7 +208,7 @@ const Overview = () => {
       trend: equipmentTotals.totalLabs > 0 ? "up" : "stable",
       icon: MapPin,
       color: "bg-orange-500",
-      description: "Laboratory locations"
+      description: "Laboratory locations",
     },
     {
       title: "Recent Reports",
@@ -207,7 +217,7 @@ const Overview = () => {
       trend: reportsData.length > 0 ? "up" : "stable",
       icon: FileText,
       color: "bg-green-500",
-      description: "Latest processed reports"
+      description: "Latest processed reports",
     },
   ];
 
@@ -234,37 +244,12 @@ const Overview = () => {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
-  };
-
-  const handleExportPDF = (report) => {
-    const content = `
-Report ID: ${report.id}
-Assistant Name: ${report.assistant_name || 'N/A'}
-Department: ${report.department || 'N/A'}
-Status: ${report.adminApprovalStatus}
-
-Complaint Details:
-${report.complaint_details || 'N/A'}
-
-Date Submitted: ${report.created_at ? new Date(report.created_at).toLocaleString() : 'N/A'}
-Date Processed: ${report.updated_at ? new Date(report.updated_at).toLocaleString() : 'N/A'}
-    `;
-    
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `report-${report.id}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   };
 
   // Loading state
@@ -330,12 +315,16 @@ Date Processed: ${report.updated_at ? new Date(report.updated_at).toLocaleString
             </p>
           )}
           <div className="flex items-center space-x-3">
-            <button 
+            <button
               onClick={handleManualRefresh}
               disabled={refreshing}
-              className={`flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors ${refreshing ? 'opacity-75' : ''}`}
+              className={`flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors ${
+                refreshing ? "opacity-75" : ""
+              }`}
             >
-              <RefreshCw className={`mr-2 w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`mr-2 w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
+              />
               {refreshing ? "Refreshing..." : "Refresh"}
             </button>
           </div>
@@ -393,11 +382,13 @@ Date Processed: ${report.updated_at ? new Date(report.updated_at).toLocaleString
             Equipment Distribution
           </h3>
           <div className="flex items-center space-x-2 text-sm text-gray-500">
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
+            />
             <span>Real-time data from labs</span>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200 hover:shadow-sm transition-shadow">
             <Monitor className="mx-auto text-blue-500 mb-3" size={32} />
@@ -435,11 +426,12 @@ Date Processed: ${report.updated_at ? new Date(report.updated_at).toLocaleString
             <p className="text-sm text-gray-600 font-medium">WiFi Points</p>
           </div>
         </div>
-        
+
         <div className="mt-6 pt-4 border-t border-gray-200">
           <div className="text-center">
             <p className="text-lg font-semibold text-gray-900">
-              Total Equipment: {equipmentTotals.totalDevices} devices across {equipmentTotals.totalLabs} labs
+              Total Equipment: {equipmentTotals.totalDevices} devices across{" "}
+              {equipmentTotals.totalLabs} labs
             </p>
             <p className="text-sm text-gray-500 mt-1">
               Data synchronized with laboratory inventory system
@@ -456,11 +448,13 @@ Date Processed: ${report.updated_at ? new Date(report.updated_at).toLocaleString
             Recent Reports
           </h3>
           <div className="flex items-center space-x-2 text-sm text-gray-500">
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
+            />
             <span>Auto-refreshes every 30s</span>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {reportsData.map((report) => (
             <div
@@ -470,12 +464,11 @@ Date Processed: ${report.updated_at ? new Date(report.updated_at).toLocaleString
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                   <h4 className="font-semibold text-gray-900 text-sm mb-2">
-                    {report.complaint_details ? 
-                      (report.complaint_details.length > 60 ? 
-                        `${report.complaint_details.substring(0, 60)}...` : 
-                        report.complaint_details
-                      ) : `Report #${report.id}`
-                    }
+                    {report.complaint_details
+                      ? report.complaint_details.length > 60
+                        ? `${report.complaint_details.substring(0, 60)}...`
+                        : report.complaint_details
+                      : `Report #${report.id}`}
                   </h4>
                   <div className="flex items-center space-x-2">
                     {getReportStatusIcon(report.adminApprovalStatus)}
@@ -489,46 +482,38 @@ Date Processed: ${report.updated_at ? new Date(report.updated_at).toLocaleString
                   </div>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <div className="flex items-center text-xs text-gray-500">
                   <Users className="w-3 h-3 mr-2" />
-                  <span>By: {report.assistant_name || report.lab_assistant || 'Assistant'}</span>
+                  <span>
+                    By:{" "}
+                    {report.assistant_name ||
+                      report.lab_assistant ||
+                      "Assistant"}
+                  </span>
                 </div>
                 <div className="flex items-center text-xs text-gray-500">
                   <Building className="w-3 h-3 mr-2" />
-                  <span>Dept: {report.department || 'N/A'}</span>
+                  <span>Dept: {report.department || "N/A"}</span>
                 </div>
                 <div className="flex items-center text-xs text-gray-500">
                   <Calendar className="w-3 h-3 mr-2" />
-                  <span>Processed: {formatDate(report.created_at || report.date)}</span>
+                  <span>
+                    Processed: {formatDate(report.created_at || report.date)}
+                  </span>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
                 <span className="text-xs text-gray-500">
                   Report ID: {report.id}
                 </span>
-                <div className="flex space-x-2">
-                  <button
-                    className="text-blue-600 hover:text-blue-800 p-1 rounded"
-                    title="View Details"
-                  >
-                    <Eye size={14} />
-                  </button>
-                  <button
-                    onClick={() => handleExportPDF(report)}
-                    className="text-green-600 hover:text-green-800 p-1 rounded"
-                    title="Export Report"
-                  >
-                    <Download size={14} />
-                  </button>
-                </div>
               </div>
             </div>
           ))}
         </div>
-        
+
         {reportsData.length === 0 && (
           <div className="text-center text-gray-500 py-8">
             <FileText className="w-8 h-8 mx-auto mb-2 text-gray-400" />
@@ -538,14 +523,17 @@ Date Processed: ${report.updated_at ? new Date(report.updated_at).toLocaleString
             </p>
           </div>
         )}
-        
+
         {reportsData.length > 0 && (
           <div className="mt-6 pt-4 border-t border-gray-200">
             <div className="flex justify-between items-center text-sm">
               <span className="text-gray-600">
                 Showing latest {reportsData.length} processed reports
               </span>
-              <button className="text-blue-600 hover:text-blue-800 font-medium">
+              <button
+                onClick={() => navigate("/admindash/reports")}
+                className="text-blue-600 hover:text-blue-800 font-medium"
+              >
                 View All Reports →
               </button>
             </div>
