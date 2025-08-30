@@ -1,27 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { 
-  FileText, 
-  Download, 
-  Search, 
-  Eye, 
-  CheckCircle, 
-  Clock, 
-  AlertCircle, 
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import {
+  FileText,
+  Download,
+  Search,
+  Eye,
+  CheckCircle,
+  Clock,
+  AlertCircle,
   Calendar,
   RefreshCw,
   User,
   Building,
   ChevronDown,
   X,
-  XCircle
-} from 'lucide-react';
+  XCircle,
+} from "lucide-react";
 
 const ReportsPage = () => {
   const [reports, setReports] = useState([]);
   const [filteredReports, setFilteredReports] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [selectedReport, setSelectedReport] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -31,14 +31,15 @@ const ReportsPage = () => {
     const fetchReports = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('/api/admin/notifications');
-        
+        const response = await axios.get("/api/admin/reports");
+
         // Filter only approved or rejected reports (completed actions)
         const completedReports = response.data.filter(
-          notification => notification.adminApprovalStatus === 'approved' || 
-                        notification.adminApprovalStatus === 'rejected'
+          (notification) =>
+            notification.adminApprovalStatus === "approved" ||
+            notification.adminApprovalStatus === "rejected"
         );
-        
+
         setReports(completedReports);
         setFilteredReports(completedReports);
       } catch (error) {
@@ -56,17 +57,26 @@ const ReportsPage = () => {
 
     // Search filter
     if (searchQuery) {
-      filtered = filtered.filter(report =>
-        report.complaint_details?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        report.department?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        report.assistant_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        report.id.toString().includes(searchQuery)
+      filtered = filtered.filter(
+        (report) =>
+          report.complaint_details
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          report.department
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          report.lab_assistant // Changed from assistant_name
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          report.id.toString().includes(searchQuery)
       );
     }
 
     // Status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(report => report.adminApprovalStatus === statusFilter);
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(
+        (report) => report.adminApprovalStatus === statusFilter
+      );
     }
 
     setFilteredReports(filtered);
@@ -74,16 +84,16 @@ const ReportsPage = () => {
 
   const getStatusColor = (status) => {
     const colors = {
-      approved: 'bg-green-100 text-green-800 border-green-200',
-      rejected: 'bg-red-100 text-red-800 border-red-200'
+      approved: "bg-green-100 text-green-800 border-green-200",
+      rejected: "bg-red-100 text-red-800 border-red-200",
     };
-    return colors[status] || 'bg-gray-100 text-gray-800 border-gray-200';
+    return colors[status] || "bg-gray-100 text-gray-800 border-gray-200";
   };
 
   const getStatusIcon = (status) => {
     const icons = {
       approved: CheckCircle,
-      rejected: XCircle
+      rejected: XCircle,
     };
     const Icon = icons[status] || Clock;
     return <Icon size={16} />;
@@ -92,23 +102,27 @@ const ReportsPage = () => {
   const handleExportPDF = (report) => {
     const content = `
 Report ID: ${report.id}
-Assistant Name: ${report.assistant_name || 'N/A'}
-Department: ${report.department || 'N/A'}
+Assistant Name: ${report.lab_assistant || "N/A"} // Changed from assistant_name
+Department: ${report.department || "N/A"}
 Status: ${report.adminApprovalStatus}
 
 Complaint Details:
-${report.complaint_details || 'N/A'}
+${report.complaint_details || "N/A"}
 
-Date Submitted: ${report.created_at ? new Date(report.created_at).toLocaleString() : 'N/A'}
-Date Processed: ${report.updated_at ? new Date(report.updated_at).toLocaleString() : 'N/A'}
+Date Submitted: ${
+      report.created_at ? new Date(report.created_at).toLocaleString() : "N/A"
+    }
+Date Processed: ${
+      report.updated_at ? new Date(report.updated_at).toLocaleString() : "N/A"
+    }
 
 Additional Information:
 ${JSON.stringify(report, null, 2)}
     `;
-    
-    const blob = new Blob([content], { type: 'text/plain' });
+
+    const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `report-${report.id}.txt`;
     document.body.appendChild(a);
@@ -118,12 +132,11 @@ ${JSON.stringify(report, null, 2)}
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -145,8 +158,12 @@ ${JSON.stringify(report, null, 2)}
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Assistant Reports</h1>
-        <p className="text-gray-600">View processed corrective actions submitted by assistants</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Assistant Reports
+        </h1>
+        <p className="text-gray-600">
+          View processed corrective actions submitted by assistants
+        </p>
       </div>
 
       {/* Stats Cards */}
@@ -155,7 +172,9 @@ ${JSON.stringify(report, null, 2)}
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Reports</p>
-              <p className="text-2xl font-bold text-gray-900">{reports.length}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {reports.length}
+              </p>
             </div>
             <FileText className="h-8 w-8 text-blue-600" />
           </div>
@@ -165,7 +184,10 @@ ${JSON.stringify(report, null, 2)}
             <div>
               <p className="text-sm font-medium text-gray-600">Approved</p>
               <p className="text-2xl font-bold text-green-600">
-                {reports.filter(r => r.adminApprovalStatus === 'approved').length}
+                {
+                  reports.filter((r) => r.adminApprovalStatus === "approved")
+                    .length
+                }
               </p>
             </div>
             <CheckCircle className="h-8 w-8 text-green-600" />
@@ -176,7 +198,10 @@ ${JSON.stringify(report, null, 2)}
             <div>
               <p className="text-sm font-medium text-gray-600">Rejected</p>
               <p className="text-2xl font-bold text-red-600">
-                {reports.filter(r => r.adminApprovalStatus === 'rejected').length}
+                {
+                  reports.filter((r) => r.adminApprovalStatus === "rejected")
+                    .length
+                }
               </p>
             </div>
             <XCircle className="h-8 w-8 text-red-600" />
@@ -188,7 +213,10 @@ ${JSON.stringify(report, null, 2)}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              size={20}
+            />
             <input
               type="text"
               placeholder="Search reports by ID, complaint details, department, or assistant name..."
@@ -211,8 +239,8 @@ ${JSON.stringify(report, null, 2)}
         </div>
       </div>
 
-      {/* Reports Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      {/* Reports Table - Desktop */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hidden md:block">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -239,87 +267,126 @@ ${JSON.stringify(report, null, 2)}
                 <tr key={report.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10">
-                        <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                          <FileText className="h-5 w-5 text-blue-600" />
-                        </div>
+                      <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                        <FileText className="h-5 w-5 text-blue-600" />
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">
-                          {report.complaint_details ? 
-                            (report.complaint_details.length > 50 ? 
-                              `${report.complaint_details.substring(0, 50)}...` : 
-                              report.complaint_details
-                            ) : 'No details available'
-                          }
+                          {report.complaint_details || "No details available"}
                         </div>
-                        <div className="text-sm text-gray-500">ID: {report.id}</div>
-                        <div className="text-xs text-gray-400">Dept: {report.department || 'N/A'}</div>
+                        <div className="text-sm text-gray-500">
+                          ID: {report.id}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          Dept: {report.department || "N/A"}
+                        </div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <User size={16} className="text-gray-400 mr-2" />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {report.lab_assistant || 'Assistant'}
-                        </div>
-                        <div className="text-sm text-gray-500">Assistant</div>
-                        <div className="text-xs text-gray-400">{report.department || 'N/A'}</div>
-                      </div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {report.lab_assistant || "Assistant"}{" "}
+                      {/* Changed from assistant_name */}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {report.department || "N/A"}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(report.adminApprovalStatus)}`}>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
+                        report.adminApprovalStatus
+                      )}`}
+                    >
                       {getStatusIcon(report.adminApprovalStatus)}
-                      <span className="ml-1 capitalize">{report.adminApprovalStatus}</span>
+                      <span className="ml-1 capitalize">
+                        {report.adminApprovalStatus}
+                      </span>
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex items-center">
-                      <Calendar size={16} className="mr-1" />
-                      {formatDate(report.date)}
-                    </div>
+                    {formatDate(report.date)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => {
-                          setSelectedReport(report);
-                          setShowModal(true);
-                        }}
-                        className="text-blue-600 hover:text-blue-900 p-1 rounded"
-                        title="View Details"
-                      >
-                        <Eye size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleExportPDF(report)}
-                        className="text-green-600 hover:text-green-900 p-1 rounded"
-                        title="Export Report"
-                      >
-                        <Download size={16} />
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedReport(report);
+                        setShowModal(true);
+                      }}
+                      className="text-blue-600 hover:text-blue-900 p-1"
+                    >
+                      <Eye size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleExportPDF(report)}
+                      className="text-green-600 hover:text-green-900 p-1"
+                    >
+                      <Download size={16} />
+                    </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        
-        {filteredReports.length === 0 && (
-          <div className="text-center py-12">
-            <FileText className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No reports found</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              {searchQuery || statusFilter !== 'all'
-                ? 'Try adjusting your search criteria.'
-                : 'No processed reports available yet.'}
+      </div>
+
+      {/* Mobile View - Cards */}
+      <div className="block md:hidden space-y-4">
+        {filteredReports.map((report) => (
+          <div
+            key={report.id}
+            className="bg-white shadow-sm rounded-lg border border-gray-200 p-4"
+          >
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm font-semibold text-gray-900">
+                  Report #{report.id}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {report.department || "N/A"}
+                </p>
+              </div>
+              <span
+                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
+                  report.adminApprovalStatus
+                )}`}
+              >
+                {getStatusIcon(report.adminApprovalStatus)}
+                <span className="ml-1 capitalize">
+                  {report.adminApprovalStatus}
+                </span>
+              </span>
+            </div>
+            <p className="mt-2 text-sm text-gray-700">
+              {report.complaint_details || "No details available"}
             </p>
+            <div className="mt-3 flex justify-between text-xs text-gray-500">
+              <span>By: {report.lab_assistant || "Assistant"}</span>{" "}
+              {/* Changed from assistant_name */}
+              <span>{formatDate(report.date)}</span>
+            </div>
+            <div className="mt-3 flex space-x-3">
+              <button
+                onClick={() => {
+                  setSelectedReport(report);
+                  setShowModal(true);
+                }}
+                className="text-blue-600 hover:text-blue-900 text-sm flex items-center space-x-1"
+              >
+                <Eye size={14} />
+                <span>View</span>
+              </button>
+              <button
+                onClick={() => handleExportPDF(report)}
+                className="text-green-600 hover:text-green-900 text-sm flex items-center space-x-1"
+              >
+                <Download size={14} />
+                <span>Export</span>
+              </button>
+            </div>
           </div>
-        )}
+        ))}
       </div>
 
       {/* Modal for Report Details */}
@@ -327,7 +394,9 @@ ${JSON.stringify(report, null, 2)}
         <div className="fixed inset-0 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Report Details</h3>
+              <h3 className="text-xl font-bold text-gray-900">
+                Report Details
+              </h3>
               <button
                 onClick={() => setShowModal(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -335,39 +404,72 @@ ${JSON.stringify(report, null, 2)}
                 <X size={24} />
               </button>
             </div>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left Column */}
               <div className="space-y-6">
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-800 mb-3">Report Information</h4>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-3">
+                    Report Information
+                  </h4>
                   <div className="bg-gray-50 p-4 rounded-lg space-y-3">
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Report ID:</span>
-                      <p className="text-sm text-gray-900">{selectedReport.id}</p>
+                      <span className="text-sm font-medium text-gray-600">
+                        Report ID:
+                      </span>
+                      <p className="text-sm text-gray-900">
+                        {selectedReport.id}
+                      </p>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Complaint Details:</span>
-                      <p className="text-sm text-gray-900">{selectedReport.complaint_details || 'N/A'}</p>
+                      <span className="text-sm font-medium text-gray-600">
+                        Complaint Details:
+                      </span>
+                      <p className="text-sm text-gray-900">
+                        {selectedReport.complaint_details || "N/A"}
+                      </p>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Department:</span>
-                      <p className="text-sm text-gray-900">{selectedReport.department || 'N/A'}</p>
+                      <span className="text-sm font-medium text-gray-600">
+                        Department:
+                      </span>
+                      <p className="text-sm text-gray-900">
+                        {selectedReport.department || "N/A"}
+                      </p>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-800 mb-3">Additional Details</h4>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-3">
+                    Additional Details
+                  </h4>
                   <div className="bg-gray-50 p-4 rounded-lg space-y-2 text-sm text-gray-700">
                     {Object.entries(selectedReport).map(([key, value]) => {
-                      if (['id', 'complaint_details', 'department', 'assistant_name', 'adminApprovalStatus', 'created_at', 'updated_at'].includes(key)) {
+                      if (
+                        [
+                          "id",
+                          "complaint_details",
+                          "department",
+                          "lab_assistant", // Changed from assistant_name
+                          "adminApprovalStatus",
+                          "created_at",
+                          "updated_at",
+                        ].includes(key)
+                      ) {
                         return null; // Skip already displayed fields
                       }
                       return (
-                        <div key={key} className="border-b border-gray-100 pb-2">
-                          <span className="font-semibold capitalize">{key.replace(/([A-Z])/g, ' $1')}: </span>
-                          <span>{value !== null ? value.toString() : "N/A"}</span>
+                        <div
+                          key={key}
+                          className="border-b border-gray-100 pb-2"
+                        >
+                          <span className="font-semibold capitalize">
+                            {key.replace(/([A-Z])/g, " $1")}:{" "}
+                          </span>
+                          <span>
+                            {value !== null ? value.toString() : "N/A"}
+                          </span>
                         </div>
                       );
                     })}
@@ -378,34 +480,59 @@ ${JSON.stringify(report, null, 2)}
               {/* Right Column */}
               <div className="space-y-6">
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-800 mb-3">Submission Details</h4>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-3">
+                    Submission Details
+                  </h4>
                   <div className="bg-gray-50 p-4 rounded-lg space-y-3">
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Submitted By:</span>
-                      <p className="text-sm text-gray-900">{selectedReport.assistant_name || 'Assistant'}</p>
+                      <span className="text-sm font-medium text-gray-600">
+                        Submitted By:
+                      </span>
+                      <p className="text-sm text-gray-900">
+                        {selectedReport.lab_assistant || "Assistant"}{" "}
+                        {/* Changed from assistant_name */}
+                      </p>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Role:</span>
+                      <span className="text-sm font-medium text-gray-600">
+                        Role:
+                      </span>
                       <p className="text-sm text-gray-900">Assistant</p>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Current Status:</span>
-                      <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(selectedReport.adminApprovalStatus)}`}>
+                      <span className="text-sm font-medium text-gray-600">
+                        Current Status:
+                      </span>
+                      <span
+                        className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
+                          selectedReport.adminApprovalStatus
+                        )}`}
+                      >
                         {getStatusIcon(selectedReport.adminApprovalStatus)}
-                        <span className="ml-1 capitalize">{selectedReport.adminApprovalStatus}</span>
+                        <span className="ml-1 capitalize">
+                          {selectedReport.adminApprovalStatus}
+                        </span>
                       </span>
                     </div>
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-800 mb-3">Timeline</h4>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-3">
+                    Timeline
+                  </h4>
                   <div className="bg-gray-50 p-4 rounded-lg space-y-3">
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Date Created:</span>
-                      <p className="text-sm text-gray-900">{formatDate(selectedReport.created_at)}</p>
+                      <span className="text-sm font-medium text-gray-600">
+                        Date Created:
+                      </span>
+                      <p className="text-sm text-gray-900">
+                        {formatDate(selectedReport.created_at)}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Date Processed:</p>
+                      <p className="text-sm font-medium text-gray-600">
+                        Date Processed:
+                      </p>
                       <p className="text-sm text-gray-900">
                         {selectedReport.date ? selectedReport.date : "N/A"}
                       </p>

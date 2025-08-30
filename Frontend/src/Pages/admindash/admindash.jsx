@@ -52,7 +52,7 @@ const SkeletonLoader = () => {
 const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [notifications] = useState(5);
+  const [notifications, setNotifications] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [userName, setUserName] = useState("");
   const navigate = useNavigate();
@@ -84,9 +84,22 @@ const Dashboard = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Fetch pending notifications count
+  useEffect(() => {
+    const fetchPendingNotifications = async () => {
+      try {
+        const res = await fetch("/api/admin/notifications/pending/count");
+        const data = await res.json();
+        setNotifications(data.count);
+      } catch (err) {
+        console.error("Error fetching pending notifications:", err);
+      }
+    };
+    fetchPendingNotifications();
+  }, []);
+
   const menuItems = [
     { id: "overview", label: "Overview", icon: Home, path: "/admindash" },
-
     {
       id: "notifications",
       label: "Notifications",
@@ -118,12 +131,8 @@ const Dashboard = () => {
     location.pathname.startsWith(item.path)
   );
 
-  const handleMenuClick = (item) => {
-    setActiveTab(item.id);
-    if (isMobile) {
-      setSidebarOpen(false);
-    }
-    navigate(item.path);
+  const handleBellClick = () => {
+    navigate("/admindash/notifications");
   };
 
   const handleConfirmLogout = () => {
@@ -157,7 +166,7 @@ const Dashboard = () => {
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center">
                 <div className="h-9 w-13 text-blue-600 transition-transform duration-300 group-hover:scale-110">
-                  <img src={logo2}></img>
+                  <img src={logo2} alt="Logo" />
                 </div>
               </div>
               <div>
@@ -179,7 +188,7 @@ const Dashboard = () => {
               <NavLink
                 key={item.id}
                 to={item.path}
-                end={item.id === "overview"} // ✅ only Overview matches exactly
+                end={item.id === "overview"}
                 className={({ isActive }) =>
                   `flex items-center w-full p-3 rounded-lg transition-all duration-200 ${
                     isActive
@@ -246,7 +255,10 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <button className="p-2 relative rounded-lg hover:bg-gray-100">
+              <button
+                onClick={handleBellClick}
+                className="p-2 relative rounded-lg hover:bg-gray-100"
+              >
                 <Bell className="text-gray-500" size={20} />
                 {notifications > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
