@@ -33,6 +33,8 @@ import LASettings from "./components/Assistantcomponents/settings.jsx";
 import LAOverview from "./components/Assistantcomponents/overview.jsx";
 import LANotification from "./components/Assistantcomponents/notifications.jsx";
 import LabAssistantForm from "./components/Assistantcomponents/requests.jsx";
+import LaDeadStock from './components/Assistantcomponents/deadstock.jsx';
+import LaDeadReport from './components/Assistantcomponents/deadreport.jsx';
 
 function App() {
   return (
@@ -96,6 +98,8 @@ function App() {
         <Route path="" element={<LAOverview />} />
         <Route path="settings" element={<LASettings />} />
         <Route path="requests" element={<LabAssistantForm />} />
+        <Route path="deadstock" element={<LaDeadStock />} />
+        <Route path="deadreport" element={<LaDeadReport />} />
         <Route path="requests/:requestId" element={<LabAssistantForm />} />
       </Route>
     </Routes>

@@ -9,11 +9,13 @@ import {
   Settings,
   Menu,
   X,
+  FileArchive,
   Search,
   User,
   ChevronDown,
   LogOut,
   HelpCircle,
+  Database,
 } from "lucide-react";
 import logo2 from "../../assets/logo2.png";
 
@@ -130,6 +132,18 @@ const Dashboard = () => {
       label: "Request Form",
       icon: ClipboardList,
       path: "/labassistantdash/requests",
+    },
+    {
+      id: "deadstock",
+      label: "Dead Stock",
+      icon: FileArchive,
+      path: "/labassistantdash/deadstock",
+    },
+    {
+      id: "deadstock",
+      label: "Dead Stock Reports",
+      icon: Database,
+      path: "/labassistantdash/deadreport",
     },
     {
       id: "settings",

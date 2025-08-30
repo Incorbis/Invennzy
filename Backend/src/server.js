@@ -17,7 +17,7 @@ const notificationRoute = require('./routes/Notification/notification');
 const labStaffRoutes = require('./routes/LabStaff');
 const labInchargeAssistantRoutes = require('./routes/labinchargeassisstant/labroutes');
 const adminnotifications = require('./routes/Admin/notifications');
-
+const deadstock = require('./routes/labinchargeassisstant/deadstock');
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -43,6 +43,7 @@ app.use('/api/notifications', notificationRoute);
 app.use('/api/labstaff', labStaffRoutes);
 app.use('/api', labInchargeAssistantRoutes);
 app.use('/api', adminnotifications);
+app.use('/api',deadstock);
 
 
 app.listen(3000, () => console.log('Server running on http://localhost:3000'));

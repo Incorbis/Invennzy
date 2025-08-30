@@ -3,3 +3,4 @@ mysql2
 bcrypt
 google-auth-library
 multer
+xlsx
