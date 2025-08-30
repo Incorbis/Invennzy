@@ -242,12 +242,12 @@ const Notification = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col space-y-2">
                         {n.adminApprovalStatus === "approved" && (
-                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">
+                          <span className="inline-flex items-center justify-center px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 whitespace-nowrap">
                             Approved
                           </span>
                         )}
                         {n.adminApprovalStatus === "rejected" && (
-                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-700">
+                          <span className="inline-flex items-center justify-center px-3 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 whitespace-nowrap">
                             Rejected
                           </span>
                         )}

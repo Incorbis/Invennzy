@@ -397,7 +397,6 @@ ${JSON.stringify(report, null, 2)}
                     </div>
                   </div>
                 </div>
-
                 <div>
                   <h4 className="text-lg font-semibold text-gray-800 mb-3">Timeline</h4>
                   <div className="bg-gray-50 p-4 rounded-lg space-y-3">
@@ -415,9 +414,6 @@ ${JSON.stringify(report, null, 2)}
                 </div>
               </div>
             </div>
-
-            {/* Action Buttons */}
-            
           </div>
         </div>
       )}
