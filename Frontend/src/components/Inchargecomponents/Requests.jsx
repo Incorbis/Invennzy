@@ -168,6 +168,8 @@ function LabInchargeForm() {
     title: "",
     message: "",
   });
+  const [equipmentList, setEquipmentList] = useState([]);
+
   const [form, setForm] = useState({
     typeOfProblem: "",
     date: "",
@@ -201,6 +203,7 @@ function LabInchargeForm() {
     maintenanceClosedSignature: "",
     adminApprovalStatus: "",
     adminApprovalDate: "",
+    equipment_id: "",
   });
   const { requestId } = useParams();
   const isViewMode = !!requestId;
@@ -285,6 +288,27 @@ function LabInchargeForm() {
     },
   ];
 
+  useEffect(() => {
+    const fetchEquipments = async () => {
+      try {
+        const staffId = localStorage.getItem("staffId");
+        const res = await axios.get(`/api/labs/equipment/by-staff/${staffId}`);
+
+        // ✅ Use flat array (items)
+        if (res.data && Array.isArray(res.data.items)) {
+          setEquipmentList(res.data.items);
+        } else {
+          setEquipmentList([]);
+        }
+      } catch (err) {
+        console.error("Error fetching equipments:", err);
+        setEquipmentList([]);
+      }
+    };
+
+    fetchEquipments();
+  }, []);
+
   const isStepCompleted = (step) => {
     if (step === 5) {
       // ✅ Only count completed when Admin actually approves/rejects
@@ -333,6 +357,7 @@ function LabInchargeForm() {
         body: JSON.stringify({
           form: cleanedForm,
           staff_id: staffId,
+          equipment_id: form.equipment_id,
         }),
       });
       if (!response.ok) throw new Error("Submission failed");
@@ -432,6 +457,9 @@ function LabInchargeForm() {
           adminApprovalDate: data.admin_approval_date
             ? String(data.admin_approval_date).split("T")[0]
             : "",
+          equipment_id: res.data.equipment_id
+            ? res.data.equipment_id.toString()
+            : "",
         });
         let maxCompleted = 0;
         for (let step = 1; step <= 6; step++) {
@@ -530,6 +558,33 @@ function LabInchargeForm() {
                         disabled={isViewMode}
                         className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                       />
+                    </div>
+                    <div className="mt-6">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Select Equipment
+                      </label>
+                      <select
+                        value={form.equipment_id}
+                        onChange={(e) =>
+                          setForm({ ...form, equipment_id: e.target.value })
+                        }
+                        className="border border-gray-300 rounded-lg px-4 py-2 w-full"
+                      >
+                        <option value="">-- Select Equipment --</option>
+                        {equipmentList.length > 0 ? (
+                          equipmentList.map((eq) => (
+                            <option
+                              key={eq.equipment_id}
+                              value={eq.equipment_id}
+                            >
+                              {eq.equipment_name} ({eq.equipment_type}) -{" "}
+                              {eq.equipment_code}
+                            </option>
+                          ))
+                        ) : (
+                          <option disabled>No equipment available</option>
+                        )}
+                      </select>
                     </div>
                   </div>
                 </div>

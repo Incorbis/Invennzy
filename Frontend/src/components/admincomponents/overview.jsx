@@ -1,210 +1,281 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   Package,
   AlertTriangle,
-  CheckCircle,
-  Clock,
   TrendingUp,
   TrendingDown,
-  Monitor,
-  Wifi,
-  Printer,
-  Projector,
-  Laptop,
-  Smartphone,
   MapPin,
-  Calendar,
   Users,
-  Activity,
   RefreshCw,
-  Filter,
-  Download,
+  Building,
+  FileText,
+  Calendar,
+  CheckCircle,
+  XCircle,
   Eye,
-  Edit,
-  Trash2,
-  Plus,
+  Download,
+  Monitor,
+  Projector,
+  Zap,
+  Fan,
+  Wifi
 } from "lucide-react";
 
 const Overview = () => {
-  const [devices, setDevices] = useState([]);
+  const [equipmentTotals, setEquipmentTotals] = useState({
+    monitors: 0,
+    projectors: 0,
+    switchBoards: 0,
+    fans: 0,
+    wifi: 0,
+    totalDevices: 0,
+    totalLabs: 0
+  });
+  const [labsData, setLabsData] = useState([]);
+  const [reportsData, setReportsData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedFilter, setSelectedFilter] = useState("all");
+  const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState(null);
 
-  // Mock data - in real app, this would come from API
-  useEffect(() => {
-    const mockDevices = [
-      {
-        id: "1",
-        name: "Classroom Projector A1",
-        type: "projector",
-        location: "Room A-101",
-        status: "active",
-        lastChecked: "2024-01-15T10:30:00Z",
-        assignedTo: "Prof. Smith",
-      },
-      {
-        id: "2",
-        name: "Lab Computer #15",
-        type: "computer",
-        location: "Computer Lab B",
-        status: "maintenance",
-        lastChecked: "2024-01-14T15:45:00Z",
-      },
-      {
-        id: "3",
-        name: "WiFi Router - Floor 2",
-        type: "network",
-        location: "Floor 2 Corridor",
-        status: "critical",
-        lastChecked: "2024-01-15T09:15:00Z",
-      },
-      {
-        id: "4",
-        name: "Library Printer",
-        type: "printer",
-        location: "Main Library",
-        status: "active",
-        lastChecked: "2024-01-15T11:00:00Z",
-      },
-      {
-        id: "5",
-        name: "Student Laptop Cart",
-        type: "laptop",
-        location: "Storage Room C",
-        status: "inactive",
-        lastChecked: "2024-01-13T16:20:00Z",
-      },
-    ];
+  // Fetch real-time equipment data from the same source as Inventory
+  const fetchEquipmentTotals = async () => {
+    try {
+      // Get adminId from localStorage (same as Inventory component)
+      const adminId = localStorage.getItem("adminId");
+      
+      if (!adminId) {
+        throw new Error("Admin ID not found. Please log in again.");
+      }
 
-    setTimeout(() => {
-      setDevices(mockDevices);
+      // Fetch labs data using the same endpoint as Inventory
+      const response = await axios.get(
+        `http://localhost:3000/api/labs/admin/${adminId}`
+      );
+      
+      const labs = response.data;
+      
+      // Calculate totals exactly like in Inventory component
+      const totals = labs.reduce(
+        (acc, lab) => ({
+          monitors: acc.monitors + (lab.monitors || 0),
+          projectors: acc.projectors + (lab.projectors || 0),
+          switchBoards: acc.switchBoards + (lab.switch_boards || 0),
+          fans: acc.fans + (lab.fans || 0),
+          wifi: acc.wifi + (lab.wifi || 0),
+        }),
+        { monitors: 0, projectors: 0, switchBoards: 0, fans: 0, wifi: 0 }
+      );
+
+      // Calculate additional metrics
+      const totalDevices = totals.monitors + totals.projectors + totals.switchBoards + totals.fans + totals.wifi;
+      const totalLabs = labs.length;
+      const activeLabs = labs.filter(lab => lab.status === 'active').length;
+
+      setEquipmentTotals({
+        ...totals,
+        totalDevices,
+        totalLabs,
+        activeLabs
+      });
+
+      setLabsData(labs);
+      return { totals, labs };
+
+    } catch (err) {
+      console.error("Error fetching equipment totals:", err);
+      throw err;
+    }
+  };
+
+  // Fetch reports data
+  const fetchReportsData = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/api/admin/notifications');
+      
+      // Filter only approved or rejected reports (completed actions)
+      const completedReports = response.data.filter(
+        notification => notification.adminApprovalStatus === 'approved' || 
+                      notification.adminApprovalStatus === 'rejected'
+      );
+      
+      // Sort by date (newest first) and get only first 3
+      const recentReports = completedReports
+        .sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date))
+        .slice(0, 3);
+      
+      setReportsData(recentReports);
+      
+      return {
+        recent: recentReports,
+        total: completedReports.length,
+        approved: completedReports.filter(r => r.adminApprovalStatus === 'approved').length,
+        rejected: completedReports.filter(r => r.adminApprovalStatus === 'rejected').length
+      };
+    } catch (err) {
+      console.error("Error fetching reports:", err);
+      setReportsData([]);
+      return { recent: [], total: 0, approved: 0, rejected: 0 };
+    }
+  };
+
+  // Main data fetching function
+  const fetchAllData = async (showRefreshIndicator = false) => {
+    try {
+      if (showRefreshIndicator) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
+      // Fetch both equipment and reports data
+      await Promise.all([
+        fetchEquipmentTotals(),
+        fetchReportsData()
+      ]);
+
+      setLastRefresh(new Date());
+      setError(null);
+
+    } catch (err) {
+      console.error("Error loading overview data:", err);
+      setError(
+        err.response?.data?.message || err.message || "Failed to load data"
+      );
+    } finally {
       setLoading(false);
-    }, 1000);
+      setRefreshing(false);
+    }
+  };
+
+  // Initial load
+  useEffect(() => {
+    fetchAllData();
   }, []);
 
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchAllData(true); // Show refresh indicator
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Manual refresh function
+  const handleManualRefresh = () => {
+    fetchAllData(true);
+  };
+
+  // Calculate device categories count
+  const deviceCategories = 5; // monitors, projectors, switchBoards, fans, wifi
+
+  // Updated metrics with real-time data from the same source as Inventory
   const metrics = [
     {
       title: "Total Devices",
-      value: "1,247",
-      change: "+12 this month",
+      value: equipmentTotals.totalDevices.toString(),
+      change: `${equipmentTotals.activeLabs || 0} active labs`,
       trend: "up",
       icon: Package,
       color: "bg-blue-500",
+      description: "All registered equipment across labs"
     },
     {
-      title: "Active Devices",
-      value: "1,089",
-      change: "87.3% operational",
-      trend: "up",
-      icon: CheckCircle,
+      title: "Device Categories",
+      value: deviceCategories.toString(),
+      change: "Equipment types",
+      trend: "stable",
+      icon: Building,
+      color: "bg-purple-500",
+      description: "Monitors, Projectors, Switches, Fans, WiFi"
+    },
+    {
+      title: "Total Labs",
+      value: equipmentTotals.totalLabs.toString(),
+      change: `${equipmentTotals.activeLabs || 0} active labs`,
+      trend: equipmentTotals.totalLabs > 0 ? "up" : "stable",
+      icon: MapPin,
+      color: "bg-orange-500",
+      description: "Laboratory locations"
+    },
+    {
+      title: "Recent Reports",
+      value: reportsData.length.toString(),
+      change: "Processed reports",
+      trend: reportsData.length > 0 ? "up" : "stable",
+      icon: FileText,
       color: "bg-green-500",
-    },
-    {
-      title: "Maintenance Required",
-      value: "23",
-      change: "-5 from last week",
-      trend: "down",
-      icon: AlertTriangle,
-      color: "bg-yellow-500",
-    },
-    {
-      title: "Critical Issues",
-      value: "8",
-      change: "+2 urgent",
-      trend: "up",
-      icon: AlertTriangle,
-      color: "bg-red-500",
+      description: "Latest processed reports"
     },
   ];
 
-  const getDeviceIcon = (type) => {
-    switch (type) {
-      case "computer":
-        return Monitor;
-      case "projector":
-        return Projector;
-      case "printer":
-        return Printer;
-      case "network":
-        return Wifi;
-      case "laptop":
-        return Laptop;
-      default:
-        return Package;
-    }
-  };
-
-  const getStatusColor = (status) => {
+  const getReportStatusColor = (status) => {
     switch (status) {
-      case "active":
-        return "bg-green-100 text-green-800";
-      case "maintenance":
-        return "bg-yellow-100 text-yellow-800";
-      case "inactive":
-        return "bg-gray-100 text-gray-800";
-      case "critical":
-        return "bg-red-100 text-red-800";
+      case "approved":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "rejected":
+        return "bg-red-100 text-red-800 border-red-200";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    // Simulate API call
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 2000);
+  const getReportStatusIcon = (status) => {
+    switch (status) {
+      case "approved":
+        return <CheckCircle size={16} className="text-green-600" />;
+      case "rejected":
+        return <XCircle size={16} className="text-red-600" />;
+      default:
+        return <AlertTriangle size={16} className="text-gray-600" />;
+    }
   };
 
-  const filteredDevices = devices.filter(
-    (device) => selectedFilter === "all" || device.status === selectedFilter
-  );
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
 
-  const recentActivities = [
-    {
-      id: 1,
-      action: "Device Added",
-      device: "Smart Board - Room C-205",
-      user: "Admin",
-      time: "2 hours ago",
-      type: "success",
-    },
-    {
-      id: 2,
-      action: "Maintenance Completed",
-      device: "Lab Computer #12",
-      user: "Tech Support",
-      time: "4 hours ago",
-      type: "info",
-    },
-    {
-      id: 3,
-      action: "Critical Alert",
-      device: "Server Room AC Unit",
-      user: "System",
-      time: "6 hours ago",
-      type: "error",
-    },
-    {
-      id: 4,
-      action: "Device Relocated",
-      device: "Portable Projector #3",
-      user: "Prof. Johnson",
-      time: "1 day ago",
-      type: "info",
-    },
-  ];
+  const handleExportPDF = (report) => {
+    const content = `
+Report ID: ${report.id}
+Assistant Name: ${report.assistant_name || 'N/A'}
+Department: ${report.department || 'N/A'}
+Status: ${report.adminApprovalStatus}
 
+Complaint Details:
+${report.complaint_details || 'N/A'}
+
+Date Submitted: ${report.created_at ? new Date(report.created_at).toLocaleString() : 'N/A'}
+Date Processed: ${report.updated_at ? new Date(report.updated_at).toLocaleString() : 'N/A'}
+    `;
+    
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `report-${report.id}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Loading state
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 bg-gray-50 min-h-screen p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => (
             <div
               key={i}
-              className="bg-white p-6 rounded-xl border border-gray-200"
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
             >
               <div className="animate-pulse">
                 <div className="w-12 h-12 bg-gray-300 rounded-lg mb-4"></div>
@@ -219,285 +290,267 @@ const Overview = () => {
     );
   }
 
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Error Loading Overview
+          </h2>
+          <p className="text-gray-600 mb-4 text-sm">{error}</p>
+          <button
+            onClick={() => fetchAllData()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      {/* Header Actions */}
+    <div className="space-y-6 bg-gray-50 min-h-screen p-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            Inventory Overview
-          </h2>
-          <p className="text-gray-600">
-            Monitor and manage all college devices and equipment
+          <h1 className="text-3xl font-bold text-gray-900">
+            College Inventory Overview
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Real-time equipment tracking and laboratory management
           </p>
         </div>
-      </div>
-
-      {/* Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {metrics.map((metric, index) => (
-          <div
-            key={index}
-            className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow"
-          >
-            <div className="flex items-center justify-between">
-              <div
-                className={`${metric.color} w-12 h-12 rounded-lg flex items-center justify-center`}
-              >
-                <metric.icon className="text-white" size={24} />
-              </div>
-              <div
-                className={`flex items-center text-sm ${
-                  metric.trend === "up"
-                    ? "text-green-600"
-                    : metric.trend === "down"
-                    ? "text-red-600"
-                    : "text-gray-600"
-                }`}
-              >
-                {metric.trend === "up" ? (
-                  <TrendingUp size={16} />
-                ) : metric.trend === "down" ? (
-                  <TrendingDown size={16} />
-                ) : null}
-              </div>
-            </div>
-            <div className="mt-4">
-              <h3 className="text-sm font-medium text-gray-600">
-                {metric.title}
-              </h3>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
-                {metric.value}
-              </p>
-              <p className="text-sm text-gray-500 mt-1">{metric.change}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Device List */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Recent Devices
-              </h3>
-              <div className="flex items-center space-x-3">
-                <select
-                  value={selectedFilter}
-                  onChange={(e) => setSelectedFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="all">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="maintenance">Maintenance</option>
-                  <option value="inactive">Inactive</option>
-                  <option value="critical">Critical</option>
-                </select>
-                <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                  <Filter size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Device
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Location
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Last Checked
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredDevices.map((device) => {
-                  const DeviceIcon = getDeviceIcon(device.type);
-                  return (
-                    <tr key={device.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                            <DeviceIcon className="text-gray-600" size={20} />
-                          </div>
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {device.name}
-                            </div>
-                            <div className="text-sm text-gray-500 capitalize">
-                              {device.type}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center text-sm text-gray-900">
-                          <MapPin className="mr-1" size={14} />
-                          {device.location}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusColor(
-                            device.status
-                          )}`}
-                        >
-                          {device.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex items-center">
-                          <Clock className="mr-1" size={14} />
-                          {new Date(device.lastChecked).toLocaleDateString()}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center space-x-2">
-                          <button className="text-blue-600 hover:text-blue-900">
-                            <Eye size={16} />
-                          </button>
-                          <button className="text-gray-600 hover:text-gray-900">
-                            <Edit size={16} />
-                          </button>
-                          <button className="text-red-600 hover:text-red-900">
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Recent Activities */}
-        <div className="bg-white rounded-xl border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-              <Activity className="mr-2" size={20} />
-              Recent Activities
-            </h3>
-          </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-start space-x-3">
-                  <div
-                    className={`w-2 h-2 rounded-full mt-2 ${
-                      activity.type === "success"
-                        ? "bg-green-500"
-                        : activity.type === "error"
-                        ? "bg-red-500"
-                        : "bg-blue-500"
-                    }`}
-                  ></div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">
-                      {activity.action}
-                    </p>
-                    <p className="text-sm text-gray-600">{activity.device}</p>
-                    <div className="flex items-center mt-1 text-xs text-gray-500">
-                      <Users className="mr-1" size={12} />
-                      {activity.user} • {activity.time}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button className="w-full mt-4 text-sm text-blue-600 hover:text-blue-800 font-medium">
-              View All Activities
+        <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-3">
+          {lastRefresh && (
+            <p className="text-sm text-gray-500 text-center sm:text-left">
+              Last updated: {lastRefresh.toLocaleTimeString()}
+            </p>
+          )}
+          <div className="flex items-center space-x-3">
+            <button 
+              onClick={handleManualRefresh}
+              disabled={refreshing}
+              className={`flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors ${refreshing ? 'opacity-75' : ''}`}
+            >
+              <RefreshCw className={`mr-2 w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? "Refreshing..." : "Refresh"}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-xl border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Device Categories
-              </p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">12</p>
-            </div>
-            <Package className="text-blue-500" size={32} />
-          </div>
-          <div className="mt-4 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Computers</span>
-              <span className="font-medium">342</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Projectors</span>
-              <span className="font-medium">89</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Network Equipment</span>
-              <span className="font-medium">156</span>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Locations</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">45</p>
-            </div>
-            <MapPin className="text-green-500" size={32} />
-          </div>
-          <div className="mt-4 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Classrooms</span>
-              <span className="font-medium">28</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Labs</span>
-              <span className="font-medium">12</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Common Areas</span>
-              <span className="font-medium">5</span>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">This Month</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">94%</p>
-            </div>
-            <TrendingUp className="text-purple-500" size={32} />
-          </div>
-          <div className="mt-4">
-            <div className="flex justify-between text-sm mb-2">
-              <span className="text-gray-600">Uptime</span>
-              <span className="font-medium">94.2%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {metrics.map((metric, index) => (
+          <div
+            key={index}
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-start justify-between">
               <div
-                className="bg-purple-500 h-2 rounded-full"
-                style={{ width: "94.2%" }}
-              ></div>
+                className={`${metric.color} w-14 h-14 rounded-xl flex items-center justify-center shadow-lg`}
+              >
+                <metric.icon className="text-white" size={28} />
+              </div>
+              <div
+                className={`flex items-center text-sm px-2 py-1 rounded-full ${
+                  metric.trend === "up"
+                    ? "text-green-600 bg-green-50"
+                    : metric.trend === "down"
+                    ? "text-red-600 bg-red-50"
+                    : "text-gray-600 bg-gray-50"
+                }`}
+              >
+                {metric.trend === "up" ? (
+                  <TrendingUp size={14} className="mr-1" />
+                ) : metric.trend === "down" ? (
+                  <TrendingDown size={14} className="mr-1" />
+                ) : null}
+              </div>
             </div>
-            <p className="text-xs text-gray-500 mt-2">+2.1% from last month</p>
+            <div className="mt-4">
+              <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                {metric.title}
+              </h3>
+              <p className="text-3xl font-bold text-gray-900 mt-2">
+                {metric.value}
+              </p>
+              <p className="text-sm text-gray-500 mt-1">{metric.change}</p>
+              <p className="text-xs text-gray-400 mt-1">{metric.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Equipment Breakdown Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+            <Package className="mr-2 text-blue-600" size={20} />
+            Equipment Distribution
+          </h3>
+          <div className="flex items-center space-x-2 text-sm text-gray-500">
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <span>Real-time data from labs</span>
           </div>
         </div>
+        
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200 hover:shadow-sm transition-shadow">
+            <Monitor className="mx-auto text-blue-500 mb-3" size={32} />
+            <p className="text-2xl font-bold text-gray-900">
+              {equipmentTotals.monitors}
+            </p>
+            <p className="text-sm text-gray-600 font-medium">Monitors</p>
+          </div>
+          <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200 hover:shadow-sm transition-shadow">
+            <Projector className="mx-auto text-purple-500 mb-3" size={32} />
+            <p className="text-2xl font-bold text-gray-900">
+              {equipmentTotals.projectors}
+            </p>
+            <p className="text-sm text-gray-600 font-medium">Projectors</p>
+          </div>
+          <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200 hover:shadow-sm transition-shadow">
+            <Zap className="mx-auto text-yellow-500 mb-3" size={32} />
+            <p className="text-2xl font-bold text-gray-900">
+              {equipmentTotals.switchBoards}
+            </p>
+            <p className="text-sm text-gray-600 font-medium">Switch Boards</p>
+          </div>
+          <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200 hover:shadow-sm transition-shadow">
+            <Fan className="mx-auto text-green-500 mb-3" size={32} />
+            <p className="text-2xl font-bold text-gray-900">
+              {equipmentTotals.fans}
+            </p>
+            <p className="text-sm text-gray-600 font-medium">Fans</p>
+          </div>
+          <div className="text-center p-4 bg-indigo-50 rounded-lg border border-indigo-200 hover:shadow-sm transition-shadow">
+            <Wifi className="mx-auto text-indigo-500 mb-3" size={32} />
+            <p className="text-2xl font-bold text-gray-900">
+              {equipmentTotals.wifi}
+            </p>
+            <p className="text-sm text-gray-600 font-medium">WiFi Points</p>
+          </div>
+        </div>
+        
+        <div className="mt-6 pt-4 border-t border-gray-200">
+          <div className="text-center">
+            <p className="text-lg font-semibold text-gray-900">
+              Total Equipment: {equipmentTotals.totalDevices} devices across {equipmentTotals.totalLabs} labs
+            </p>
+            <p className="text-sm text-gray-500 mt-1">
+              Data synchronized with laboratory inventory system
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Reports Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+            <FileText className="mr-2 text-blue-600" size={20} />
+            Recent Reports
+          </h3>
+          <div className="flex items-center space-x-2 text-sm text-gray-500">
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <span>Auto-refreshes every 30s</span>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {reportsData.map((report) => (
+            <div
+              key={report.id}
+              className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-all duration-200 hover:border-gray-300"
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <h4 className="font-semibold text-gray-900 text-sm mb-2">
+                    {report.complaint_details ? 
+                      (report.complaint_details.length > 60 ? 
+                        `${report.complaint_details.substring(0, 60)}...` : 
+                        report.complaint_details
+                      ) : `Report #${report.id}`
+                    }
+                  </h4>
+                  <div className="flex items-center space-x-2">
+                    {getReportStatusIcon(report.adminApprovalStatus)}
+                    <span
+                      className={`inline-flex px-2 py-1 text-xs font-medium rounded-full capitalize border ${getReportStatusColor(
+                        report.adminApprovalStatus
+                      )}`}
+                    >
+                      {report.adminApprovalStatus}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center text-xs text-gray-500">
+                  <Users className="w-3 h-3 mr-2" />
+                  <span>By: {report.assistant_name || report.lab_assistant || 'Assistant'}</span>
+                </div>
+                <div className="flex items-center text-xs text-gray-500">
+                  <Building className="w-3 h-3 mr-2" />
+                  <span>Dept: {report.department || 'N/A'}</span>
+                </div>
+                <div className="flex items-center text-xs text-gray-500">
+                  <Calendar className="w-3 h-3 mr-2" />
+                  <span>Processed: {formatDate(report.created_at || report.date)}</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                <span className="text-xs text-gray-500">
+                  Report ID: {report.id}
+                </span>
+                <div className="flex space-x-2">
+                  <button
+                    className="text-blue-600 hover:text-blue-800 p-1 rounded"
+                    title="View Details"
+                  >
+                    <Eye size={14} />
+                  </button>
+                  <button
+                    onClick={() => handleExportPDF(report)}
+                    className="text-green-600 hover:text-green-800 p-1 rounded"
+                    title="Export Report"
+                  >
+                    <Download size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {reportsData.length === 0 && (
+          <div className="text-center text-gray-500 py-8">
+            <FileText className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+            <p className="text-sm">No recent reports available</p>
+            <p className="text-xs text-gray-400 mt-1">
+              Processed reports will appear here as they are completed
+            </p>
+          </div>
+        )}
+        
+        {reportsData.length > 0 && (
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-gray-600">
+                Showing latest {reportsData.length} processed reports
+              </span>
+              <button className="text-blue-600 hover:text-blue-800 font-medium">
+                View All Reports →
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

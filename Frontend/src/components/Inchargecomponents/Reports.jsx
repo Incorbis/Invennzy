@@ -6,13 +6,16 @@ import {
   Clock,
   CheckCircle,
   AlertTriangle,
-  Calendar,
+  Eye,
+  Search,
+  Filter,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Reports = () => {
   const [reports, setReports] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -34,6 +37,8 @@ const Reports = () => {
           createdAt: item.date,
           createdBy: item.created_by || "Unknown",
           resolvedAt: item.maintenanceClosedDate || null,
+          equipmentName: item.equipment_name || "N/A",
+          equipmentId: item.equipment_id || "N/A",
         }));
         setReports(data);
       } catch (err) {
@@ -65,35 +70,63 @@ const Reports = () => {
     }
   };
 
-  const getTypeIcon = (type) => {
-    switch (type) {
-      case "query":
-        return FileText;
-      case "maintenance":
-        return Clock;
-      case "audit":
-        return CheckCircle;
-      case "issue":
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "open":
         return AlertTriangle;
+      case "in-progress":
+        return Clock;
+      case "resolved":
+        return CheckCircle;
+      case "closed":
+        return CheckCircle;
       default:
         return FileText;
     }
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+  const formatTimestamp = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
-      day: "numeric",
+      day: "2-digit",
     });
+  };
+
+  const getMonthOptions = () => {
+    const months = [
+      { value: "", label: "All Months" },
+      { value: "01", label: "January" },
+      { value: "02", label: "February" },
+      { value: "03", label: "March" },
+      { value: "04", label: "April" },
+      { value: "05", label: "May" },
+      { value: "06", label: "June" },
+      { value: "07", label: "July" },
+      { value: "08", label: "August" },
+      { value: "09", label: "September" },
+      { value: "10", label: "October" },
+      { value: "11", label: "November" },
+      { value: "12", label: "December" },
+    ];
+    return months;
   };
 
   const filteredReports = reports
     .filter(
       (report) =>
         report.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        report.description.toLowerCase().includes(searchQuery.toLowerCase())
+        report.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        report.equipmentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        report.equipmentId.toLowerCase().includes(searchQuery.toLowerCase())
     )
+    .filter((report) => {
+      if (!selectedMonth) return true;
+      const reportMonth = new Date(report.createdAt).getMonth() + 1;
+      const formattedMonth = reportMonth.toString().padStart(2, "0");
+      return formattedMonth === selectedMonth;
+    })
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   const totalReports = reports.length;
@@ -157,34 +190,51 @@ const Reports = () => {
         </div>
       </div>
 
-      {/* Search Bar */}
+      {/* Search Bar and Monthly Filter */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">
-            Search Reports
+            Search & Filter Reports
           </h3>
         </div>
-        <div>
-          <input
-            type="text"
-            placeholder="Search reports..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+        <div className="flex gap-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search reports..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+            />
+          </div>
+          <div className="relative">
+            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="pl-10 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white min-w-[180px]"
+            >
+              {getMonthOptions().map((month) => (
+                <option key={month.value} value={month.value}>
+                  {month.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
-      {/* Reports List */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+      {/* Reports Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
-                Query History
+                Reports Overview
               </h3>
               <p className="text-gray-600 mt-1">
-                Track all reports and their resolution status
+                Manage and track all maintenance reports
               </p>
             </div>
             <p className="text-sm text-gray-600">
@@ -192,78 +242,103 @@ const Reports = () => {
             </p>
           </div>
         </div>
-        <div className="divide-y divide-gray-200">
-          {filteredReports.length === 0 ? (
-            <div className="p-12 text-center">
-              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No reports found
-              </h3>
-              <p className="text-gray-600">Try adjusting your search query.</p>
-            </div>
-          ) : (
-            filteredReports.map((report) => {
-              const TypeIcon = getTypeIcon(report.type);
-              return (
-                <div
-                  key={report.id}
-                  className="p-6 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-start space-x-4">
-                    <div className="p-2 bg-gray-100 rounded-lg">
-                      <TypeIcon className="w-5 h-5 text-gray-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-2">
-                            <h4 className="text-lg font-semibold text-gray-900">
-                              {report.title}
-                            </h4>
-                            <span
-                              className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                                report.status
-                              )}`}
-                            >
-                              {report.status.charAt(0).toUpperCase() +
-                                report.status.slice(1).replace("-", " ")}
-                            </span>
-                          </div>
-                          <p className="text-gray-600 mb-3">
-                            {report.description}
-                          </p>
-                          <div className="flex items-center space-x-6 text-sm text-gray-500">
-                            <div className="flex items-center space-x-1">
-                              <Calendar className="w-4 h-4" />
-                              <span>
-                                Created: {formatDate(report.createdAt)}
-                              </span>
-                            </div>
-                            {report.resolvedAt && (
-                              <span>
-                                Resolved: {formatDate(report.resolvedAt)}
-                              </span>
-                            )}
-                          </div>
+
+        {filteredReports.length === 0 ? (
+          <div className="p-12 text-center">
+            <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No reports found
+            </h3>
+            <p className="text-gray-600">Try adjusting your search query.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Sr. No.
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type of Problem
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Equipment Details
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Timestamp
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Current Status
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredReports.map((report, index) => {
+                  const StatusIcon = getStatusIcon(report.status);
+                  return (
+                    <tr
+                      key={report.id}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {index + 1}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {report.title}
                         </div>
-                        <div className="flex items-center space-x-2 ml-4">
-                          <button
-                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                            onClick={() =>
-                              navigate(`/labinchargedash/requests/${report.id}`)
-                            }
+                        <div className="text-sm text-gray-500 max-w-xs truncate">
+                          {report.description}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="text-sm font-medium text-gray-900">
+                          {report.equipmentName}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          ID: {report.equipmentId}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {formatTimestamp(report.createdAt)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center space-x-2">
+                          <StatusIcon className="w-4 h-4 text-gray-500" />
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
+                              report.status
+                            )}`}
                           >
-                            Check Status
-                          </button>
+                            {report.status.charAt(0).toUpperCase() +
+                              report.status.slice(1).replace("-", " ")}
+                          </span>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() =>
+                            navigate(`/labinchargedash/requests/${report.id}`)
+                          }
+                          className="inline-flex items-center space-x-1 text-blue-600 hover:text-blue-900 transition-colors"
+                        >
+                          <Eye className="w-4 h-4" />
+                          <span>View</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

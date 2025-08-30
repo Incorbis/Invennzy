@@ -16,6 +16,7 @@ import AdminReports from "./components/admincomponents/Reports.jsx";
 import Settings from "./components/admincomponents/settings.jsx";
 import Overview from "./components/admincomponents/overview.jsx";
 import Notifications from "./components/admincomponents/Notification.jsx";
+import RequestDetails from "./components/admincomponents/request.jsx";
 
 import PrivateRoute from "./Utils/PrivateRoute.jsx";
 
@@ -56,6 +57,7 @@ function App() {
       >
         <Route path="inventory" element={<Inventory />} />
         <Route path="reports" element={<AdminReports />} />
+        <Route path="requests/:requestId" element={<RequestDetails />} />
         <Route path="" element={<Overview />} />
         <Route path="settings" element={<Settings />} />
         <Route path="notifications" element={<Notifications />} />

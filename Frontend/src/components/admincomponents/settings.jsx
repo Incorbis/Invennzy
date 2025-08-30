@@ -69,7 +69,7 @@ const SettingsPage = () => {
           setProfileImagePreview(imageUrl);
         }
       } catch (err) {
-        console.error("❌ Error fetching profile:", err);
+        console.error("⚠️ Error fetching profile:", err);
         toast.error("Error fetching profile data");
       }
     };
@@ -262,8 +262,10 @@ const SettingsPage = () => {
             <span className="ml-2 text-sm text-gray-500">Loading...</span>
           )}
         </h3>
-        <div className="flex items-center mb-6">
-          <div className="w-20 h-20 rounded-full bg-blue-500 flex items-center justify-center mr-6 overflow-hidden">
+        
+        {/* Mobile responsive profile photo section */}
+        <div className="flex flex-col sm:flex-row items-center sm:items-start mb-6">
+          <div className="w-24 h-24 sm:w-20 sm:h-20 rounded-full bg-blue-500 flex items-center justify-center mb-4 sm:mb-0 sm:mr-6 overflow-hidden">
             {profileImagePreview ? (
               <img
                 src={profileImagePreview}
@@ -274,7 +276,7 @@ const SettingsPage = () => {
               <User className="text-white" size={32} />
             )}
           </div>
-          <div>
+          <div className="flex-1">
             <input
               type="file"
               ref={fileInputRef}
@@ -282,23 +284,24 @@ const SettingsPage = () => {
               accept="image/*"
               className="hidden"
             />
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 pt-4">
               <button
                 onClick={handleChangePhoto}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+                className="w-full sm:w-auto bg-blue-600 text-white px-3 py-2 text-sm rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-2"
               >
-                <Camera size={16} />
+                <Camera size={14} />
                 <span>Change Photo</span>
               </button>
               <button
                 onClick={handleRemovePhoto}
-                className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50"
+                className="w-full sm:w-auto border border-gray-300 text-gray-700 px-3 py-2 text-sm rounded-lg hover:bg-gray-50"
               >
                 Remove
               </button>
             </div>
           </div>
         </div>
+        
         {profileImage && (
           <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
             <p className="text-sm text-green-700 flex items-center">
@@ -527,23 +530,24 @@ const SettingsPage = () => {
         {/* Settings Content */}
         <div className="flex-1">
           {renderContent()}
-          {/* Save Button */}
+          {/* Mobile responsive Save Button section */}
           <div className="mt-6 bg-white rounded-xl p-6 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0">
+              {/* Hide descriptive text on mobile */}
+              <div className="hidden sm:block">
                 <h4 className="font-medium text-gray-800">Save Changes</h4>
                 <p className="text-sm text-gray-500">
                   Make sure to save your changes before leaving this page.
                 </p>
               </div>
-              <div className="flex items-center space-x-3">
-                <button className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
+                <button className="w-full sm:w-auto px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveSettings}
                   disabled={isLoading}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2 disabled:opacity-50"
+                  className="w-full sm:w-auto bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-2 disabled:opacity-50"
                 >
                   <Save size={16} />
                   <span>{isLoading ? "Saving..." : "Save Settings"}</span>

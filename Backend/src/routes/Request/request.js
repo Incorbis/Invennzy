@@ -7,18 +7,19 @@ const db = require("../../db");
 // =======================
 
 // Create a request
+// Create a request
 router.post("/create", async (req, res) => {
   try {
-    const { form, staff_id } = req.body;
+    const { form, staff_id, equipment_id } = req.body;
 
     const [result] = await db.query(`
       INSERT INTO requests (
         type_of_problem, date, department, location,
         complaint_details, recurring_complaint, recurring_times,
         lab_assistant, lab_assistant_date, hod, hod_date,
-        current_step, completed_steps, staff_id
+        current_step, completed_steps, staff_id, equipment_id
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, ?, ?)
     `, [
       form.typeOfProblem,
       form.date,
@@ -31,10 +32,17 @@ router.post("/create", async (req, res) => {
       form.labAssistantDate,
       form.hod,
       form.hodDate,
-      staff_id
+      staff_id,
+      equipment_id
     ]);
 
     const requestId = result.insertId;
+
+    // ✅ Update equipment status to "2" (maintenance)
+    await db.query(
+      `UPDATE equipment_details SET equipment_status = '2' WHERE equipment_id = ?`,
+      [equipment_id]
+    );
 
     // Add notification
     await db.query(`
@@ -49,10 +57,22 @@ router.post("/create", async (req, res) => {
   }
 });
 
+
 // Fetch all requests created by a LIC (based on staff_id)
 router.get("/lic/:staff_id", async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT * FROM requests WHERE staff_id = ?", [req.params.staff_id]);
+    const [rows] = await db.query(
+      `SELECT r.*, 
+              e.equipment_name, 
+              e.equipment_code, 
+              e.equipment_type
+       FROM requests r
+       LEFT JOIN equipment_details e 
+         ON r.equipment_id = e.equipment_id
+       WHERE r.staff_id = ?`,
+      [req.params.staff_id]
+    );
+
     res.json(rows);
   } catch (err) {
     console.error("LIC Fetch Error:", err);

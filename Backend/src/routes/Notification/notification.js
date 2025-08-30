@@ -11,12 +11,17 @@ router.get("/:role/:staff_id", async (req, res) => {
     console.log("Fetching notifications for:", role, staff_id);
 
     const [rows] = await db.query(`
-      SELECT * FROM notifications
-      WHERE user_role = ? AND staff_id = ?
-      ORDER BY timestamp DESC
-    `, [role, staff_id]);
+  SELECT n.id, n.user_role, n.type, n.title, n.message, n.is_read, n.timestamp,
+         n.request_id, n.staff_id,
+         e.equipment_id, e.equipment_name
+  FROM notifications n
+  JOIN requests r ON n.request_id = r.id
+  JOIN equipment_details e ON r.equipment_id = e.equipment_id
+  WHERE n.user_role = ? AND n.staff_id = ?
+  ORDER BY n.timestamp DESC
+`, [role, staff_id]);
 
-    console.log("Notifications found:", rows);
+    console.log("Notifications with equipment found:", rows);
 
     res.json(rows);
   } catch (err) {
@@ -24,6 +29,7 @@ router.get("/:role/:staff_id", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+
 
 
 // Mark a notification as read

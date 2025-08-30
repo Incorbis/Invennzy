@@ -164,6 +164,7 @@ function LabAssistantForm() {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [completedSteps, setCompletedSteps] = useState(0);
+  const [equipmentList, setEquipmentList] = useState([]);
   const [modal, setModal] = useState({
     isOpen: false,
     type: "",
@@ -221,6 +222,7 @@ function LabAssistantForm() {
     maintenanceClosedSignature: "",
     adminApprovalStatus: "",
     adminApprovalDate: "",
+    equipment_id: "",
   });
 
   const stepFields = {
@@ -313,6 +315,27 @@ function LabAssistantForm() {
   const closeModal = () =>
     setModal({ isOpen: false, type: "", title: "", message: "" });
 
+  useEffect(() => {
+    const fetchEquipments = async () => {
+      try {
+        const staffId = localStorage.getItem("staffId");
+        const res = await axios.get(`/api/labs/equipment/by-staff/${staffId}`);
+
+        // ✅ Use flat array (items)
+        if (res.data && Array.isArray(res.data.items)) {
+          setEquipmentList(res.data.items);
+        } else {
+          setEquipmentList([]);
+        }
+      } catch (err) {
+        console.error("Error fetching equipments:", err);
+        setEquipmentList([]);
+      }
+    };
+
+    fetchEquipments();
+  }, []);
+
   const handleStep3Submit = async () => {
     try {
       await axios.put(`/api/requests/assistant/${requestId}/verification`, {
@@ -390,6 +413,8 @@ function LabAssistantForm() {
       showModal("info", "Error", "Failed to save closure.");
     }
   };
+
+  const userRole = localStorage.getItem("userRole");
 
   const handleSubmitRequest = async () => {
     const staffId = localStorage.getItem("staffId");
@@ -495,6 +520,9 @@ function LabAssistantForm() {
           adminApprovalStatus: data.admin_approval_status || "",
           adminApprovalDate: data.admin_approval_date
             ? String(data.admin_approval_date).split("T")[0]
+            : "",
+          equipment_id: res.data.equipment_id
+            ? res.data.equipment_id.toString()
             : "",
         });
         // Determine completed steps
@@ -641,6 +669,35 @@ function LabAssistantForm() {
                         className={`w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                           lockInitial ? "bg-gray-50 cursor-not-allowed" : ""
                         }`}
+                      />
+                    </div>
+                    <div className="mt-6">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Equipment
+                      </label>
+                      <input
+                        type="text"
+                        value={
+                          equipmentList.find(
+                            (eq) => eq.equipment_id == form.equipment_id
+                          )
+                            ? `${
+                                equipmentList.find(
+                                  (eq) => eq.equipment_id == form.equipment_id
+                                ).equipment_name
+                              } (${
+                                equipmentList.find(
+                                  (eq) => eq.equipment_id == form.equipment_id
+                                ).equipment_type
+                              }) - ${
+                                equipmentList.find(
+                                  (eq) => eq.equipment_id == form.equipment_id
+                                ).equipment_code
+                              }`
+                            : "Not Assigned"
+                        }
+                        disabled
+                        className="block border border-gray-300 rounded-lg px-4 py-2 w-full bg-gray-100 text-gray-600"
                       />
                     </div>
                   </div>
