@@ -223,6 +223,7 @@ function LabAssistantForm() {
     adminApprovalStatus: "",
     adminApprovalDate: "",
     equipment_id: "",
+    equipmentStatus: "",
   });
 
   const stepFields = {
@@ -397,12 +398,25 @@ function LabAssistantForm() {
         completionRemarkMaintenance: form.completionRemarkMaintenance,
         maintenanceClosedDate: form.maintenanceClosedDate,
         maintenanceClosedSignature: form.maintenanceClosedSignature,
-        currentStep: 6, // stays 5 since closure is last
+        currentStep: 6,
         completedSteps: 6,
         message: "Closure completed successfully",
+        equipmentStatus: form.equipmentStatus,
       });
 
       setCompletedSteps(6);
+      // ✅ Re-fetch request from backend to sync updated status
+      const res = await axios.get(`/api/requests/${requestId}`);
+      const data = res.data;
+      setForm((prev) => ({
+        ...prev,
+        equipmentStatus:
+          Number(data.equipment_status) === 0
+            ? "active"
+            : Number(data.equipment_status) === 1
+            ? "damaged"
+            : "maintenance",
+      }));
       showModal(
         "success",
         "Closure Saved",
@@ -524,6 +538,12 @@ function LabAssistantForm() {
           equipment_id: res.data.equipment_id
             ? res.data.equipment_id.toString()
             : "",
+          equipmentStatus:
+            Number(data.equipment_status) === 0
+              ? "active"
+              : Number(data.equipment_status) === 1
+              ? "damaged"
+              : "maintenance",
         });
         // Determine completed steps
         let maxCompleted = 0;
@@ -1131,6 +1151,7 @@ function LabAssistantForm() {
 
               {currentStep === 6 && (
                 <div className="space-y-6">
+                  {/* Header */}
                   <div className="border-b border-gray-200 pb-4">
                     <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
                       <CheckSquare className="w-7 h-7 text-green-500" />
@@ -1140,6 +1161,8 @@ function LabAssistantForm() {
                       Final completion and sign-off
                     </p>
                   </div>
+
+                  {/* Finalize Request */}
                   <div className="bg-green-50 border border-green-200 rounded-xl p-6">
                     <div className="flex items-center gap-3 mb-4">
                       <CheckSquare className="w-6 h-6 text-green-600" />
@@ -1151,6 +1174,56 @@ function LabAssistantForm() {
                       Complete the final details for this maintenance request.
                     </p>
                   </div>
+
+                  {/* Equipment Status Section */}
+                  <div className="mt-4 bg-gray-50 border border-gray-200 rounded-xl p-4">
+                    <h3 className="text-sm font-semibold text-gray-800 mb-3">
+                      Equipment Status
+                    </h3>
+
+                    {/* Show current DB status */}
+                    <p className="inline-block bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full mb-3">
+                      Current Status:{" "}
+                      {form.equipmentStatus === "active"
+                        ? "Active"
+                        : form.equipmentStatus === "damaged"
+                        ? "Damaged"
+                        : "In Maintenance"}
+                    </p>
+
+                    {/* Update options */}
+                    <div className="flex items-center gap-6">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="equipmentStatus"
+                          value="active"
+                          checked={form.equipmentStatus === "active"}
+                          onChange={handleChange}
+                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                        />
+                        <span className="text-sm font-medium text-gray-700">
+                          Active
+                        </span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="equipmentStatus"
+                          value="damaged"
+                          checked={form.equipmentStatus === "damaged"}
+                          onChange={handleChange}
+                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
+                        />
+                        <span className="text-sm font-medium text-gray-700">
+                          Damaged
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Assistant Form Section */}
                   {isAssistant && (
                     <div className="space-y-4">
                       <div>
@@ -1166,6 +1239,7 @@ function LabAssistantForm() {
                           rows={3}
                         />
                       </div>
+
                       <div className="grid md:grid-cols-2 gap-6">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1194,6 +1268,7 @@ function LabAssistantForm() {
                           />
                         </div>
                       </div>
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Completion Remarks (Maintenance){" "}
@@ -1207,6 +1282,7 @@ function LabAssistantForm() {
                           rows={3}
                         />
                       </div>
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Closed Date (Maintenance){" "}

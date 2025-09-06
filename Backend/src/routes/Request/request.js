@@ -178,6 +178,35 @@ router.put("/assistant/:id/verification", async (req, res) => {
   }
 });
 
+
+router.put("/admin/:id/approved", async (req, res) => {
+  const { id } = req.params;
+  try {
+    await db.query(
+      `UPDATE requests SET admin_approval_status = 'approved' WHERE id = ?`,
+      [id]
+    );
+    res.json({ message: "Request approved successfully", requestId: id });
+  } catch (error) {
+    console.error("Error approving request:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.put("/admin/:id/rejected", async (req, res) => {
+  const { id } = req.params;
+  try {
+    await db.query(
+      `UPDATE requests SET admin_approval_status = 'rejected' WHERE id = ?`,
+      [id]
+    );
+    res.json({ message: "Request rejected successfully", requestId: id });
+  } catch (error) {
+    console.error("Error rejecting request:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // Save Step 4 Corrective Action
 router.put("/assistant/:id/corrective", async (req, res) => {
   try {
@@ -247,14 +276,22 @@ router.put("/assistant/:id/closure", async (req, res) => {
       maintenanceClosedSignature,
       currentStep,
       completedSteps,
-      message
+      message,
+      equipmentStatus, // from frontend ("active", "damaged")
     } = req.body;
 
+    // Map frontend string → DB code
+   let statusValue = "2"; // default maintenance
+if (equipmentStatus === "active") statusValue = "0";
+if (equipmentStatus === "damaged") statusValue = "1";
+
+    // 1️⃣ Update requests table
     await db.query(`
       UPDATE requests
       SET completion_remark_lab = ?, lab_completion_name = ?, lab_completion_signature = ?,
           lab_completion_date = ?, completion_remark_maintenance = ?, maintenance_closed_date = ?,
-          maintenance_closed_signature = ?, current_step = ?, completed_steps = ?
+          maintenance_closed_signature = ?, current_step = ?, completed_steps = ?, 
+          equipment_status = ?
       WHERE id = ?
     `, [
       completionRemarkLab,
@@ -266,13 +303,29 @@ router.put("/assistant/:id/closure", async (req, res) => {
       maintenanceClosedSignature,
       currentStep,
       completedSteps,
+      statusValue,    // ✅ new
       requestId
     ]);
 
-    // Get staff_id for notification
-    const [request] = await db.query("SELECT staff_id FROM requests WHERE id = ?", [requestId]);
-    const staff_id = request[0].staff_id;
+    // 2️⃣ Get staff_id + equipment_id
+    const [reqRow] = await db.query(
+      "SELECT staff_id, equipment_id FROM requests WHERE id = ?",
+      [requestId]
+    );
+    if (!reqRow || reqRow.length === 0) {
+      return res.status(404).json({ error: "Request not found" });
+    }
+    const { staff_id, equipment_id } = reqRow[0];
 
+    // 3️⃣ Update equipment master table also
+    if (equipment_id) {
+      await db.query(
+        "UPDATE equipment_details SET equipment_status = ? WHERE equipment_id = ?",
+        [statusValue, equipment_id]
+      );
+    }
+
+    // 4️⃣ Insert notification
     await db.query(`
       INSERT INTO notifications (user_role, type, title, message, request_id, staff_id)
       VALUES ('labincharge', 'maintenance', 'Closure Completed', ?, ?, ?)
@@ -284,6 +337,8 @@ router.put("/assistant/:id/closure", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+
+
 
 
 module.exports = router;

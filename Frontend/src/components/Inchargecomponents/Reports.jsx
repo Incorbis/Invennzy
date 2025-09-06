@@ -143,7 +143,9 @@ const Reports = () => {
         report.equipmentName
           .toLowerCase()
           .includes(searchQuery.toLowerCase()) ||
-        report.equipmentId.toLowerCase().includes(searchQuery.toLowerCase())
+        String(report.equipmentId || "")
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase())
     )
     .filter((report) => {
       if (!selectedMonth) return true;
