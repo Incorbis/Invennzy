@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Download, FileText, CheckCircle, XCircle, Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Download, FileText, CheckCircle, XCircle, Clock, AlertCircle, RefreshCw, Check, X } from 'lucide-react';
 
 const EquipmentDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -8,6 +8,15 @@ const EquipmentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [downloadingIds, setDownloadingIds] = useState(new Set());
+  const [processingIds, setProcessingIds] = useState(new Set());
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalData, setModalData] = useState(null);
+
+  // Normalize status strings for consistent comparison
+  const normalizeStatus = (status) => {
+    if (!status) return 'pending';
+    return status.toString().toLowerCase().trim();
+  };
 
   // Fetch grouped deadstock reports from backend
   const fetchEquipmentData = async () => {
@@ -15,7 +24,6 @@ const EquipmentDashboard = () => {
       setLoading(true);
       setError(null);
       
-      // Using fetch instead of axios for React component compatibility
       const response = await fetch('/api/fetch/deadstock');
       
       if (!response.ok) {
@@ -32,7 +40,7 @@ const EquipmentDashboard = () => {
           // Calculate group total
           const totalItems = group.length;
           const totalValue = group.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
-          const status = group[0].status || 'Pending'; // Assume all items in group have same status
+          const status = group[0].status || 'Pending';
           const registeredBy = group[0].registered_by || 'Unknown';
           const createdAt = group[0].date_submitted;
 
@@ -40,7 +48,7 @@ const EquipmentDashboard = () => {
             deadstock_id: deadstockId,
             totalItems,
             totalValue,
-            status,
+            status: status, // Keep original status format
             registeredBy: group[0].assistant_name || 'Unknown',
             date: createdAt
               ? new Date(createdAt).toLocaleDateString('en-IN', {
@@ -71,10 +79,8 @@ const EquipmentDashboard = () => {
   // Download detailed report for specific deadstock ID
   const handleDownload = async (deadstockId) => {
     try {
-      // mark this row as downloading
       setDownloadingIds(prev => new Set([...prev, deadstockId]));
 
-      // call backend API
       const response = await fetch(`/api/download/deadstock-report/${deadstockId}`, {
         method: 'GET',
         headers: {
@@ -86,21 +92,16 @@ const EquipmentDashboard = () => {
         throw new Error(`Failed to download report: ${response.statusText}`);
       }
 
-      // convert response into a blob (PDF file)
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-
-      // Use meaningful filename
       const fileName = `Deadstock_Report_${deadstockId}.pdf`;
 
-      // create a temporary <a> tag to trigger download
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', fileName);
       document.body.appendChild(link);
       link.click();
 
-      // cleanup
       link.remove();
       window.URL.revokeObjectURL(url);
 
@@ -108,7 +109,6 @@ const EquipmentDashboard = () => {
       console.error('Download failed:', err);
       alert('Failed to download report. Please try again.');
     } finally {
-      // remove ID from "downloading" set
       setDownloadingIds(prev => {
         const newSet = new Set(prev);
         newSet.delete(deadstockId);
@@ -117,67 +117,113 @@ const EquipmentDashboard = () => {
     }
   };
 
+  // Handle status update
+  const handleStatusUpdate = async (deadstockId, newStatus) => {
+    try {
+      setProcessingIds(prev => new Set([...prev, deadstockId]));
+
+      const response = await fetch(`/api/update/deadstock-status/${deadstockId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update status: ${response.statusText}`);
+      }
+
+      // Update local state
+      setEquipmentData(prev =>
+        prev.map(item =>
+          item.deadstock_id === deadstockId
+            ? { ...item, status: newStatus }
+            : item
+        )
+      );
+
+      // Close modal
+      setModalOpen(false);
+      setModalData(null);
+
+    } catch (err) {
+      console.error("Status update failed:", err);
+      alert("Failed to update status. Please try again.");
+    } finally {
+      setProcessingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(deadstockId);
+        return newSet;
+      });
+    }
+  };
+
+  // Open confirmation modal
+  const openConfirmationModal = (deadstockId, action, registeredBy) => {
+    setModalData({
+      deadstockId,
+      action,
+      registeredBy
+    });
+    setModalOpen(true);
+  };
+
+  // Close modal
+  const closeModal = () => {
+    setModalOpen(false);
+    setModalData(null);
+  };
+
+  // Confirm action
+  const confirmAction = () => {
+    if (modalData) {
+      const newStatus = modalData.action === 'approve' ? 'Approved' : 'Rejected';
+      handleStatusUpdate(modalData.deadstockId, newStatus);
+    }
+  };
+
   // Fetch data on component mount
   useEffect(() => {
     fetchEquipmentData();
-
+  
     const interval = setInterval(() => {
       fetchEquipmentData();
     }, 10000); // every 10s
-
+  
     return () => clearInterval(interval);
   }, []);
 
-  // Memoized summary statistics that update when equipmentData changes
-  const summaryStats = useMemo(() => {
-    const totalReports = equipmentData.length;
-    
-    // Use case-insensitive comparison for status matching
-    const approvedReports = equipmentData.filter(item => 
-      item.status?.toLowerCase() === 'approved'
-    ).length;
-    
-    const rejectedReports = equipmentData.filter(item => 
-      item.status?.toLowerCase() === 'rejected'
-    ).length;
-    
-    const pendingReports = equipmentData.filter(item => 
-      item.status?.toLowerCase() === 'pending'
-    ).length;
-
-    return {
-      totalReports,
-      approvedReports,
-      rejectedReports,
-      pendingReports
-    };
-  }, [equipmentData]);
+  // Calculate summary statistics with normalized status comparison
+  const totalReports = equipmentData.length;
+  const approvedReports = equipmentData.filter(item => normalizeStatus(item.status) === 'approved').length;
+  const rejectedReports = equipmentData.filter(item => normalizeStatus(item.status) === 'rejected').length;
+  const pendingReports = equipmentData.filter(item => normalizeStatus(item.status) === 'pending').length;
 
   // Filter data based on search and status
-  const filteredData = useMemo(() => {
-    return equipmentData.filter(item => {
-      const matchesSearch = item.deadstock_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           item.registeredBy.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           item.category.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      // Use case-insensitive comparison for status filtering
-      const matchesStatus = statusFilter === 'All Statuses' || 
-                           item.status?.toLowerCase() === statusFilter.toLowerCase();
-      
-      return matchesSearch && matchesStatus;
-    });
-  }, [equipmentData, searchTerm, statusFilter]);
+  const filteredData = equipmentData.filter(item => {
+    const matchesSearch = item.deadstock_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         item.registeredBy.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         item.category.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Normalize status comparison for filtering as well
+    const matchesStatus = statusFilter === 'All Statuses' || 
+                         normalizeStatus(item.status) === normalizeStatus(statusFilter);
+    return matchesSearch && matchesStatus;
+  });
 
+  // Fixed getStatusColor function with proper case matching
   const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
+    const normalizedStatus = normalizeStatus(status);
+    switch (normalizedStatus) {
       case 'approved':
-        return 'bg-green-100 text-green-800 border border-green-200';
+        return 'bg-green-100 text-green-800';
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
+        return 'bg-yellow-100 text-yellow-800';
       case 'rejected':
-        return 'bg-red-100 text-red-800 border border-red-200';
+        return 'bg-red-100 text-red-800';
       default:
-        return 'bg-gray-100 text-gray-800 border border-gray-200';
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -237,7 +283,7 @@ const EquipmentDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Reports</p>
-                <p className="text-3xl font-bold text-gray-900">{summaryStats.totalReports}</p>
+                <p className="text-3xl font-bold text-gray-900">{totalReports}</p>
               </div>
               <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
                 <FileText className="h-6 w-6 text-blue-600" />
@@ -249,7 +295,7 @@ const EquipmentDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Approved Reports</p>
-                <p className="text-3xl font-bold text-green-600">{summaryStats.approvedReports}</p>
+                <p className="text-3xl font-bold text-green-600">{approvedReports}</p>
               </div>
               <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
                 <CheckCircle className="h-6 w-6 text-green-600" />
@@ -261,7 +307,7 @@ const EquipmentDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Rejected Reports</p>
-                <p className="text-3xl font-bold text-red-600">{summaryStats.rejectedReports}</p>
+                <p className="text-3xl font-bold text-red-600">{rejectedReports}</p>
               </div>
               <div className="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center">
                 <XCircle className="h-6 w-6 text-red-600" />
@@ -273,7 +319,7 @@ const EquipmentDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Pending Reports</p>
-                <p className="text-3xl font-bold text-yellow-600">{summaryStats.pendingReports}</p>
+                <p className="text-3xl font-bold text-yellow-600">{pendingReports}</p>
               </div>
               <div className="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center">
                 <Clock className="h-6 w-6 text-yellow-600" />
@@ -341,7 +387,7 @@ const EquipmentDashboard = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredData.map((item) => (
-                  <tr key={item.deadstock_id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={item.deadstock_id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{item.deadstock_id}</div>
                       <div className="text-sm text-gray-500">{item.category} • {item.purchase_year}</div>
@@ -356,12 +402,41 @@ const EquipmentDashboard = () => {
                       {item.totalItems} items
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      ₹{item.totalValue.toLocaleString('en-IN')}
+                      ₹{item.totalValue.toLocaleString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(item.status)}`}>
-                        {item.status}
-                      </span>
+                      {normalizeStatus(item.status) === 'pending' ? (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => openConfirmationModal(item.deadstock_id, 'approve', item.registeredBy)}
+                            disabled={processingIds.has(item.deadstock_id)}
+                            className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                              processingIds.has(item.deadstock_id)
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'bg-green-100 text-green-800 hover:bg-green-200'
+                            }`}
+                          >
+                            <Check className="h-3 w-3 mr-1" />
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => openConfirmationModal(item.deadstock_id, 'reject', item.registeredBy)}
+                            disabled={processingIds.has(item.deadstock_id)}
+                            className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                              processingIds.has(item.deadstock_id)
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'bg-red-100 text-red-800 hover:bg-red-200'
+                            }`}
+                          >
+                            <X className="h-3 w-3 mr-1" />
+                            Reject
+                          </button>
+                        </div>
+                      ) : (
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(item.status)}`}>
+                          {item.status}
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <button 
@@ -388,11 +463,6 @@ const EquipmentDashboard = () => {
                   <tr>
                     <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
                       No deadstock reports found
-                      {searchTerm || statusFilter !== 'All Statuses' ? (
-                        <div className="mt-2 text-sm">
-                          Try adjusting your search or filter criteria
-                        </div>
-                      ) : null}
                     </td>
                   </tr>
                 )}
@@ -405,13 +475,78 @@ const EquipmentDashboard = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex justify-between items-center">
             <div className="text-sm text-gray-700">
-              Showing {filteredData.length} of {summaryStats.totalReports} deadstock reports
+              Showing {filteredData.length} of {totalReports} deadstock reports
             </div>
             <div className="text-xs text-gray-500">
-              Last updated: {new Date().toLocaleTimeString('en-IN')}
+              Last updated: {new Date().toLocaleTimeString()}
             </div>
           </div>
         </div>
+
+        {/* Confirmation Modal */}
+        {modalOpen && modalData && (
+          <div className="fixed inset-0 bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 border border-gray-300 shadow-lg">
+              <div className="flex items-center mb-4">
+                {modalData.action === 'approve' ? (
+                  <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                    <Check className="h-6 w-6 text-green-600" />
+                  </div>
+                ) : (
+                  <div className="h-12 w-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                    <X className="h-6 w-6 text-red-600" />
+                  </div>
+                )}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">
+                    {modalData.action === 'approve' ? 'Approve Report' : 'Reject Report'}
+                  </h3>
+                  <p className="text-sm text-gray-500">This action cannot be undone</p>
+                </div>
+              </div>
+              
+              <div className="mb-6">
+                <p className="text-sm text-gray-700 mb-2">
+                  Are you sure you want to <strong>{modalData.action}</strong> the deadstock report?
+                </p>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="text-sm">
+                    <p><strong>Deadstock ID:</strong> {modalData.deadstockId}</p>
+                    <p><strong>Registered By:</strong> {modalData.registeredBy}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={closeModal}
+                  disabled={processingIds.has(modalData.deadstockId)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmAction}
+                  disabled={processingIds.has(modalData.deadstockId)}
+                  className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50 ${
+                    modalData.action === 'approve'
+                      ? 'bg-green-600 hover:bg-green-700'
+                      : 'bg-red-600 hover:bg-red-700'
+                  }`}
+                >
+                  {processingIds.has(modalData.deadstockId) ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Processing...
+                    </div>
+                  ) : (
+                    `Yes, ${modalData.action === 'approve' ? 'Approve' : 'Reject'}`
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

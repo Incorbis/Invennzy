@@ -239,3 +239,18 @@ ALTER TABLE `invennzy`.`requests`
 ADD COLUMN `equipment_status` ENUM('0', '1', '2') NULL DEFAULT '1' AFTER `equipment_id`;
 
 
+CREATE TABLE dead_stock_requirements (
+    id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    deadstock_id INT,
+    po_no VARCHAR(255) DEFAULT NULL,
+    purchase_year VARCHAR(255) NOT NULL,
+    equipment_name VARCHAR(255) NOT NULL,
+    ds_number VARCHAR(255) NOT NULL UNIQUE,
+    quantity INT NOT NULL,
+    unit_rate DECIMAL(10,2) NOT NULL,
+    cost DECIMAL(12,2) NOT NULL,
+    remark TEXT DEFAULT NULL,
+    date_submitted TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    staff_id INT DEFAULT NULL,
+    status ENUM('approved', 'rejected', 'pending') DEFAULT NULL
+);

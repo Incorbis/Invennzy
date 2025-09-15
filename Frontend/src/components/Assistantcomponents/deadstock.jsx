@@ -276,7 +276,7 @@ const submitResponse = async () => {
 
     // Generate a unique deadstock_id for this batch
    const deadstockId = Math.floor(100000 + Math.random() * 900000);
-
+   const staff_id = localStorage.getItem("staffId");
 
     for (const item of equipment) {
       await axios.post("/api/deadstock", {
@@ -288,6 +288,7 @@ const submitResponse = async () => {
         unit_rate: item.unitRate,
         cost: item.cost,
         remark: item.remarks || null,
+        staff_id,
         deadstock_id: deadstockId // ✅ keep track of which set it belongs to
       });
     }

@@ -110,7 +110,7 @@ const DocsPage = () => {
           {/* Introduction */}
           <SectionCard
             icon={<Eye className="w-6 h-6" />}
-            title="🔍 Introduction"
+            title="Introduction"
           >
             <p className="text-gray-600 leading-relaxed mb-4">
               Invennzy is a centralized and intelligent inventory management
@@ -128,7 +128,7 @@ const DocsPage = () => {
           </SectionCard>
 
           {/* Objective */}
-          <SectionCard icon={<Zap className="w-6 h-6" />} title="🎯 Objective">
+          <SectionCard icon={<Zap className="w-6 h-6" />} title="Objective">
             <p className="text-gray-600 mb-4">
               The objective of Invennzy is to:
             </p>
@@ -170,7 +170,7 @@ const DocsPage = () => {
           {/* Scope */}
           <SectionCard
             icon={<Database className="w-6 h-6" />}
-            title="🏛 Scope of the System"
+            title="Scope of the System"
           >
             <p className="text-gray-600 leading-relaxed mb-4">
               Invennzy is designed to manage inventories at the departmental
@@ -219,7 +219,7 @@ const DocsPage = () => {
           {/* User Roles */}
           <SectionCard
             icon={<Users className="w-6 h-6" />}
-            title="👥 User Roles & Responsibilities"
+            title="User Roles & Responsibilities"
           >
             <p className="text-gray-600 mb-6">
               Invennzy incorporates a hierarchical role-based access system to
@@ -288,7 +288,7 @@ const DocsPage = () => {
           {/* Workflow */}
           <SectionCard
             icon={<Settings className="w-6 h-6" />}
-            title="🔁 Workflow: Issue Reporting to Resolution"
+            title="Workflow: Issue Reporting to Resolution"
           >
             <p className="text-gray-600 mb-6">
               The following flow outlines the issue lifecycle within the
@@ -350,7 +350,7 @@ const DocsPage = () => {
           {/* Maintenance Report */}
           <SectionCard
             icon={<FileText className="w-6 h-6" />}
-            title="🧾 Maintenance Report Details"
+            title="Maintenance Report Details"
           >
             <p className="text-gray-600 mb-4">
               Each maintenance report includes the following:
@@ -408,7 +408,7 @@ const DocsPage = () => {
           {/* Key Features */}
           <SectionCard
             icon={<Zap className="w-6 h-6" />}
-            title="🧠 Key Features"
+            title="Key Features"
           >
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               <FeatureCard
@@ -447,7 +447,7 @@ const DocsPage = () => {
           {/* Benefits */}
           <SectionCard
             icon={<CheckCircle className="w-6 h-6" />}
-            title="📈 Benefits"
+            title="Benefits"
           >
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-3">
@@ -494,7 +494,7 @@ const DocsPage = () => {
           {/* Future Enhancements */}
           <SectionCard
             icon={<Brain className="w-6 h-6" />}
-            title="🧩 Future Enhancements"
+            title="Future Enhancements"
           >
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               <FeatureCard
@@ -528,7 +528,7 @@ const DocsPage = () => {
           {/* Technology Stack */}
           <SectionCard
             icon={<Settings className="w-6 h-6" />}
-            title="🛠 Technology Stack"
+            title="Technology Stack"
           >
             <div className="grid md:grid-cols-2 gap-6">
               <div>
@@ -588,7 +588,7 @@ const DocsPage = () => {
           {/* Contact */}
           <SectionCard
             icon={<Mail className="w-6 h-6" />}
-            title="📬 Contact & Support"
+            title="Contact & Support"
           >
             <p className="text-gray-600 mb-4">
               For technical issues, support, or suggestions, please contact:
