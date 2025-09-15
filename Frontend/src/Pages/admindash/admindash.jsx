@@ -6,6 +6,7 @@ import {
   Package,
   BarChart3,
   Settings,
+  Database,
   Menu,
   X,
   User,
@@ -117,6 +118,12 @@ const Dashboard = () => {
       label: "Reports",
       icon: BarChart3,
       path: "/admindash/reports",
+    },
+    {
+      id: "deadstock",
+      label: "Dead Stock Reports",
+      icon: Database,
+      path: "/admindash/deadreport",
     },
     {
       id: "settings",

@@ -12,6 +12,7 @@ import {
   Search,
   User,
   ChevronDown,
+  Database,
   LogOut,
   HelpCircle,
   Plus,
@@ -128,6 +129,12 @@ const labinchargedash = () => {
       label: "Request Form",
       icon: ClipboardList,
       path: "/labinchargedash/requests",
+    },
+    {
+      id: "deadstock",
+      label: "Dead Stock Reports",
+      icon: Database,
+      path: "/labinchargedash/deadreport",
     },
     {
       id: "settings",

@@ -17,6 +17,7 @@ import Settings from "./components/admincomponents/settings.jsx";
 import Overview from "./components/admincomponents/overview.jsx";
 import Notifications from "./components/admincomponents/Notification.jsx";
 import RequestDetails from "./components/admincomponents/request.jsx";
+import DeadReport from "./components/admincomponents/deadreport.jsx";
 
 import PrivateRoute from "./Utils/PrivateRoute.jsx";
 
@@ -26,6 +27,7 @@ import LICReports from "./components/Inchargecomponents/Reports.jsx";
 import LICSettingsPage from "./components/Inchargecomponents/settings.jsx";
 import LICoverview from "./components/Inchargecomponents/overview.jsx";
 import LICInventory from "./components/Inchargecomponents/Inventory.jsx";
+import LICDeadReport from './components/Inchargecomponents/deadreport.jsx';
 
 import LAInventory from "./components/Assistantcomponents/Inventory.jsx";
 import LAReports from "./components/Assistantcomponents/Reports.jsx";
@@ -62,6 +64,7 @@ function App() {
         <Route path="requests/:requestId" element={<RequestDetails />} />
         <Route path="" element={<Overview />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="deadreport" element={<DeadReport />} />
         <Route path="notifications" element={<Notifications />} />
       </Route>
 
@@ -80,6 +83,7 @@ function App() {
         <Route path="requests/:requestId" element={<LICRequests />} />
         <Route path="reports" element={<LICReports />} />
         <Route path="" element={<LICoverview />} />
+        <Route path="deadreport" element={<LICDeadReport />} />
         <Route path="settings" element={<LICSettingsPage />} />
       </Route>
 

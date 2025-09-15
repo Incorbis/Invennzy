@@ -4,3 +4,4 @@ bcrypt
 google-auth-library
 multer
 xlsx
+pdfkit
