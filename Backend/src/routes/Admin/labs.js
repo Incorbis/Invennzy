@@ -31,7 +31,7 @@ router.get('/equipment/:labId', async (req, res) => {
 
   try {
     const [rows] = await db.query(`
-      SELECT monitors, projectors, switch_boards, fans, wifi
+      SELECT monitors, projectors, switch_boards, fans, wifi, others
       FROM equipment
       WHERE lab_id = ?
     `, [labId]);
@@ -44,6 +44,33 @@ router.get('/equipment/:labId', async (req, res) => {
   } catch (error) {
     console.error('Error fetching equipment:', error);
     res.status(500).json({ error: 'Failed to fetch equipment' });
+  }
+});
+
+router.get('/equipment/:adminId/:labId/:type', async (req, res) => {
+  try {
+    const { adminId, labId, type } = req.params;
+    
+    // Validate equipment type
+    const validTypes = ['monitor', 'projector', 'switch_board', 'fan', 'wifi', 'other'];
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({ error: 'Invalid equipment type' });
+    }
+
+    const query = `
+      SELECT ed.*
+      FROM equipment_details ed
+      JOIN labs l ON ed.lab_id = l.id
+      WHERE ed.lab_id = ? AND ed.equipment_type = ? AND l.admin_id = ?
+      ORDER BY ed.created_at DESC
+    `;
+    
+    const [rows] = await db.execute(query, [labId, type, adminId]);
+    
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching equipment details:', error);
+    res.status(500).json({ error: 'Failed to fetch equipment details' });
   }
 });
 
@@ -66,7 +93,7 @@ router.post('/', async (req, res) => {
   try {
     const {
       labNo, labName, building, floor, capacity,
-      monitors, projectors, switchBoards, fans, wifi,
+      monitors, projectors, switchBoards, fans, wifi, others,
       inchargeName, inchargeEmail, inchargePhone,
       assistantName, assistantEmail, assistantPhone,
       status, adminId
@@ -79,7 +106,7 @@ router.post('/', async (req, res) => {
 
     const newLab = await Lab.create({
       labNo, labName, building, floor, capacity,
-      monitors, projectors, switchBoards, fans, wifi,
+      monitors, projectors, switchBoards, fans, wifi, others,
       inchargeName, inchargeEmail, inchargePhone,
       assistantName, assistantEmail, assistantPhone,
       status, adminId
@@ -108,6 +135,7 @@ createEquipments('projector', projectors);
 createEquipments('switch_board', switchBoards);
 createEquipments('fan', fans);
 createEquipments('wifi', wifi);
+createEquipments('other', others);
 
 if (equipmentInsert.length > 0) {
   await db.query(
@@ -129,7 +157,7 @@ router.put('/:id', async (req, res) => {
   const labId = req.params.id;
   const {
     labNo, labName, building, floor, capacity,
-    monitors, projectors, switchBoards, fans, wifi,
+    monitors, projectors, switchBoards, fans, wifi, others,
     inchargeName, inchargeEmail, inchargePhone,
     assistantName, assistantEmail, assistantPhone,
     status
@@ -139,7 +167,7 @@ router.put('/:id', async (req, res) => {
     // First, update the lab basic details
     const updated = await Lab.update(labId, {
       labNo, labName, building, floor, capacity,
-      monitors, projectors, switchBoards, fans, wifi,
+      monitors, projectors, switchBoards, fans, wifi, others,
       inchargeName, inchargeEmail, inchargePhone,
       assistantName, assistantEmail, assistantPhone,
       status
@@ -197,6 +225,7 @@ router.put('/:id', async (req, res) => {
     await syncEquipment('switch_board', switchBoards);
     await syncEquipment('fan', fans);
     await syncEquipment('wifi', wifi);
+    await syncEquipment('other', others);
 
     // Return updated lab
     const updatedLab = await Lab.findById(labId);

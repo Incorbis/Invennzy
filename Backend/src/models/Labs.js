@@ -6,7 +6,7 @@ class Lab {
     const [rows] = await db.query(`
       SELECT 
         l.*, 
-        e.monitors, e.projectors, e.switch_boards, e.fans, e.wifi,
+        e.monitors, e.projectors, e.switch_boards, e.fans, e.wifi, e.others,
         s.incharge_name, s.incharge_email, s.incharge_phone,
         s.assistant_name, s.assistant_email, s.assistant_phone
       FROM labs l
@@ -22,7 +22,7 @@ class Lab {
     const [rows] = await db.query(`
       SELECT 
         l.*, 
-        e.monitors, e.projectors, e.switch_boards, e.fans, e.wifi,
+        e.monitors, e.projectors, e.switch_boards, e.fans, e.wifi, e.others,
         s.incharge_name, s.incharge_email, s.incharge_phone,
         s.assistant_name, s.assistant_email, s.assistant_phone
       FROM labs l
@@ -37,7 +37,7 @@ class Lab {
     const [rows] = await db.query(`
       SELECT 
         l.*, 
-        e.monitors, e.projectors, e.switch_boards, e.fans, e.wifi,
+        e.monitors, e.projectors, e.switch_boards, e.fans, e.wifi, e.others,
         s.incharge_name, s.incharge_email, s.incharge_phone,
         s.assistant_name, s.assistant_email, s.assistant_phone
       FROM labs l
@@ -71,15 +71,16 @@ class Lab {
 
       // ✅ Insert into equipment
       await conn.query(`
-        INSERT INTO equipment (lab_id, monitors, projectors, switch_boards, fans, wifi)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO equipment (lab_id, monitors, projectors, switch_boards, fans, wifi, others)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `, [
         labId,
         labData.monitors,
         labData.projectors,
         labData.switchBoards,
         labData.fans,
-        labData.wifi
+        labData.wifi,
+        labData.others
       ]);
 
       // ✅ Insert into staff
@@ -162,7 +163,7 @@ class Lab {
 
       await conn.query(`
         UPDATE equipment 
-        SET monitors = ?, projectors = ?, switch_boards = ?, fans = ?, wifi = ?
+        SET monitors = ?, projectors = ?, switch_boards = ?, fans = ?, wifi = ?, others = ?
         WHERE lab_id = ?
       `, [
         labData.monitors,
@@ -170,6 +171,7 @@ class Lab {
         labData.switchBoards,
         labData.fans,
         labData.wifi,
+        labData.others,
         id
       ]);
 

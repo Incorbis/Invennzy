@@ -254,3 +254,6 @@ CREATE TABLE dead_stock_requirements (
     staff_id INT DEFAULT NULL,
     status ENUM('approved', 'rejected', 'pending') DEFAULT NULL
 );
+
+ALTER TABLE equipment ADD COLUMN others INT DEFAULT 0;
+

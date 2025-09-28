@@ -500,7 +500,7 @@ function LabInchargeForm() {
   }, [form]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-4 px-2 sm:py-8 sm:px-4">
       <Modal
         isOpen={modal.isOpen}
         onClose={closeModal}
@@ -508,32 +508,35 @@ function LabInchargeForm() {
         title={modal.title}
         message={modal.message}
       />
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto w-full">
         <ProgressBar
           steps={steps}
           currentStep={currentStep}
           completedSteps={completedSteps}
         />
-        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-8 border border-gray-100">
           {loading ? (
-            <div className="animate-pulse text-gray-500">Loading request…</div>
+            <div className="animate-pulse text-gray-500 text-center py-8">
+              Loading request...
+            </div>
           ) : (
             <>
+              {/* Step 1: Problem Details */}
               {currentStep === 1 && (
-                <div className="space-y-6">
-                  <div className="border-b border-gray-200 pb-4">
-                    <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-                      <FileText className="w-7 h-7 text-blue-600" />
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="border-b border-gray-200 pb-3 sm:pb-4">
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3">
+                      <FileText className="w-5 h-5 sm:w-7 sm:h-7 text-blue-600" />
                       Problem Details
                     </h2>
-                    <p className="text-gray-600 mt-2">
+                    <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
                       Please provide the basic information about the maintenance
                       issue
                     </p>
                   </div>
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1 sm:mb-2">
                         Type of Problem <span className="text-red-500">*</span>
                       </label>
                       <select
@@ -542,7 +545,7 @@ function LabInchargeForm() {
                         onChange={handleChange}
                         required
                         disabled={isViewMode}
-                        className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                       >
                         <option value="">Select Problem Type</option>
                         <option value="System">System</option>
@@ -553,7 +556,7 @@ function LabInchargeForm() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1 sm:mb-2">
                         Date <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -563,11 +566,11 @@ function LabInchargeForm() {
                         onChange={handleChange}
                         required
                         disabled={isViewMode}
-                        className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                       />
                     </div>
-                    <div className="mt-6">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1 sm:mb-2">
                         Select Equipment
                       </label>
                       <select
@@ -575,7 +578,7 @@ function LabInchargeForm() {
                         onChange={(e) =>
                           setForm({ ...form, equipment_id: e.target.value })
                         }
-                        className="border border-gray-300 rounded-lg px-4 py-2 w-full"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                       >
                         <option value="">-- Select Equipment --</option>
                         {equipmentList.length > 0 ? (
@@ -596,65 +599,67 @@ function LabInchargeForm() {
                   </div>
                 </div>
               )}
+
+              {/* Step 2: Request Details */}
               {currentStep === 2 && (
-                <div className="space-y-6">
-                  <div className="border-b border-gray-200 pb-4">
-                    <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-                      <User className="w-7 h-7 text-blue-600" />
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="border-b border-gray-200 pb-3 sm:pb-4">
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3">
+                      <User className="w-5 h-5 sm:w-7 sm:h-7 text-blue-600" />
                       Request Details
                     </h2>
-                    <p className="text-gray-600 mt-2">
+                    <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
                       Complete the request information and submit for processing
                     </p>
                   </div>
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1 sm:mb-2">
                         Department <span className="text-red-500">*</span>
                       </label>
                       <input
                         name="department"
                         value={form.department}
-                        required
                         onChange={handleChange}
+                        required
                         disabled={isViewMode}
                         placeholder="Enter department name"
-                        className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1 sm:mb-2">
                         Location <span className="text-red-500">*</span>
                       </label>
                       <input
                         name="location"
                         value={form.location}
-                        required
                         onChange={handleChange}
+                        required
                         disabled={isViewMode}
                         placeholder="Enter specific location"
-                        className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                       />
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <div className="mt-4 sm:mt-6">
+                    <label className="block text-sm font-semibold text-gray-700 mb-1 sm:mb-2">
                       Complaint Details <span className="text-red-500">*</span>
                     </label>
                     <textarea
                       name="complaintDetails"
                       value={form.complaintDetails}
-                      required
                       onChange={handleChange}
+                      required
                       disabled={isViewMode}
                       placeholder="Describe the issue in detail..."
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      rows={4}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      rows={3}
                     />
                   </div>
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 mt-4 sm:mt-6">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1 sm:mb-2">
                         Recurring Complaint?
                       </label>
                       <select
@@ -662,7 +667,7 @@ function LabInchargeForm() {
                         value={form.recurringComplaint}
                         onChange={handleChange}
                         disabled={isViewMode}
-                        className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                       >
                         <option value="no">No</option>
                         <option value="yes">Yes</option>
@@ -670,7 +675,7 @@ function LabInchargeForm() {
                     </div>
                     {form.recurringComplaint === "yes" && (
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-1 sm:mb-2">
                           How many times?
                         </label>
                         <input
@@ -681,18 +686,18 @@ function LabInchargeForm() {
                           onChange={handleChange}
                           disabled={isViewMode}
                           placeholder="Enter number"
-                          className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                         />
                       </div>
                     )}
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  <div className="bg-gray-50 rounded-lg sm:rounded-xl p-4 sm:p-6 mt-4 sm:mt-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
                       Approval Information
                     </h3>
-                    <div className="grid md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 gap-3 sm:gap-4">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">
                           Lab Assistant Name
                         </label>
                         <input
@@ -701,11 +706,11 @@ function LabInchargeForm() {
                           onChange={handleChange}
                           disabled={isViewMode}
                           placeholder="Enter lab assistant name"
-                          className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">
                           Date
                         </label>
                         <input
@@ -714,11 +719,11 @@ function LabInchargeForm() {
                           value={form.labAssistantDate}
                           onChange={handleChange}
                           disabled={isViewMode}
-                          className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">
                           Head of Department
                         </label>
                         <input
@@ -727,11 +732,11 @@ function LabInchargeForm() {
                           onChange={handleChange}
                           disabled={isViewMode}
                           placeholder="Enter HOD name"
-                          className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">
                           Date
                         </label>
                         <input
@@ -740,140 +745,146 @@ function LabInchargeForm() {
                           value={form.hodDate}
                           onChange={handleChange}
                           disabled={isViewMode}
-                          className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
                         />
                       </div>
                     </div>
                   </div>
                 </div>
               )}
+
+              {/* Step 3: Verification Stage */}
               {currentStep === 3 && (
-                <div className="space-y-6">
-                  <div className="border-b border-gray-200 pb-4">
-                    <h2 className="text-2xl font-bold text-gray-500 flex items-center gap-3">
-                      <Clock className="w-7 h-7 text-orange-500" />
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="border-b border-gray-200 pb-3 sm:pb-4">
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-500 flex items-center gap-2 sm:gap-3">
+                      <Clock className="w-5 h-5 sm:w-7 sm:h-7 text-orange-500" />
                       Verification Stage
                     </h2>
-                    <p className="text-gray-500 mt-2">
+                    <p className="text-gray-500 mt-1 sm:mt-2 text-sm sm:text-base">
                       Your request is being reviewed by the maintenance team
                     </p>
                   </div>
-                  <div className="bg-orange-50 border border-orange-200 rounded-xl p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <Clock className="w-6 h-6 text-orange-600" />
-                      <h3 className="text-lg font-semibold text-orange-800">
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg sm:rounded-xl p-4 sm:p-6">
+                    <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                      <Clock className="w-4 h-4 sm:w-6 sm:h-6 text-orange-600" />
+                      <h3 className="text-base sm:text-lg font-semibold text-orange-800">
                         Under Review
                       </h3>
                     </div>
-                    <p className="text-orange-700">
+                    <p className="text-orange-700 text-sm sm:text-base">
                       The maintenance team is currently reviewing your request.
                     </p>
                   </div>
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 gap-3 sm:gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Assigned Person
                       </label>
                       <input
                         value={form.assignedPerson || ""}
                         disabled
-                        className="w-full border border-gray-200 rounded-lg px-4 py-3 bg-gray-50 cursor-not-allowed"
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base bg-gray-50 cursor-not-allowed"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Verification Date
                       </label>
                       <input
                         type="date"
                         value={form.inChargeDate || ""}
                         disabled
-                        className="w-full border border-gray-200 rounded-lg px-4 py-3 bg-gray-50 cursor-not-allowed"
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base bg-gray-50 cursor-not-allowed"
                       />
                     </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Verification Remarks
                       </label>
                       <textarea
                         value={form.verificationRemarks || ""}
                         disabled
-                        className="w-full border border-gray-200 rounded-lg px-4 py-3 bg-gray-50 cursor-not-allowed"
-                        rows={3}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base bg-gray-50 cursor-not-allowed"
+                        rows={2}
                       />
                     </div>
                   </div>
                 </div>
               )}
+
+              {/* Step 4: Corrective Action */}
               {currentStep === 4 && (
-                <div className="space-y-6">
-                  <div className="border-b border-gray-200 pb-4">
-                    <h2 className="text-2xl font-bold text-gray-500 flex items-center gap-3">
-                      <Settings className="w-7 h-7 text-blue-500" />
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="border-b border-gray-200 pb-3 sm:pb-4">
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-500 flex items-center gap-2 sm:gap-3">
+                      <Settings className="w-5 h-5 sm:w-7 sm:h-7 text-blue-500" />
                       Corrective Action
                     </h2>
-                    <p className="text-gray-500 mt-2">
+                    <p className="text-gray-500 mt-1 sm:mt-2 text-sm sm:text-base">
                       Maintenance work is in progress
                     </p>
                   </div>
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <Settings className="w-6 h-6 text-blue-600" />
-                      <h3 className="text-lg font-semibold text-blue-800">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg sm:rounded-xl p-4 sm:p-6">
+                    <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                      <Settings className="w-4 h-4 sm:w-6 sm:h-6 text-blue-600" />
+                      <h3 className="text-base sm:text-lg font-semibold text-blue-800">
                         Work in Progress
                       </h3>
                     </div>
-                    <p className="text-blue-700">
+                    <p className="text-blue-700 text-sm sm:text-base">
                       The maintenance team is actively working on resolving your
                       issue.
                     </p>
                   </div>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="grid grid-cols-1 gap-3 sm:gap-4">
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Materials Used
                       </label>
                       <textarea
                         value={form.materialsUsed || ""}
                         disabled
-                        className="w-full border border-gray-200 rounded-lg px-4 py-3 bg-gray-50 cursor-not-allowed"
-                        rows={3}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base bg-gray-50 cursor-not-allowed"
+                        rows={2}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Resolved In-house?
                       </label>
                       <select
                         value={form.resolvedInhouse || "yes"}
                         disabled
-                        className="w-full border border-gray-200 rounded-lg px-4 py-3 bg-gray-50 cursor-not-allowed"
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base bg-gray-50 cursor-not-allowed"
                       >
                         <option value="yes">Yes</option>
                         <option value="no">No</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Resolution Remark
                       </label>
                       <input
                         value={form.resolvedRemark || ""}
                         disabled
-                        className="w-full border border-gray-200 rounded-lg px-4 py-3 bg-gray-50 cursor-not-allowed"
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base bg-gray-50 cursor-not-allowed"
                       />
                     </div>
                   </div>
                 </div>
               )}
+
+              {/* Step 5: Admin Approval */}
               {currentStep === 5 && (
-                <div className="space-y-6">
-                  <div className="pb-4">
-                    <h2 className="text-2xl font-bold text-gray-500 flex items-center gap-3">
-                      <AlertCircle className="w-7 h-7 text-purple-500" />
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="pb-3 sm:pb-4">
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-500 flex items-center gap-2 sm:gap-3">
+                      <AlertCircle className="w-5 h-5 sm:w-7 sm:h-7 text-purple-500" />
                       Admin Approval
                     </h2>
-                    <p className="text-gray-600 mt-2">
+                    <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
                       {form?.adminApprovalStatus === "approved"
                         ? "This request has been approved by Admin."
                         : form?.adminApprovalStatus === "rejected"
@@ -883,36 +894,37 @@ function LabInchargeForm() {
                   </div>
                 </div>
               )}
+
+              {/* Step 6: Closure */}
               {currentStep === 6 && (
-                <div className="space-y-6">
-                  <div className="border-b border-gray-200 pb-4">
-                    <h2 className="text-2xl font-bold text-gray-500 flex items-center gap-3">
-                      <CheckSquare className="w-7 h-7 text-green-500" />
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="border-b border-gray-200 pb-3 sm:pb-4">
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-500 flex items-center gap-2 sm:gap-3">
+                      <CheckSquare className="w-5 h-5 sm:w-7 sm:h-7 text-green-500" />
                       Closure
                     </h2>
-                    <p className="text-gray-500 mt-2">
+                    <p className="text-gray-500 mt-1 sm:mt-2 text-sm sm:text-base">
                       Final completion and sign-off
                     </p>
                   </div>
-                  <div className="bg-green-50 border border-green-200 rounded-xl p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <CheckSquare className="w-6 h-6 text-green-600" />
-                      <h3 className="text-lg font-semibold text-green-800">
+                  <div className="bg-green-50 border border-green-200 rounded-lg sm:rounded-xl p-4 sm:p-6">
+                    <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                      <CheckSquare className="w-4 h-4 sm:w-6 sm:h-6 text-green-600" />
+                      <h3 className="text-base sm:text-lg font-semibold text-green-800">
                         Finalize Request
                       </h3>
                     </div>
-                    <p className="text-green-700">
+                    <p className="text-green-700 text-sm sm:text-base">
                       Complete the final details for this maintenance request.
                     </p>
                   </div>
+
                   {/* Equipment Status Section */}
-                  <div className="mt-4 bg-gray-50 border border-gray-200 rounded-xl p-4">
-                    <h3 className="text-sm font-semibold text-gray-800 mb-3">
+                  <div className="mt-3 sm:mt-4 bg-gray-50 border border-gray-200 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                    <h3 className="text-sm font-semibold text-gray-800 mb-2 sm:mb-3">
                       Equipment Status
                     </h3>
-
-                    {/* Show current DB status */}
-                    <p className="inline-block bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full mb-3">
+                    <p className="inline-block bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded-full mb-2 sm:mb-3">
                       Current Status:{" "}
                       {form.equipmentStatus === "active"
                         ? "Active"
@@ -920,102 +932,102 @@ function LabInchargeForm() {
                         ? "Damaged"
                         : "In Maintenance"}
                     </p>
-
-                    {/* Update options */}
-                    <div className="flex items-center gap-6">
-                      <label className="flex items-center gap-2 cursor-pointer">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                      <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer">
                         <input
                           type="radio"
                           name="equipmentStatus"
                           value="active"
                           checked={form.equipmentStatus === "active"}
                           onChange={handleChange}
-                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                          className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600 border-gray-300 focus:ring-green-500"
                         />
-                        <span className="text-sm font-medium text-gray-700">
+                        <span className="text-xs sm:text-sm font-medium text-gray-700">
                           Active
                         </span>
                       </label>
-
-                      <label className="flex items-center gap-2 cursor-pointer">
+                      <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer">
                         <input
                           type="radio"
                           name="equipmentStatus"
                           value="damaged"
                           checked={form.equipmentStatus === "damaged"}
                           onChange={handleChange}
-                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
+                          className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-600 border-gray-300 focus:ring-red-500"
                         />
-                        <span className="text-sm font-medium text-gray-700">
+                        <span className="text-xs sm:text-sm font-medium text-gray-700">
                           Damaged
                         </span>
                       </label>
                     </div>
                   </div>
-                  <div className="space-y-4">
+
+                  <div className="space-y-3 sm:space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Completion Remarks (Lab)
                       </label>
                       <textarea
                         value={form.completionRemarkLab || ""}
                         disabled
-                        className="w-full border border-gray-200 rounded-lg px-4 py-3 bg-gray-50 cursor-not-allowed"
-                        rows={3}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base bg-gray-50 cursor-not-allowed"
+                        rows={2}
                       />
                     </div>
-                    <div className="grid md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
                           Completed By (Lab)
                         </label>
                         <input
                           value={form.labCompletionName || ""}
                           disabled
-                          className="w-full border border-gray-200 rounded-lg px-4 py-3 bg-gray-50 cursor-not-allowed"
+                          className="w-full border border-gray-200 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base bg-gray-50 cursor-not-allowed"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
                           Completion Date (Lab)
                         </label>
                         <input
                           type="date"
                           value={form.labCompletionDate || ""}
                           disabled
-                          className="w-full border border-gray-200 rounded-lg px-4 py-3 bg-gray-50 cursor-not-allowed"
+                          className="w-full border border-gray-200 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base bg-gray-50 cursor-not-allowed"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Completion Remarks (Maintenance)
                       </label>
                       <textarea
                         value={form.completionRemarkMaintenance || ""}
                         disabled
-                        className="w-full border border-gray-200 rounded-lg px-4 py-3 bg-gray-50 cursor-not-allowed"
-                        rows={3}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base bg-gray-50 cursor-not-allowed"
+                        rows={2}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Closed Date (Maintenance)
                       </label>
                       <input
                         type="date"
                         value={form.maintenanceClosedDate || ""}
                         disabled
-                        className="w-full border border-gray-200 rounded-lg px-4 py-3 bg-gray-50 cursor-not-allowed"
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base bg-gray-50 cursor-not-allowed"
                       />
                     </div>
                   </div>
                 </div>
               )}
-              <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+
+              {/* Navigation Buttons */}
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200">
                 <button
                   type="button"
-                  className={`px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-all font-medium ${
+                  className={`w-full sm:w-auto px-4 sm:px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-all font-medium text-sm sm:text-base ${
                     currentStep === 1 ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                   onClick={prevStep}
@@ -1023,11 +1035,11 @@ function LabInchargeForm() {
                 >
                   ← Previous
                 </button>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
                   {currentStep === 2 && (
                     <button
                       type="button"
-                      className="px-6 py-2 bg-red-600 text-white rounded-lg shadow hover:bg-red-700 transition-all font-medium"
+                      className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-red-600 text-white rounded-lg shadow hover:bg-red-700 transition-all font-medium text-sm sm:text-base"
                       onClick={handleSubmitRequest}
                       disabled={!isStepCompleted(currentStep)}
                     >
@@ -1038,7 +1050,7 @@ function LabInchargeForm() {
                     <button
                       type="button"
                       onClick={nextStep}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-all font-medium"
+                      className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-all font-medium text-sm sm:text-base"
                     >
                       Next →
                     </button>
@@ -1046,7 +1058,7 @@ function LabInchargeForm() {
                   {completedSteps >= 2 && (
                     <button
                       type="button"
-                      className="px-6 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition-all font-medium"
+                      className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition-all font-medium text-sm sm:text-base"
                       onClick={downloadPDF}
                     >
                       📄 Download PDF
