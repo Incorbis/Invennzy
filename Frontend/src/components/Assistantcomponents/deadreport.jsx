@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Download, FileText, CheckCircle, XCircle, Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import { Search, Download, FileText, RefreshCw } from 'lucide-react';
 
 const EquipmentDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All Statuses');
   const [equipmentData, setEquipmentData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -14,36 +13,45 @@ const EquipmentDashboard = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      // Using fetch instead of axios for React component compatibility
+
+      // ✅ Fetch grouped data
       const response = await fetch('/api/fetch/deadstock');
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
-      
-      // Transform the grouped data for summary display only
+
+      // ✅ Transform grouped data for summary display
       const transformedData = [];
       Object.keys(data).forEach(deadstockId => {
         const group = data[deadstockId];
         if (group && group.length > 0) {
-          // Calculate group total
+          // Calculate group totals
           const totalItems = group.length;
-          const totalValue = group.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
-          const status = group[0].status || 'Pending'; // Assume all items in group have same status
-          const registeredBy = group[0].registered_by || 'Unknown';
-          const createdAt = group[0].date_submitted;
+          const totalSubtotal = group.reduce(
+            (sum, item) => sum + (parseFloat(item.subtotal_excl_gst) || 0),
+            0
+          );
+          const totalGST = group.reduce(
+            (sum, item) => sum + (parseFloat(item.gst_amount) || 0),
+            0
+          );
+          const totalValue = group.reduce(
+            (sum, item) => sum + (parseFloat(item.total_incl_gst) || 0),
+            0
+          );
 
           transformedData.push({
             deadstock_id: deadstockId,
             totalItems,
-            totalValue,
-            status,
+            subtotal_excl_gst: totalSubtotal.toFixed(2),
+            gst_amount: totalGST.toFixed(2),
+            totalValue: totalValue.toFixed(2), // ✅ Incl. GST
             registeredBy: group[0].assistant_name || 'Unknown',
-            date: createdAt
-              ? new Date(createdAt).toLocaleDateString('en-IN', {
+            date: group[0].date_submitted
+              ? new Date(group[0].date_submitted).toLocaleDateString('en-IN', {
                   year: 'numeric',
                   month: 'short',
                   day: 'numeric'
@@ -54,7 +62,7 @@ const EquipmentDashboard = () => {
           });
         }
       });
-      
+
       setEquipmentData(transformedData);
     } catch (err) {
       console.error('Error fetching equipment data:', err);
@@ -69,53 +77,55 @@ const EquipmentDashboard = () => {
   };
 
   // Download detailed report for specific deadstock ID
-  const handleDownload = async (deadstockId) => {
-    try {
-      // mark this row as downloading
-      setDownloadingIds(prev => new Set([...prev, deadstockId]));
+  const handleDownload = async (deadstockId, { subtotalExclGst, gstAmount, totalInclGst }) => {
+  try {
+    // mark this row as downloading
+    setDownloadingIds(prev => new Set([...prev, deadstockId]));
 
-      // call backend API
-      const response = await fetch(`/api/download/deadstock-report/${deadstockId}`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/pdf',
-        },
-      });
+    // call backend API
+    const response = await fetch(`/api/download/deadstock-report/${deadstockId}`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/pdf',
+      },
+    });
 
-      if (!response.ok) {
-        throw new Error(`Failed to download report: ${response.statusText}`);
-      }
-
-      // convert response into a blob (PDF file)
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-
-      // Use meaningful filename
-      const fileName = `Deadstock_Report_${deadstockId}.pdf`;
-
-      // create a temporary <a> tag to trigger download
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', fileName);
-      document.body.appendChild(link);
-      link.click();
-
-      // cleanup
-      link.remove();
-      window.URL.revokeObjectURL(url);
-
-    } catch (err) {
-      console.error('Download failed:', err);
-      alert('Failed to download report. Please try again.');
-    } finally {
-      // remove ID from "downloading" set
-      setDownloadingIds(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(deadstockId);
-        return newSet;
-      });
+    if (!response.ok) {
+      throw new Error(`Failed to download report: ${response.statusText}`);
     }
-  };
+
+    // convert response into a blob (PDF file)
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    // Use descriptive filename with GST info if available
+    const fileName = subtotalExclGst && gstAmount && totalInclGst
+      ? `Deadstock_Report_${deadstockId}_Total-${totalInclGst}.pdf`
+      : `Deadstock_Report_${deadstockId}.pdf`;
+
+    // create a temporary <a> tag to trigger download
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+
+    // cleanup
+    link.remove();
+    window.URL.revokeObjectURL(url);
+
+  } catch (err) {
+    console.error('Download failed:', err);
+    alert('Failed to download report. Please try again.');
+  } finally {
+    // remove ID from "downloading" set
+    setDownloadingIds(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(deadstockId);
+      return newSet;
+    });
+  }
+};
 
   // Fetch data on component mount
   useEffect(() => {
@@ -131,55 +141,22 @@ const EquipmentDashboard = () => {
   // Memoized summary statistics that update when equipmentData changes
   const summaryStats = useMemo(() => {
     const totalReports = equipmentData.length;
-    
-    // Use case-insensitive comparison for status matching
-    const approvedReports = equipmentData.filter(item => 
-      item.status?.toLowerCase() === 'approved'
-    ).length;
-    
-    const rejectedReports = equipmentData.filter(item => 
-      item.status?.toLowerCase() === 'rejected'
-    ).length;
-    
-    const pendingReports = equipmentData.filter(item => 
-      item.status?.toLowerCase() === 'pending'
-    ).length;
 
     return {
-      totalReports,
-      approvedReports,
-      rejectedReports,
-      pendingReports
+      totalReports
     };
   }, [equipmentData]);
 
-  // Filter data based on search and status
+  // Filter data based on search
   const filteredData = useMemo(() => {
     return equipmentData.filter(item => {
       const matchesSearch = item.deadstock_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            item.registeredBy.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            item.category.toLowerCase().includes(searchTerm.toLowerCase());
       
-      // Use case-insensitive comparison for status filtering
-      const matchesStatus = statusFilter === 'All Statuses' || 
-                           item.status?.toLowerCase() === statusFilter.toLowerCase();
-      
-      return matchesSearch && matchesStatus;
+      return matchesSearch;
     });
-  }, [equipmentData, searchTerm, statusFilter]);
-
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'approved':
-        return 'bg-green-100 text-green-800 border border-green-200';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
-      case 'rejected':
-        return 'bg-red-100 text-red-800 border border-red-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border border-gray-200';
-    }
-  };
+  }, [equipmentData, searchTerm]);
 
   const handleRefresh = () => {
     fetchEquipmentData();
@@ -200,7 +177,11 @@ const EquipmentDashboard = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <div className="h-12 w-12 text-red-500 mx-auto mb-4 flex items-center justify-center">
+            <svg className="w-full h-full" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          </div>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={handleRefresh}
@@ -231,7 +212,7 @@ const EquipmentDashboard = () => {
           </button>
         </div>
 
-        {/* Summary Cards */}
+        {/* Summary Card */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between">
@@ -244,45 +225,9 @@ const EquipmentDashboard = () => {
               </div>
             </div>
           </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Approved Reports</p>
-                <p className="text-3xl font-bold text-green-600">{summaryStats.approvedReports}</p>
-              </div>
-              <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Rejected Reports</p>
-                <p className="text-3xl font-bold text-red-600">{summaryStats.rejectedReports}</p>
-              </div>
-              <div className="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center">
-                <XCircle className="h-6 w-6 text-red-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Pending Reports</p>
-                <p className="text-3xl font-bold text-yellow-600">{summaryStats.pendingReports}</p>
-              </div>
-              <div className="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <Clock className="h-6 w-6 text-yellow-600" />
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* Search and Filter Section */}
+        {/* Search Section */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="relative flex-1 max-w-md">
@@ -294,18 +239,6 @@ const EquipmentDashboard = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-            </div>
-            <div className="flex items-center gap-4">
-              <select
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option>All Statuses</option>
-                <option>Approved</option>
-                <option>Pending</option>
-                <option>Rejected</option>
-              </select>
             </div>
           </div>
         </div>
@@ -332,9 +265,6 @@ const EquipmentDashboard = () => {
                     Total Value
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Action
                   </th>
                 </tr>
@@ -358,11 +288,6 @@ const EquipmentDashboard = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       ₹{item.totalValue.toLocaleString('en-IN')}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(item.status)}`}>
-                        {item.status}
-                      </span>
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <button 
                         className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
@@ -371,7 +296,11 @@ const EquipmentDashboard = () => {
                             : 'bg-blue-600 text-white hover:bg-blue-700'
                         }`}
                         title="Download Detailed Report"
-                        onClick={() => handleDownload(item.deadstock_id)}
+                        onClick={() => handleDownload(item.deadstock_id, {
+                          subtotalExclGst: item.subtotalExclGst,
+                          gstAmount: item.gstAmount,
+                          totalInclGst: item.totalInclGst
+                        })}
                         disabled={downloadingIds.has(item.deadstock_id)}
                       >
                         {downloadingIds.has(item.deadstock_id) ? (
@@ -386,11 +315,11 @@ const EquipmentDashboard = () => {
                 ))}
                 {filteredData.length === 0 && (
                   <tr>
-                    <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
                       No deadstock reports found
-                      {searchTerm || statusFilter !== 'All Statuses' ? (
+                      {searchTerm ? (
                         <div className="mt-2 text-sm">
-                          Try adjusting your search or filter criteria
+                          Try adjusting your search criteria
                         </div>
                       ) : null}
                     </td>
