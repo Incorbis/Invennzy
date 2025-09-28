@@ -204,6 +204,7 @@ function LabInchargeForm() {
     adminApprovalStatus: "",
     adminApprovalDate: "",
     equipment_id: "",
+    equipmentStatus: "",
   });
   const { requestId } = useParams();
   const isViewMode = !!requestId;
@@ -460,6 +461,12 @@ function LabInchargeForm() {
           equipment_id: res.data.equipment_id
             ? res.data.equipment_id.toString()
             : "",
+          equipmentStatus:
+            data.equipment_status === "0"
+              ? "active"
+              : data.equipment_status === "1"
+              ? "damaged"
+              : "maintenance",
         });
         let maxCompleted = 0;
         for (let step = 1; step <= 6; step++) {
@@ -897,6 +904,53 @@ function LabInchargeForm() {
                     <p className="text-green-700">
                       Complete the final details for this maintenance request.
                     </p>
+                  </div>
+                  {/* Equipment Status Section */}
+                  <div className="mt-4 bg-gray-50 border border-gray-200 rounded-xl p-4">
+                    <h3 className="text-sm font-semibold text-gray-800 mb-3">
+                      Equipment Status
+                    </h3>
+
+                    {/* Show current DB status */}
+                    <p className="inline-block bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full mb-3">
+                      Current Status:{" "}
+                      {form.equipmentStatus === "active"
+                        ? "Active"
+                        : form.equipmentStatus === "damaged"
+                        ? "Damaged"
+                        : "In Maintenance"}
+                    </p>
+
+                    {/* Update options */}
+                    <div className="flex items-center gap-6">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="equipmentStatus"
+                          value="active"
+                          checked={form.equipmentStatus === "active"}
+                          onChange={handleChange}
+                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                        />
+                        <span className="text-sm font-medium text-gray-700">
+                          Active
+                        </span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="equipmentStatus"
+                          value="damaged"
+                          checked={form.equipmentStatus === "damaged"}
+                          onChange={handleChange}
+                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
+                        />
+                        <span className="text-sm font-medium text-gray-700">
+                          Damaged
+                        </span>
+                      </label>
+                    </div>
                   </div>
                   <div className="space-y-4">
                     <div>

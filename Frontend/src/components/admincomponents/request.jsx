@@ -187,6 +187,7 @@ function AdminRequestPage() {
     adminApprovalStatus: "",
     adminApprovalDate: "",
     equipment_id: "",
+    equipmentStatus: "",
   });
   const [modal, setModal] = useState({
     isOpen: false,
@@ -356,6 +357,12 @@ function AdminRequestPage() {
           equipment_id: res.data.equipment_id
             ? res.data.equipment_id.toString()
             : "",
+          equipmentStatus:
+            data.equipment_status === "0"
+              ? "active"
+              : data.equipment_status === "1"
+              ? "damaged"
+              : "maintenance",
         });
       } catch (err) {
         console.error("Error fetching request:", err);
@@ -846,6 +853,27 @@ function AdminRequestPage() {
                     <p className="text-green-700">
                       The maintenance request has been completed.
                     </p>
+                  </div>
+                  <div className="mt-4 bg-gray-50 border border-gray-200 rounded-xl p-4">
+                    <h3 className="text-sm font-semibold text-gray-800 mb-3">
+                      Equipment Status
+                    </h3>
+
+                    {form.equipmentStatus === "active" && (
+                      <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-3 py-1 rounded-full">
+                        Active
+                      </span>
+                    )}
+                    {form.equipmentStatus === "damaged" && (
+                      <span className="inline-block bg-red-100 text-red-800 text-xs font-semibold px-3 py-1 rounded-full">
+                        Damaged
+                      </span>
+                    )}
+                    {form.equipmentStatus === "maintenance" && (
+                      <span className="inline-block bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full">
+                        In Maintenance
+                      </span>
+                    )}
                   </div>
                   <div className="space-y-4">
                     <div>
