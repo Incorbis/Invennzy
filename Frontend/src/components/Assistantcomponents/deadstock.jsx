@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Download, Calculator, Send, Upload } from 'lucide-react';
+import { Plus, Trash2, Download, Calculator, Send, Upload, Percent } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import axios from "axios";
 
 function deadreport() {
   const [equipmentCount, setEquipmentCount] = useState(1);
@@ -10,6 +9,8 @@ function deadreport() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [manuallyChangedYears, setManuallyChangedYears] = useState(new Set());
   const [importStatus, setImportStatus] = useState('');
+  const [globalGST, setGlobalGST] = useState(18); // Default GST rate
+  const [showGSTInput, setShowGSTInput] = useState(false);
 
   // Get financial year string
   const getFinancialYear = (year) => {
@@ -42,6 +43,7 @@ function deadreport() {
         drsNo: generateDRSNumber(fy, `EQ${index + 1}`),
         quantity: 1,
         unitRate: 0,
+        gstRate: globalGST,
         cost: 0,
         remarks: ''
       };
@@ -83,6 +85,7 @@ function deadreport() {
           drsUserInput: findColumn(headers, ['drs input', 'drs user input', 'equipment id', 'eq id']),
           quantity: findColumn(headers, ['quantity', 'qty', 'count']),
           unitRate: findColumn(headers, ['rate', 'unit rate', 'price', 'unit price', 'cost per unit']),
+          gstRate: findColumn(headers, ['gst', 'gst rate', 'tax rate', 'gst %']),
           cost: findColumn(headers, ['cost', 'total cost', 'amount', 'total amount']),
           remarks: findColumn(headers, ['remarks', 'notes', 'comments', 'description'])
         };
@@ -100,11 +103,14 @@ function deadreport() {
             const drsUserInput = getValue(row, columnMap.drsUserInput) || `EQ${index + 1}`;
             const quantity = parseInt(getValue(row, columnMap.quantity)) || 1;
             const unitRate = parseFloat(getValue(row, columnMap.unitRate)) || 0;
+            const gstRate = parseFloat(getValue(row, columnMap.gstRate)) || globalGST;
             const providedCost = parseFloat(getValue(row, columnMap.cost));
             const remarks = getValue(row, columnMap.remarks) || '';
 
             // Calculate cost (Excel data takes priority if provided)
-            const calculatedCost = quantity * unitRate;
+            const baseAmount = quantity * unitRate;
+            const gstAmount = baseAmount * (gstRate / 100);
+            const calculatedCost = baseAmount + gstAmount;
             const cost = !isNaN(providedCost) ? providedCost : calculatedCost;
 
             return {
@@ -116,6 +122,7 @@ function deadreport() {
               drsNo: generateDRSNumber(purchaseYear, drsUserInput),
               quantity,
               unitRate,
+              gstRate,
               cost,
               remarks
             };
@@ -157,15 +164,33 @@ function deadreport() {
     return row[columnIndex].toString().trim();
   };
 
+  // Apply GST to all equipment
+  const applyGlobalGST = () => {
+    setEquipment(prev => prev.map(item => {
+      const baseAmount = item.quantity * item.unitRate;
+      const gstAmount = baseAmount * (globalGST / 100);
+      return {
+        ...item,
+        gstRate: globalGST,
+        cost: baseAmount + gstAmount
+      };
+    }));
+    setShowGSTInput(false);
+  };
+
   // Update equipment field
   const updateEquipment = (id, field, value) => {
     setEquipment(prev => prev.map(item => {
       if (item.id === id) {
         const updatedItem = { ...item, [field]: value };
-        // Auto-calculate cost when quantity or unit rate changes
-        if (field === 'quantity' || field === 'unitRate') {
-          updatedItem.cost = Number(updatedItem.quantity) * Number(updatedItem.unitRate);
+        
+        // Auto-calculate cost when quantity, unit rate, or GST changes
+        if (field === 'quantity' || field === 'unitRate' || field === 'gstRate') {
+          const baseAmount = Number(updatedItem.quantity) * Number(updatedItem.unitRate);
+          const gstAmount = baseAmount * (Number(updatedItem.gstRate) / 100);
+          updatedItem.cost = baseAmount + gstAmount;
         }
+        
         // Update DRS number when purchase year or user input changes
         if (field === 'purchaseYear' || field === 'drsUserInput') {
           updatedItem.drsNo = generateDRSNumber(
@@ -180,13 +205,10 @@ function deadreport() {
 
     // Handle purchase year cascading
     if (field === 'purchaseYear') {
-      // Mark this item's year as manually changed
       setManuallyChangedYears(prev => new Set([...prev, id]));
       
-      // Find the index of the current item
       const currentIndex = equipment.findIndex(item => item.id === id);
       
-      // Update all subsequent items that haven't been manually changed
       setEquipment(prev => prev.map((item, index) => {
         if (index > currentIndex && !manuallyChangedYears.has(item.id)) {
           return { 
@@ -214,6 +236,7 @@ function deadreport() {
       drsNo: generateDRSNumber(fy, `EQ${equipment.length + 1}`),
       quantity: 1,
       unitRate: 0,
+      gstRate: globalGST,
       cost: 0,
       remarks: ''
     };
@@ -235,25 +258,22 @@ function deadreport() {
     if (e.key === 'Enter') {
       e.preventDefault();
       
-      const fields = ['poNoAndDate', 'purchaseYear', 'name', 'drsUserInput', 'quantity', 'unitRate', 'remarks'];
+      const fields = ['poNoAndDate', 'purchaseYear', 'name', 'drsUserInput', 'quantity', 'unitRate', 'gstRate', 'remarks'];
       const currentFieldIndex = fields.indexOf(currentField);
       
       if (currentFieldIndex < fields.length - 1) {
-        // Move to next column in same row
         const nextField = fields[currentFieldIndex + 1];
         const nextInput = document.querySelector(`input[data-row="${currentRowIndex}"][data-field="${nextField}"]`);
         if (nextInput) {
           nextInput.focus();
         }
       } else {
-        // Last column - move to first column of next row or create new row
         if (currentRowIndex < equipment.length - 1) {
           const nextRowInput = document.querySelector(`input[data-row="${currentRowIndex + 1}"][data-field="poNoAndDate"]`);
           if (nextRowInput) {
             nextRowInput.focus();
           }
         } else {
-          // Create new row and focus on it
           addEquipmentRow();
           setTimeout(() => {
             const newRowInput = document.querySelector(`input[data-row="${equipment.length}"][data-field="poNoAndDate"]`);
@@ -266,45 +286,62 @@ function deadreport() {
     }
   };
 
-  // Calculate total cost
+  // Calculate totals
+  const totalBaseAmount = equipment.reduce((sum, item) => {
+    const baseAmount = item.quantity * item.unitRate;
+    return sum + baseAmount;
+  }, 0);
+
+  const totalGSTAmount = equipment.reduce((sum, item) => {
+    const baseAmount = item.quantity * item.unitRate;
+    const gstAmount = baseAmount * (item.gstRate / 100);
+    return sum + gstAmount;
+  }, 0);
+
   const totalCost = equipment.reduce((sum, item) => sum + item.cost, 0);
   
-const submitResponse = async () => {
-  try {
-    // reset state before submission
-    setIsSubmitted(false);
+  const submitResponse = async () => {
+    try {
+      setIsSubmitted(false);
 
-    // Generate a unique deadstock_id for this batch
-   const deadstockId = Math.floor(100000 + Math.random() * 900000);
-   const staff_id = localStorage.getItem("staffId");
+      const deadstockId = Math.floor(100000 + Math.random() * 900000);
+      const staff_id = localStorage?.getItem("staffId");
 
-    for (const item of equipment) {
-      await axios.post("/api/deadstock", {
-        po_no: item.poNoAndDate || null,
-        purchase_year: item.purchaseYear,
-        equipment_name: item.name,
-        ds_number: item.drsNo,
-        quantity: item.quantity,
-        unit_rate: item.unitRate,
-        cost: item.cost,
-        remark: item.remarks || null,
-        staff_id,
-        deadstock_id: deadstockId // ✅ keep track of which set it belongs to
-      });
+      for (const item of equipment) {
+        // You would need to update your API to handle GST data
+        await fetch("/api/deadstock", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            po_no: item.poNoAndDate || null,
+            purchase_year: item.purchaseYear,
+            equipment_name: item.name,
+            ds_number: item.drsNo,
+            quantity: item.quantity,
+            unit_rate: item.unitRate,
+            gst_rate: item.gstRate,
+            cost: item.cost,
+            remark: item.remarks || null,
+            staff_id,
+            deadstock_id: deadstockId
+          })
+        });
+      }
+
+      setIsSubmitted(true);
+      alert("Equipment data submitted successfully!");
+    } catch (error) {
+      console.error("Error submitting equipment data:", error);
+      setIsSubmitted(false);
+      alert("Failed to submit equipment data.");
     }
-
-    setIsSubmitted(true); // ✅ mark as submitted only if all requests succeed
-    alert("Equipment data submitted successfully!");
-  } catch (error) {
-    console.error("Error submitting equipment data:", error);
-    setIsSubmitted(false); // ❌ failed submission
-    alert("Failed to submit equipment data.");
-  }
-};
+  };
 
   // Export to CSV
   const exportToCSV = () => {
-    const headers = ['Sr No', 'PO No & Date', 'Purchase Year', 'Name of Equipment', 'DRS User Input', 'DRS No', 'Quantity', 'Per Unit Rate', 'Cost', 'Remarks'];
+    const headers = ['Sr No', 'PO No & Date', 'Purchase Year', 'Name of Equipment', 'DRS User Input', 'DRS No', 'Quantity', 'Per Unit Rate', 'GST %', 'Cost', 'Remarks'];
     const csvContent = [
       headers.join(','),
       ...equipment.map((item, index) => [
@@ -316,6 +353,7 @@ const submitResponse = async () => {
         item.drsNo,
         item.quantity,
         item.unitRate,
+        item.gstRate,
         item.cost.toFixed(2),
         `"${item.remarks}"`
       ].join(','))
@@ -336,7 +374,7 @@ const submitResponse = async () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-slate-800 mb-2">Equipment Management System</h1>
-          <p className="text-slate-600">Manage your equipment inventory with automated DRS generation</p>
+          <p className="text-slate-600">Manage your equipment inventory with automated DRS generation and GST calculation</p>
         </div>
 
         {/* Import Status Message */}
@@ -424,7 +462,7 @@ const submitResponse = async () => {
               </label>
               
               <div className="mt-4 text-xs text-slate-500">
-                <p>Supported columns: PO No, Purchase Year, Equipment Name, DRS Input, Quantity, Unit Rate, Cost, Remarks</p>
+                <p>Supported columns: PO No, Purchase Year, Equipment Name, DRS Input, Quantity, Unit Rate, GST %, Cost, Remarks</p>
                 <p>Excel data will override calculated values where provided</p>
               </div>
             </div>
@@ -440,7 +478,7 @@ const submitResponse = async () => {
                   <h2 className="text-2xl font-semibold text-slate-800">Equipment Details</h2>
                   <p className="text-slate-600">{equipment.length} equipment items • Total Cost: ₹{totalCost.toFixed(2)}</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-3 flex-wrap">
                   <label className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 transition-all duration-200 flex items-center gap-2 cursor-pointer">
                     <Upload className="w-4 h-4" />
                     Import Excel
@@ -451,6 +489,49 @@ const submitResponse = async () => {
                       className="hidden"
                     />
                   </label>
+                  
+                  {/* GST Button */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowGSTInput(!showGSTInput)}
+                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 focus:ring-2 focus:ring-orange-500 transition-all duration-200 flex items-center gap-2"
+                    >
+                      <Percent className="w-4 h-4" />
+                      GST ({globalGST}%)
+                    </button>
+                    
+                    {showGSTInput && (
+                      <div className="absolute top-full right-0 mt-2 bg-white border border-slate-300 rounded-lg shadow-lg p-4 z-10 min-w-64">
+                        <div className="flex items-center gap-2 mb-3">
+                          <label className="text-sm font-medium text-slate-700">GST Rate (%):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            value={globalGST}
+                            onChange={(e) => setGlobalGST(parseFloat(e.target.value) || 0)}
+                            className="w-20 px-2 py-1 text-sm border border-slate-300 rounded focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={applyGlobalGST}
+                            className="px-3 py-1 bg-orange-600 text-white rounded text-sm hover:bg-orange-700"
+                          >
+                            Apply to All
+                          </button>
+                          <button
+                            onClick={() => setShowGSTInput(false)}
+                            className="px-3 py-1 bg-slate-300 text-slate-700 rounded text-sm hover:bg-slate-400"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
                   <button
                     onClick={addEquipmentRow}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 transition-all duration-200 flex items-center gap-2"
@@ -464,13 +545,6 @@ const submitResponse = async () => {
                   >
                     <Download className="w-4 h-4" />
                     Export CSV
-                  </button>
-                  <button
-                    onClick={submitResponse}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 transition-all duration-200 flex items-center gap-2"
-                  >
-                    <Send className="w-4 h-4" />
-                    Submit
                   </button>
                   <button
                     onClick={() => {
@@ -500,6 +574,7 @@ const submitResponse = async () => {
                     <th className="px-2 py-3 text-left text-xs font-semibold text-slate-700 border-b border-slate-200 w-44">DSR No</th>
                     <th className="px-2 py-3 text-left text-xs font-semibold text-slate-700 border-b border-slate-200 w-16">Qty</th>
                     <th className="px-2 py-3 text-left text-xs font-semibold text-slate-700 border-b border-slate-200 w-20">Rate (₹)</th>
+                    <th className="px-2 py-3 text-left text-xs font-semibold text-slate-700 border-b border-slate-200 w-16">GST %</th>
                     <th className="px-2 py-3 text-left text-xs font-semibold text-slate-700 border-b border-slate-200 w-24">Cost (₹)</th>
                     <th className="px-2 py-3 text-left text-xs font-semibold text-slate-700 border-b border-slate-200 w-32">Remarks</th>
                     <th className="px-2 py-3 text-left text-xs font-semibold text-slate-700 border-b border-slate-200 w-16">Action</th>
@@ -590,6 +665,21 @@ const submitResponse = async () => {
                           placeholder="0.00"
                         />
                       </td>
+                      <td className="px-2 py-3 border-b border-slate-100">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          value={item.gstRate}
+                          onChange={(e) => updateEquipment(item.id, 'gstRate', parseFloat(e.target.value) || 0)}
+                          onKeyDown={(e) => handleKeyDown(e, index, 'gstRate')}
+                          data-row={index}
+                          data-field="gstRate"
+                          className="w-full px-2 py-1 text-xs border border-slate-300 rounded focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+                          placeholder="18"
+                        />
+                      </td>
                       <td className="px-2 py-3 text-xs font-semibold text-slate-800 border-b border-slate-100">
                         <span className="px-2 py-1 bg-green-50 text-green-700 rounded text-xs">
                           ₹{item.cost.toFixed(2)}
@@ -619,19 +709,48 @@ const submitResponse = async () => {
                     </tr>
                   ))}
                   
-                  {/* Total Cost Row */}
+                  {/* Total Cost Rows */}
                   {equipment.length > 0 && (
-                    <tr className="bg-slate-100 font-semibold">
-                      <td colSpan="8" className="px-2 py-3 text-right text-slate-800 border-b border-slate-300 text-sm">
-                        <span>Total Cost:</span>
-                      </td>
-                      <td className="px-2 py-3 text-slate-800 border-b border-slate-300">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm font-bold">
-                          ₹{totalCost.toFixed(2)}
-                        </span>
-                      </td>
-                      <td colSpan="2" className="px-2 py-3 border-b border-slate-300"></td>
-                    </tr>
+                    <>
+                      {/* Subtotal Row */}
+                      <tr className="bg-slate-50">
+                        <td colSpan="8" className="px-2 py-2 text-right text-slate-700 border-b border-slate-200 text-sm">
+                          <span>Subtotal (Excl. GST):</span>
+                        </td>
+                        <td className="px-2 py-2 text-slate-700 border-b border-slate-200">
+                          <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-sm">
+                            ₹{totalBaseAmount.toFixed(2)}
+                          </span>
+                        </td>
+                        <td colSpan="3" className="px-2 py-2 border-b border-slate-200"></td>
+                      </tr>
+                      
+                      {/* GST Row */}
+                      <tr className="bg-slate-50">
+                        <td colSpan="8" className="px-2 py-2 text-right text-slate-700 border-b border-slate-200 text-sm">
+                          <span>Total GST Amount:</span>
+                        </td>
+                        <td className="px-2 py-2 text-slate-700 border-b border-slate-200">
+                          <span className="px-2 py-1 bg-orange-50 text-orange-700 rounded text-sm">
+                            ₹{totalGSTAmount.toFixed(2)}
+                          </span>
+                        </td>
+                        <td colSpan="3" className="px-2 py-2 border-b border-slate-200"></td>
+                      </tr>
+                      
+                      {/* Total Row */}
+                      <tr className="bg-slate-100 font-semibold">
+                        <td colSpan="8" className="px-2 py-3 text-right text-slate-800 border-b border-slate-300 text-sm">
+                          <span>Total Cost (Incl. GST):</span>
+                        </td>
+                        <td className="px-2 py-3 text-slate-800 border-b border-slate-300">
+                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm font-bold">
+                            ₹{totalCost.toFixed(2)}
+                          </span>
+                        </td>
+                        <td colSpan="3" className="px-2 py-3 border-b border-slate-300"></td>
+                      </tr>
+                    </>
                   )}
                 </tbody>
               </table>
@@ -643,6 +762,10 @@ const submitResponse = async () => {
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div className="text-sm text-slate-600">
                     <span className="font-medium">Total Equipment:</span> {equipment.length} items
+                    <br />
+                    <span className="font-medium">Subtotal:</span> ₹{totalBaseAmount.toFixed(2)} | 
+                    <span className="font-medium"> GST:</span> ₹{totalGSTAmount.toFixed(2)} | 
+                    <span className="font-medium"> Total:</span> ₹{totalCost.toFixed(2)}
                   </div>
                   <div className="flex gap-3">
                     <button
@@ -679,10 +802,14 @@ const submitResponse = async () => {
                     <span className="w-1 h-1 bg-blue-600 rounded-full mt-1.5 flex-shrink-0"></span>
                     Fill in equipment details manually
                   </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1 h-1 bg-blue-600 rounded-full mt-1.5 flex-shrink-0"></span>
+                    Use GST button to apply tax rates
+                  </li>
                 </ul>
               </div>
               <div>
-                <h4 className="font-medium text-blue-800 mb-2">Excel Import:</h4>
+                <h4 className="font-medium text-blue-800 mb-2">Excel Import & GST:</h4>
                 <ul className="text-blue-700 space-y-1 text-sm">
                   <li className="flex items-start gap-2">
                     <span className="w-1 h-1 bg-blue-600 rounded-full mt-1.5 flex-shrink-0"></span>
@@ -690,11 +817,15 @@ const submitResponse = async () => {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="w-1 h-1 bg-blue-600 rounded-full mt-1.5 flex-shrink-0"></span>
-                    Click "Import Excel File" to auto-populate
+                    Include GST rates in your Excel file
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="w-1 h-1 bg-blue-600 rounded-full mt-1.5 flex-shrink-0"></span>
-                    Excel data overrides calculated values
+                    GST is auto-calculated into final cost
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1 h-1 bg-blue-600 rounded-full mt-1.5 flex-shrink-0"></span>
+                    Individual GST rates can be edited per item
                   </li>
                 </ul>
               </div>
@@ -702,7 +833,7 @@ const submitResponse = async () => {
             <div className="mt-4 p-3 bg-blue-100 rounded-lg">
               <p className="text-xs text-blue-800">
                 <span className="font-medium">Note:</span> DSR numbers auto-generate as PCCOER/COMP/[Year]/[Input]. 
-                Cost auto-calculates from quantity × rate unless provided in Excel.
+                Cost auto-calculates from (quantity × rate) + GST unless provided in Excel. Default GST is 18%.
               </p>
             </div>
           </div>

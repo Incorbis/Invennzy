@@ -254,3 +254,9 @@ CREATE TABLE dead_stock_requirements (
     staff_id INT DEFAULT NULL,
     status ENUM('approved', 'rejected', 'pending') DEFAULT NULL
 );
+
+ALTER TABLE DeadStock
+ADD COLUMN gst_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
+ADD COLUMN subtotal_excl_gst DECIMAL(10,2) NOT NULL DEFAULT 0,
+ADD COLUMN gst_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+ADD COLUMN total_incl_gst DECIMAL(10,2) NOT NULL DEFAULT 0;
