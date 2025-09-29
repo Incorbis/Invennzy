@@ -829,7 +829,7 @@ function LabAssistantForm() {
 };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-4 px-2 sm:py-8 sm:px-4">
       <Modal
         isOpen={modal.isOpen}
         onClose={closeModal}
@@ -837,34 +837,35 @@ function LabAssistantForm() {
         title={modal.title}
         message={modal.message}
       />
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto w-full">
         <ProgressBar
           steps={steps}
           currentStep={currentStep}
           completedSteps={completedSteps}
         />
-
-        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-8 border border-gray-100">
           {loading ? (
-            <div className="animate-pulse text-gray-500">Loading request…</div>
+            <div className="animate-pulse text-gray-500 text-center py-6 sm:py-8">
+              Loading request...
+            </div>
           ) : (
             <>
+              {/* Step 1: Problem Details */}
               {currentStep === 1 && (
-                <div className="space-y-6">
-                  <div className="border-b border-gray-200 pb-4">
-                    <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-                      <FileText className="w-7 h-7 text-blue-600" />
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="border-b border-gray-200 pb-3 sm:pb-4">
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3">
+                      <FileText className="w-5 h-5 sm:w-7 sm:h-7 text-blue-600" />
                       Problem Details
                     </h2>
-                    <p className="text-gray-600 mt-2">
+                    <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
                       Please provide the basic information about the maintenance
                       issue
                     </p>
                   </div>
-
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1 sm:mb-2">
                         Type of Problem <span className="text-red-500">*</span>
                       </label>
                       <select
@@ -876,7 +877,7 @@ function LabAssistantForm() {
                           (!isAssistant && lockInitial) ||
                           (isAssistant && currentStep <= 2)
                         }
-                        className={`w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                        className={`w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base ${
                           lockInitial ? "bg-gray-50 cursor-not-allowed" : ""
                         }`}
                       >
@@ -888,9 +889,8 @@ function LabAssistantForm() {
                         <option value="Workshop">Workshop</option>
                       </select>
                     </div>
-
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1 sm:mb-2">
                         Date <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -903,13 +903,13 @@ function LabAssistantForm() {
                           (!isAssistant && lockInitial) ||
                           (isAssistant && currentStep <= 2)
                         }
-                        className={`w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                        className={`w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base ${
                           lockInitial ? "bg-gray-50 cursor-not-allowed" : ""
                         }`}
                       />
                     </div>
-                    <div className="mt-6">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <div className="sm:col-span-2 mt-4 sm:mt-6">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1 sm:mb-2">
                         Equipment
                       </label>
                       <input
@@ -934,28 +934,28 @@ function LabAssistantForm() {
                             : "Not Assigned"
                         }
                         disabled
-                        className="block border border-gray-300 rounded-lg px-4 py-2 w-full bg-gray-100 text-gray-600"
+                        className="block border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-2 w-full bg-gray-100 text-gray-600 text-sm sm:text-base"
                       />
                     </div>
                   </div>
                 </div>
               )}
 
+              {/* Step 2: Request Details */}
               {currentStep === 2 && (
-                <div className="space-y-6">
-                  <div className="border-b border-gray-200 pb-4">
-                    <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-                      <User className="w-7 h-7 text-blue-600" />
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="border-b border-gray-200 pb-3 sm:pb-4">
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3">
+                      <User className="w-5 h-5 sm:w-7 sm:h-7 text-blue-600" />
                       Request Details
                     </h2>
-                    <p className="text-gray-600 mt-2">
+                    <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
                       Complete the request information and submit for processing
                     </p>
                   </div>
-
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1 sm:mb-2">
                         Department <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -968,14 +968,13 @@ function LabAssistantForm() {
                           (isAssistant && currentStep <= 2)
                         }
                         placeholder="Enter department name"
-                        className={`w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                        className={`w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base ${
                           lockInitial ? "bg-gray-50 cursor-not-allowed" : ""
                         }`}
                       />
                     </div>
-
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1 sm:mb-2">
                         Location <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -988,15 +987,14 @@ function LabAssistantForm() {
                           (isAssistant && currentStep <= 2)
                         }
                         placeholder="Enter specific location"
-                        className={`w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                        className={`w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base ${
                           lockInitial ? "bg-gray-50 cursor-not-allowed" : ""
                         }`}
                       />
                     </div>
                   </div>
-
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-1 sm:mb-2">
                       Complaint Details <span className="text-red-500">*</span>
                     </label>
                     <textarea
@@ -1009,16 +1007,15 @@ function LabAssistantForm() {
                         (isAssistant && currentStep <= 2)
                       }
                       placeholder="Describe the issue in detail..."
-                      className={`w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                      className={`w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base ${
                         lockInitial ? "bg-gray-50 cursor-not-allowed" : ""
                       }`}
-                      rows={4}
+                      rows={3}
                     />
                   </div>
-
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1 sm:mb-2">
                         Recurring Complaint?
                       </label>
                       <select
@@ -1029,7 +1026,7 @@ function LabAssistantForm() {
                           (!isAssistant && lockInitial) ||
                           (isAssistant && currentStep <= 2)
                         }
-                        className={`w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                        className={`w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base ${
                           lockInitial ? "bg-gray-50 cursor-not-allowed" : ""
                         }`}
                       >
@@ -1037,10 +1034,9 @@ function LabAssistantForm() {
                         <option value="yes">Yes</option>
                       </select>
                     </div>
-
                     {form.recurringComplaint === "yes" && (
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-1 sm:mb-2">
                           How many times?
                         </label>
                         <input
@@ -1054,21 +1050,20 @@ function LabAssistantForm() {
                             (isAssistant && currentStep <= 2)
                           }
                           placeholder="Enter number"
-                          className={`w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                          className={`w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base ${
                             lockInitial ? "bg-gray-50 cursor-not-allowed" : ""
                           }`}
                         />
                       </div>
                     )}
                   </div>
-
-                  <div className="bg-gray-50 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  <div className="bg-gray-50 rounded-lg sm:rounded-xl p-4 sm:p-6 mt-4 sm:mt-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
                       Approval Information
                     </h3>
-                    <div className="grid md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">
                           Lab Assistant Name
                         </label>
                         <input
@@ -1080,14 +1075,13 @@ function LabAssistantForm() {
                             (isAssistant && currentStep <= 2)
                           }
                           placeholder="Enter lab assistant name"
-                          className={`w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white ${
+                          className={`w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base bg-white ${
                             lockInitial ? "bg-gray-50 cursor-not-allowed" : ""
                           }`}
                         />
                       </div>
-
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">
                           Date
                         </label>
                         <input
@@ -1099,14 +1093,13 @@ function LabAssistantForm() {
                             (!isAssistant && lockInitial) ||
                             (isAssistant && currentStep <= 2)
                           }
-                          className={`w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white ${
+                          className={`w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base bg-white ${
                             lockInitial ? "bg-gray-50 cursor-not-allowed" : ""
                           }`}
                         />
                       </div>
-
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">
                           Head of Department
                         </label>
                         <input
@@ -1118,14 +1111,13 @@ function LabAssistantForm() {
                             (isAssistant && currentStep <= 2)
                           }
                           placeholder="Enter HOD name"
-                          className={`w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white ${
+                          className={`w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base bg-white ${
                             lockInitial ? "bg-gray-50 cursor-not-allowed" : ""
                           }`}
                         />
                       </div>
-
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">
                           Date
                         </label>
                         <input
@@ -1137,7 +1129,7 @@ function LabAssistantForm() {
                             (!isAssistant && lockInitial) ||
                             (isAssistant && currentStep <= 2)
                           }
-                          className={`w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white ${
+                          className={`w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base bg-white ${
                             lockInitial ? "bg-gray-50 cursor-not-allowed" : ""
                           }`}
                         />
@@ -1147,24 +1139,24 @@ function LabAssistantForm() {
                 </div>
               )}
 
+              {/* Step 3: Verification Stage */}
               {currentStep === 3 && (
-                <div className="space-y-6">
-                  <div className="border-b border-gray-200 pb-4">
-                    <h2 className="text-2xl font-bold flex items-center gap-3">
-                      <Clock className="w-7 h-7 text-orange-500" />
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="border-b border-gray-200 pb-3 sm:pb-4">
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3">
+                      <Clock className="w-5 h-5 sm:w-7 sm:h-7 text-orange-500" />
                       Verification Stage
                     </h2>
                     {!isAssistant && (
-                      <p className="text-gray-500 mt-2">
+                      <p className="text-gray-500 mt-1 sm:mt-2 text-sm sm:text-base">
                         Your request is being reviewed by the maintenance team
                       </p>
                     )}
                   </div>
-
                   {isAssistant && (
-                    <div className="grid md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                           Assigned Person
                         </label>
                         <input
@@ -1172,11 +1164,11 @@ function LabAssistantForm() {
                           value={form.assignedPerson}
                           onChange={handleChange}
                           placeholder="Enter assigned person"
-                          className="w-full border border-gray-300 rounded-lg px-4 py-3"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                           In-Charge Date
                         </label>
                         <input
@@ -1184,20 +1176,20 @@ function LabAssistantForm() {
                           name="inChargeDate"
                           value={form.inChargeDate}
                           onChange={handleChange}
-                          className="w-full border border-gray-300 rounded-lg px-4 py-3"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base"
                         />
                       </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <div className="sm:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                           Verification Remarks
                         </label>
                         <textarea
                           name="verificationRemarks"
                           value={form.verificationRemarks}
                           onChange={handleChange}
-                          rows={3}
+                          rows={2}
                           placeholder="Enter remarks..."
-                          className="w-full border border-gray-300 rounded-lg px-4 py-3"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base"
                         />
                       </div>
                     </div>
@@ -1205,34 +1197,35 @@ function LabAssistantForm() {
                 </div>
               )}
 
+              {/* Step 4: Corrective Action */}
               {currentStep === 4 && (
-                <div className="space-y-6">
-                  <div className="border-b border-gray-200 pb-4">
-                    <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-                      <Settings className="w-7 h-7 text-blue-500" />
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="border-b border-gray-200 pb-3 sm:pb-4">
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3">
+                      <Settings className="w-5 h-5 sm:w-7 sm:h-7 text-blue-500" />
                       Corrective Action
                     </h2>
-                    <p className="text-gray-600 mt-2">
+                    <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
                       Maintenance work is in progress. Fill in the details
                       below.
                     </p>
                   </div>
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <Settings className="w-6 h-6 text-blue-600" />
-                      <h3 className="text-lg font-semibold text-blue-800">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg sm:rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+                    <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                      <Settings className="w-4 h-4 sm:w-6 sm:h-6 text-blue-600" />
+                      <h3 className="text-base sm:text-lg font-semibold text-blue-800">
                         Work in Progress
                       </h3>
                     </div>
-                    <p className="text-blue-700">
+                    <p className="text-blue-700 text-sm sm:text-base">
                       The maintenance team is actively working on resolving the
                       issue. Fill in the details below.
                     </p>
                   </div>
                   {isAssistant && (
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                      <div className="sm:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                           Materials Used <span className="text-red-500">*</span>
                         </label>
                         <textarea
@@ -1240,12 +1233,12 @@ function LabAssistantForm() {
                           value={form.materialsUsed || ""}
                           onChange={handleChange}
                           placeholder="List materials used..."
-                          className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                          rows={3}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base"
+                          rows={2}
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                           Resolved In-house?{" "}
                           <span className="text-red-500">*</span>
                         </label>
@@ -1253,14 +1246,14 @@ function LabAssistantForm() {
                           name="resolvedInhouse"
                           value={form.resolvedInhouse || "yes"}
                           onChange={handleChange}
-                          className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base"
                         >
                           <option value="yes">Yes</option>
                           <option value="no">No</option>
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                           Resolution Remark{" "}
                           <span className="text-red-500">*</span>
                         </label>
@@ -1269,11 +1262,11 @@ function LabAssistantForm() {
                           value={form.resolvedRemark || ""}
                           onChange={handleChange}
                           placeholder="Enter resolution remark..."
-                          className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                           Consumables Needed?{" "}
                           <span className="text-red-500">*</span>
                         </label>
@@ -1281,7 +1274,7 @@ function LabAssistantForm() {
                           name="consumablesNeeded"
                           value={form.consumablesNeeded || "no"}
                           onChange={handleChange}
-                          className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base"
                         >
                           <option value="no">No</option>
                           <option value="yes">Yes</option>
@@ -1289,7 +1282,7 @@ function LabAssistantForm() {
                       </div>
                       {form.consumablesNeeded === "yes" && (
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                             Consumable Details{" "}
                             <span className="text-red-500">*</span>
                           </label>
@@ -1298,12 +1291,12 @@ function LabAssistantForm() {
                             value={form.consumableDetails || ""}
                             onChange={handleChange}
                             placeholder="Enter consumable details..."
-                            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base"
                           />
                         </div>
                       )}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                           External Agency Needed?{" "}
                           <span className="text-red-500">*</span>
                         </label>
@@ -1311,7 +1304,7 @@ function LabAssistantForm() {
                           name="externalAgencyNeeded"
                           value={form.externalAgencyNeeded || "no"}
                           onChange={handleChange}
-                          className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base"
                         >
                           <option value="no">No</option>
                           <option value="yes">Yes</option>
@@ -1319,7 +1312,7 @@ function LabAssistantForm() {
                       </div>
                       {form.externalAgencyNeeded === "yes" && (
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                             Agency Name <span className="text-red-500">*</span>
                           </label>
                           <input
@@ -1327,12 +1320,12 @@ function LabAssistantForm() {
                             value={form.agencyName || ""}
                             onChange={handleChange}
                             placeholder="Enter agency name..."
-                            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base"
                           />
                         </div>
                       )}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                           Approx. Expenditure
                         </label>
                         <input
@@ -1340,7 +1333,7 @@ function LabAssistantForm() {
                           value={form.approxExpenditure || ""}
                           onChange={handleChange}
                           placeholder="Enter approximate expenditure..."
-                          className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base"
                         />
                       </div>
                     </div>
@@ -1348,14 +1341,15 @@ function LabAssistantForm() {
                 </div>
               )}
 
+              {/* Step 5: Admin Approval */}
               {currentStep === 5 && (
-                <div className="space-y-6">
-                  <div className="pb-4">
-                    <h2 className="text-2xl font-bold flex items-center gap-3">
-                      <AlertCircle className="w-7 h-7 text-purple-500" />
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="pb-3 sm:pb-4">
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3">
+                      <AlertCircle className="w-5 h-5 sm:w-7 sm:h-7 text-purple-500" />
                       Admin Approval
                     </h2>
-                    <p className="text-gray-600 mt-2">
+                    <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
                       {form?.adminApprovalStatus === "approved"
                         ? "This request has been approved by Admin."
                         : form?.adminApprovalStatus === "rejected"
@@ -1366,40 +1360,34 @@ function LabAssistantForm() {
                 </div>
               )}
 
+              {/* Step 6: Closure */}
               {currentStep === 6 && (
-                <div className="space-y-6">
-                  {/* Header */}
-                  <div className="border-b border-gray-200 pb-4">
-                    <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-                      <CheckSquare className="w-7 h-7 text-green-500" />
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="border-b border-gray-200 pb-3 sm:pb-4">
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3">
+                      <CheckSquare className="w-5 h-5 sm:w-7 sm:h-7 text-green-500" />
                       Closure
                     </h2>
-                    <p className="text-gray-600 mt-2">
+                    <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
                       Final completion and sign-off
                     </p>
                   </div>
-
-                  {/* Finalize Request */}
-                  <div className="bg-green-50 border border-green-200 rounded-xl p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <CheckSquare className="w-6 h-6 text-green-600" />
-                      <h3 className="text-lg font-semibold text-green-800">
+                  <div className="bg-green-50 border border-green-200 rounded-lg sm:rounded-xl p-4 sm:p-6">
+                    <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                      <CheckSquare className="w-4 h-4 sm:w-6 sm:h-6 text-green-600" />
+                      <h3 className="text-base sm:text-lg font-semibold text-green-800">
                         Finalize Request
                       </h3>
                     </div>
-                    <p className="text-green-700">
+                    <p className="text-green-700 text-sm sm:text-base">
                       Complete the final details for this maintenance request.
                     </p>
                   </div>
-
-                  {/* Equipment Status Section */}
-                  <div className="mt-4 bg-gray-50 border border-gray-200 rounded-xl p-4">
-                    <h3 className="text-sm font-semibold text-gray-800 mb-3">
+                  <div className="mt-3 sm:mt-4 bg-gray-50 border border-gray-200 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                    <h3 className="text-sm font-semibold text-gray-800 mb-2 sm:mb-3">
                       Equipment Status
                     </h3>
-
-                    {/* Show current DB status */}
-                    <p className="inline-block bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full mb-3">
+                    <p className="inline-block bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 sm:px-3 sm:py-1 rounded-full mb-2 sm:mb-3">
                       Current Status:{" "}
                       {form.equipmentStatus === "active"
                         ? "Active"
@@ -1407,44 +1395,39 @@ function LabAssistantForm() {
                         ? "Damaged"
                         : "In Maintenance"}
                     </p>
-
-                    {/* Update options */}
-                    <div className="flex items-center gap-6">
-                      <label className="flex items-center gap-2 cursor-pointer">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-6">
+                      <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer">
                         <input
                           type="radio"
                           name="equipmentStatus"
                           value="active"
                           checked={form.equipmentStatus === "active"}
                           onChange={handleChange}
-                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                          className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600 border-gray-300 focus:ring-green-500"
                         />
-                        <span className="text-sm font-medium text-gray-700">
+                        <span className="text-xs sm:text-sm font-medium text-gray-700">
                           Active
                         </span>
                       </label>
-
-                      <label className="flex items-center gap-2 cursor-pointer">
+                      <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer">
                         <input
                           type="radio"
                           name="equipmentStatus"
                           value="damaged"
                           checked={form.equipmentStatus === "damaged"}
                           onChange={handleChange}
-                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
+                          className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-600 border-gray-300 focus:ring-red-500"
                         />
-                        <span className="text-sm font-medium text-gray-700">
+                        <span className="text-xs sm:text-sm font-medium text-gray-700">
                           Damaged
                         </span>
                       </label>
                     </div>
                   </div>
-
-                  {/* Assistant Form Section */}
                   {isAssistant && (
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                           Completion Remarks (Lab){" "}
                           <span className="text-red-500">*</span>
                         </label>
@@ -1452,14 +1435,13 @@ function LabAssistantForm() {
                           name="completionRemarkLab"
                           value={form.completionRemarkLab || ""}
                           onChange={handleChange}
-                          className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                          rows={3}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all text-sm sm:text-base"
+                          rows={2}
                         />
                       </div>
-
-                      <div className="grid md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                             Completed By (Lab){" "}
                             <span className="text-red-500">*</span>
                           </label>
@@ -1468,11 +1450,11 @@ function LabAssistantForm() {
                             value={form.labCompletionName || ""}
                             onChange={handleChange}
                             placeholder="Enter name"
-                            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all text-sm sm:text-base"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                             Completion Date (Lab){" "}
                             <span className="text-red-500">*</span>
                           </label>
@@ -1481,13 +1463,12 @@ function LabAssistantForm() {
                             name="labCompletionDate"
                             value={form.labCompletionDate || ""}
                             onChange={handleChange}
-                            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all text-sm sm:text-base"
                           />
                         </div>
                       </div>
-
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                           Completion Remarks (Maintenance){" "}
                           <span className="text-red-500">*</span>
                         </label>
@@ -1495,13 +1476,12 @@ function LabAssistantForm() {
                           name="completionRemarkMaintenance"
                           value={form.completionRemarkMaintenance || ""}
                           onChange={handleChange}
-                          className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                          rows={3}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all text-sm sm:text-base"
+                          rows={2}
                         />
                       </div>
-
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                           Closed Date (Maintenance){" "}
                           <span className="text-red-500">*</span>
                         </label>
@@ -1510,7 +1490,7 @@ function LabAssistantForm() {
                           name="maintenanceClosedDate"
                           value={form.maintenanceClosedDate || ""}
                           onChange={handleChange}
-                          className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all text-sm sm:text-base"
                         />
                       </div>
                     </div>
@@ -1518,10 +1498,11 @@ function LabAssistantForm() {
                 </div>
               )}
 
-              <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+              {/* Navigation Buttons */}
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200">
                 <button
                   type="button"
-                  className={`px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-all font-medium ${
+                  className={`w-full sm:w-auto px-4 sm:px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-all font-medium text-sm sm:text-base ${
                     currentStep === 1 ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                   onClick={prevStep}
@@ -1529,11 +1510,11 @@ function LabAssistantForm() {
                 >
                   ← Previous
                 </button>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
                   {currentStep === 2 && !isViewMode && !isAssistant && (
                     <button
                       type="button"
-                      className="px-6 py-2 bg-red-600 text-white rounded-lg shadow hover:bg-red-700 transition-all font-medium"
+                      className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-red-600 text-white rounded-lg shadow hover:bg-red-700 transition-all font-medium text-sm sm:text-base"
                       onClick={handleSubmitRequest}
                     >
                       🚀 Submit Request
@@ -1542,7 +1523,7 @@ function LabAssistantForm() {
                   {currentStep < 6 && isAssistant && (
                     <button
                       type="button"
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-all font-medium"
+                      className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-all font-medium text-sm sm:text-base"
                       onClick={nextStep}
                     >
                       Next →
@@ -1551,7 +1532,7 @@ function LabAssistantForm() {
                   {currentStep === 3 && isAssistant && (
                     <button
                       type="button"
-                      className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all font-medium"
+                      className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all font-medium text-sm sm:text-base"
                       onClick={handleStep3Submit}
                     >
                       ✅ Verify & Save
@@ -1560,7 +1541,7 @@ function LabAssistantForm() {
                   {currentStep === 4 && isAssistant && (
                     <button
                       type="button"
-                      className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all font-medium"
+                      className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all font-medium text-sm sm:text-base"
                       onClick={handleStep4Submit}
                     >
                       💾 Save Corrective Action
@@ -1569,7 +1550,7 @@ function LabAssistantForm() {
                   {currentStep === 6 && isAssistant && (
                     <button
                       type="button"
-                      className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all font-medium"
+                      className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all font-medium text-sm sm:text-base"
                       onClick={handleStep5Submit}
                     >
                       🔒 Save Closure
@@ -1578,7 +1559,7 @@ function LabAssistantForm() {
                   {completedSteps >= 2 && (
                     <button
                       type="button"
-                      className="px-6 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition-all font-medium"
+                      className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition-all font-medium text-sm sm:text-base"
                       onClick={downloadPDF}
                     >
                       📄 Download PDF

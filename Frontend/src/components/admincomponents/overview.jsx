@@ -19,6 +19,7 @@ import {
   Zap,
   Fan,
   Wifi,
+  Box,
 } from "lucide-react";
 
 const Overview = () => {
@@ -29,6 +30,7 @@ const Overview = () => {
     switchBoards: 0,
     fans: 0,
     wifi: 0,
+    others: 0,
     totalDevices: 0,
     totalLabs: 0,
   });
@@ -42,21 +44,16 @@ const Overview = () => {
   // Fetch real-time equipment data from the same source as Inventory
   const fetchEquipmentTotals = async () => {
     try {
-      // Get adminId from localStorage (same as Inventory component)
       const adminId = localStorage.getItem("adminId");
-
       if (!adminId) {
         throw new Error("Admin ID not found. Please log in again.");
       }
 
-      // Fetch labs data using the same endpoint as Inventory
       const response = await axios.get(
         `http://localhost:3000/api/labs/admin/${adminId}`
       );
-
       const labs = response.data;
 
-      // Calculate totals exactly like in Inventory component
       const totals = labs.reduce(
         (acc, lab) => ({
           monitors: acc.monitors + (lab.monitors || 0),
@@ -64,17 +61,26 @@ const Overview = () => {
           switchBoards: acc.switchBoards + (lab.switch_boards || 0),
           fans: acc.fans + (lab.fans || 0),
           wifi: acc.wifi + (lab.wifi || 0),
+          others: acc.others + (lab.others || 0),
         }),
-        { monitors: 0, projectors: 0, switchBoards: 0, fans: 0, wifi: 0 }
+        {
+          monitors: 0,
+          projectors: 0,
+          switchBoards: 0,
+          fans: 0,
+          wifi: 0,
+          others: 0,
+        }
       );
 
-      // Calculate additional metrics
       const totalDevices =
         totals.monitors +
         totals.projectors +
         totals.switchBoards +
         totals.fans +
-        totals.wifi;
+        totals.wifi +
+        totals.others;
+
       const totalLabs = labs.length;
       const activeLabs = labs.filter((lab) => lab.status === "active").length;
 
@@ -84,7 +90,6 @@ const Overview = () => {
         totalLabs,
         activeLabs,
       });
-
       setLabsData(labs);
       return { totals, labs };
     } catch (err) {
@@ -100,14 +105,12 @@ const Overview = () => {
         "http://localhost:3000/api/admin/reports"
       );
 
-      // Filter only approved or rejected reports (completed actions)
       const completedReports = response.data.filter(
         (notification) =>
           notification.adminApprovalStatus === "approved" ||
           notification.adminApprovalStatus === "rejected"
       );
 
-      // Sort by date (newest first) and get only first 3
       const recentReports = completedReports
         .sort(
           (a, b) =>
@@ -116,7 +119,6 @@ const Overview = () => {
         .slice(0, 3);
 
       setReportsData(recentReports);
-
       return {
         recent: recentReports,
         total: completedReports.length,
@@ -143,9 +145,7 @@ const Overview = () => {
         setLoading(true);
       }
 
-      // Fetch both equipment and reports data
       await Promise.all([fetchEquipmentTotals(), fetchReportsData()]);
-
       setLastRefresh(new Date());
       setError(null);
     } catch (err) {
@@ -167,9 +167,8 @@ const Overview = () => {
   // Auto-refresh every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      fetchAllData(true); // Show refresh indicator
+      fetchAllData(true);
     }, 30000);
-
     return () => clearInterval(interval);
   }, []);
 
@@ -179,9 +178,9 @@ const Overview = () => {
   };
 
   // Calculate device categories count
-  const deviceCategories = 5; // monitors, projectors, switchBoards, fans, wifi
+  const deviceCategories = 6; // monitors, projectors, switchBoards, fans, wifi, others
 
-  // Updated metrics with real-time data from the same source as Inventory
+  // Updated metrics with real-time data
   const metrics = [
     {
       title: "Total Devices",
@@ -199,7 +198,7 @@ const Overview = () => {
       trend: "stable",
       icon: Building,
       color: "bg-purple-500",
-      description: "Monitors, Projectors, Switches, Fans, WiFi",
+      description: "Monitors, Projectors, Switches, Fans, WiFi, Others",
     },
     {
       title: "Total Labs",
@@ -389,41 +388,50 @@ const Overview = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {/* Updated to 6 columns grid to include Others */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200 hover:shadow-sm transition-shadow">
             <Monitor className="mx-auto text-blue-500 mb-3" size={32} />
             <p className="text-2xl font-bold text-gray-900">
-              {equipmentTotals.monitors}
+              {equipmentTotals.monitors || 0}
             </p>
             <p className="text-sm text-gray-600 font-medium">Monitors</p>
           </div>
           <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200 hover:shadow-sm transition-shadow">
             <Projector className="mx-auto text-purple-500 mb-3" size={32} />
             <p className="text-2xl font-bold text-gray-900">
-              {equipmentTotals.projectors}
+              {equipmentTotals.projectors || 0}
             </p>
             <p className="text-sm text-gray-600 font-medium">Projectors</p>
           </div>
           <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200 hover:shadow-sm transition-shadow">
             <Zap className="mx-auto text-yellow-500 mb-3" size={32} />
             <p className="text-2xl font-bold text-gray-900">
-              {equipmentTotals.switchBoards}
+              {equipmentTotals.switchBoards || 0}
             </p>
             <p className="text-sm text-gray-600 font-medium">Switch Boards</p>
           </div>
           <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200 hover:shadow-sm transition-shadow">
             <Fan className="mx-auto text-green-500 mb-3" size={32} />
             <p className="text-2xl font-bold text-gray-900">
-              {equipmentTotals.fans}
+              {equipmentTotals.fans || 0}
             </p>
             <p className="text-sm text-gray-600 font-medium">Fans</p>
           </div>
           <div className="text-center p-4 bg-indigo-50 rounded-lg border border-indigo-200 hover:shadow-sm transition-shadow">
             <Wifi className="mx-auto text-indigo-500 mb-3" size={32} />
             <p className="text-2xl font-bold text-gray-900">
-              {equipmentTotals.wifi}
+              {equipmentTotals.wifi || 0}
             </p>
             <p className="text-sm text-gray-600 font-medium">WiFi Points</p>
+          </div>
+          {/* Added Others equipment card */}
+          <div className="text-center p-4 bg-pink-50 rounded-lg border border-pink-200 hover:shadow-sm transition-shadow">
+            <Box className="mx-auto text-pink-500 mb-3" size={32} />
+            <p className="text-2xl font-bold text-gray-900">
+              {equipmentTotals.others || 0}
+            </p>
+            <p className="text-sm text-gray-600 font-medium">Others</p>
           </div>
         </div>
 
@@ -482,7 +490,6 @@ const Overview = () => {
                   </div>
                 </div>
               </div>
-
               <div className="space-y-2">
                 <div className="flex items-center text-xs text-gray-500">
                   <Users className="w-3 h-3 mr-2" />
@@ -504,7 +511,6 @@ const Overview = () => {
                   </span>
                 </div>
               </div>
-
               <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
                 <span className="text-xs text-gray-500">
                   Report ID: {report.id}

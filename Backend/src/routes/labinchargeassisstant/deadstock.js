@@ -10,19 +10,19 @@ const filePath = path.join(__dirname, "uploads", "report.pdf");
 // ✅ Fetch ALL deadstock rows, grouped by deadstock_id
 router.get("/fetch/deadstock", async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT * FROM dead_stock_requirements ORDER BY deadstock_id");
+    const [rows] = await db.query("SELECT d.id, d.deadstock_id, d.po_no, d.date_submitted, d.status, d.quantity, d.remark, d.equipment_name, d.purchase_year, d.ds_number, d.cost, d.staff_id, l.name FROM dead_stock_requirements d JOIN labassistant l ON d.staff_id = l.staff_id");
 
     // Grouping logic
-    const grouped = rows.reduce((acc, row) => {
-      const id = row.deadstock_id;
-      if (!acc[id]) {
-        acc[id] = [];
-      }
-      acc[id].push(row);
-      return acc;
-    }, {});
+    // const grouped = rows.reduce((acc, row) => {
+    //   const id = row.deadstock_id;
+    //   if (!acc[id]) {
+    //     acc[id] = [];
+    //   }
+    //   acc[id].push(row);
+    //   return acc;
+    // }, {});
 
-    res.json(grouped);
+    res.json(rows);
   } catch (error) {
     console.error("Error fetching deadstock:", error);
     res.status(500).json({ error: "Failed to fetch deadstock" });
