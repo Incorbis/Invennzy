@@ -7,18 +7,20 @@ router.get('/labs/equipment/:labId', (req, res) => {
     const { labId } = req.params;
 
     const query = `
-        SELECT 
-            equipment_id as id,
-            equipment_name,
-            equipment_code,
-            equipment_type as type,
-            equipment_status as status,
-            equipment_password as password,
-            equipment_description as description
-        FROM equipment_details
-        WHERE lab_id = ?
-        ORDER BY equipment_type, equipment_code
-    `;
+    SELECT 
+        equipment_id as id,
+        equipment_name,
+        equipment_code,
+        equipment_type as type,
+        equipment_status as status,
+        equipment_password as password,
+        company_name,
+        specification
+    FROM equipment_details
+    WHERE lab_id = ?
+    ORDER BY equipment_type, equipment_code
+`;
+    
 
     db.query(query, [labId], (err, results) => {
         if (err) {
@@ -31,7 +33,8 @@ router.get('/labs/equipment/:labId', (req, res) => {
             projectors: [],
             switch_boards: [],
             fans: [],
-            wifi: []
+            wifi: [],
+            others: []
         };
 
         results.forEach(equip => {
@@ -44,7 +47,8 @@ router.get('/labs/equipment/:labId', (req, res) => {
                     equipment_type: equipmentType,
                     equipment_status: equip.status,
                     equipment_password: equip.password,
-                    equipment_description: equip.description
+                    company_name: equip.company_name,
+                    specification: equip.specification
                 });
             }
         });
@@ -110,30 +114,23 @@ router.get("/staff/:staffId", async (req, res) => {
 
 
 
-
 // Handler for updating equipment details
-const updateEquipmentHandler = (req, res) => {
+const updateEquipmentHandler = async (req, res) => {
     console.log(`API hit: PUT ${req.originalUrl}`);
     const { equipmentId } = req.params;
-    const { 
-        equipment_name, 
-        equipment_code, 
-        equipment_status, 
-        equipment_password, 
-        equipment_description 
+    const {
+        equipment_name,
+        equipment_code,
+        equipment_status,
+        equipment_password,
+        company_name,
+        specification
     } = req.body;
-
-    console.log('PUT equipment endpoint called');
-    console.log('equipmentId:', equipmentId);
-    console.log('Request body:', req.body);
 
     const numericId = parseInt(equipmentId.toString().replace(/[^\d]/g, ''), 10);
     if (isNaN(numericId)) {
-        console.log('Invalid equipment ID format:', equipmentId);
         return res.status(400).json({ error: 'Invalid equipment ID format' });
     }
-
-    console.log('Extracted numeric ID:', numericId);
 
     const mapStatusToDb = (frontendStatus) => {
         switch(frontendStatus) {
@@ -143,113 +140,83 @@ const updateEquipmentHandler = (req, res) => {
             default: return '0';
         }
     };
-
     const dbStatus = mapStatusToDb(equipment_status);
-    console.log('Mapped status from', equipment_status, 'to', dbStatus);
 
-    // Update the equipment details
-    const updateQuery = `
-        UPDATE equipment_details 
-        SET 
-            equipment_name = ?,
-            equipment_code = ?,
-            equipment_status = ?,
-            equipment_password = ?,
-            equipment_description = ?
-        WHERE equipment_id = ?
-    `;
+    try {
+        // --- Step 1: Update the equipment ---
+        const updateQuery = `
+            UPDATE equipment_details 
+            SET equipment_name = ?, equipment_code = ?, equipment_status = ?, 
+                equipment_password = ?, company_name = ?, specification = ?
+            WHERE equipment_id = ?`;
 
-    const values = [
-        equipment_name,
-        equipment_code,
-        dbStatus,
-        equipment_password || null,
-        equipment_description || null,
-        numericId
-    ];
+        const values = [
+            equipment_name,
+            equipment_code,
+            dbStatus,
+            equipment_password || null,
+            company_name || null,
+            specification || null,
+            numericId
+        ];
 
-    console.log('Update query:', updateQuery);
-    console.log('Update values:', values);
-
-        db.query(updateQuery, values, (updateErr, updateResult) => {
-        console.log('Callback for UPDATE query has been called.');
-        if (updateErr) {
-            console.error('Error updating equipment:', updateErr);
-            return res.status(500).json({ error: 'Database error while updating equipment' });
-        }
-
-        console.log('Update result:', updateResult);
+        // Notice there is no .promise() here
+        const [updateResult] = await db.query(updateQuery, values);
 
         if (updateResult.affectedRows === 0) {
-            console.log('No rows affected during update. Equipment ID may not exist:', numericId);
             return res.status(404).json({ error: 'Equipment not found or no changes made' });
         }
-
         console.log('Equipment updated successfully, affected rows:', updateResult.affectedRows);
 
-        // Fetch the updated equipment details to send back to the client
+
+        // --- Step 2: Fetch the updated data to send back ---
         const selectQuery = `
-            SELECT 
-                equipment_id as id,
-                equipment_name,
-                equipment_code,
-                equipment_type as type,
-                equipment_status as status,
-                equipment_password as password,
-                equipment_description as description,
-                lab_id
+            SELECT equipment_id as id, equipment_name, equipment_code, equipment_type as type,
+                   equipment_status as status, equipment_password as password, company_name,
+                   specification, lab_id
             FROM equipment_details
-            WHERE equipment_id = ?
-        `;
+            WHERE equipment_id = ?`;
 
-        db.query(selectQuery, [numericId], (selectErr, updatedResults) => {
-            if (selectErr) {
-                console.error('Error fetching updated equipment:', selectErr);
-                return res.status(500).json({ 
-                    error: 'Equipment updated but failed to fetch updated data',
-                    success: true
-                });
+        // Notice there is no .promise() here
+        const [updatedResults] = await db.query(selectQuery, [numericId]);
+
+        if (updatedResults.length === 0) {
+            return res.status(404).json({ error: 'Equipment updated but could not be found' });
+        }
+
+        const updatedEquipment = updatedResults[0];
+        
+        const mapStatusFromDb = (dbStatus) => {
+            switch(String(dbStatus)) {
+                case '0': return 'active';
+                case '2': return 'maintenance';
+                case '1': return 'damaged';
+                default: return 'active';
             }
+        };
 
-            if (updatedResults.length === 0) {
-                console.log('Equipment updated but not found in fetch');
-                return res.status(404).json({ 
-                    error: 'Equipment updated but not found in fetch',
-                    success: true
-                });
+        const responseData = {
+            success: true,
+            message: 'Equipment updated successfully',
+            equipment: {
+                equipment_id: updatedEquipment.id,
+                equipment_name: updatedEquipment.equipment_name,
+                equipment_code: updatedEquipment.equipment_code,
+                equipment_type: updatedEquipment.type,
+                status: mapStatusFromDb(updatedEquipment.status),
+                password: updatedEquipment.password,
+                company_name: updatedEquipment.company_name,
+                specification: updatedEquipment.specification,
+                lab_id: updatedEquipment.lab_id
             }
+        };
 
-            const updatedEquipment = updatedResults[0];
-            
-            const mapStatusFromDb = (dbStatus) => {
-                switch(String(dbStatus)) {
-                    case '0': return 'active';
-                    case '2': return 'maintenance';
-                    case '1': return 'damaged';
-                    default: return 'active';
-                }
-            };
+        return res.json(responseData);
 
-            const responseData = {
-                success: true,
-                message: 'Equipment updated successfully',
-                equipment: {
-                    equipment_id: updatedEquipment.id,
-                    equipment_name: updatedEquipment.equipment_name,
-                    equipment_code: updatedEquipment.equipment_code,
-                    equipment_type: updatedEquipment.type,
-                    status: mapStatusFromDb(updatedEquipment.status),
-                    password: updatedEquipment.password,
-                    description: updatedEquipment.description, // Corrected: Include description
-                    lab_id: updatedEquipment.lab_id
-                }
-            };
-            const updated = db.query("SELECT * FROM equipment WHERE id = ?", [id]);
-                res.json({ success: true, equipment: updated[0] });
-            
-            return res.json(responseData);
-        });
-    });
+    } catch (err) {
+        console.error('An error occurred in the update process:', err);
+        return res.status(500).json({ error: 'Database error while processing update' });
+    }
 };
 
 router.get('/equipment/:equipmentId', (req, res) => {
@@ -270,7 +237,8 @@ router.get('/equipment/:equipmentId', (req, res) => {
             equipment_type as type,
             equipment_status as status,
             equipment_password as password,
-            equipment_description as description,
+            company_name,
+            specification,
             lab_id
         FROM equipment_details
         WHERE equipment_id = ?
@@ -306,7 +274,8 @@ router.get('/equipment/:equipmentId', (req, res) => {
                 equipment_type: equipment.type,
                 status: mapStatusFromDb(equipment.status),
                 password: equipment.password,
-                description: equipment.description,
+                company_name: equipment.company_name,
+                specification: equipment.specification,
                 lab_id: equipment.lab_id
             }
         });
@@ -350,7 +319,8 @@ function mapRow(r) {
     equipment_status: status_raw,
     status_text,
     equipment_password: r.equipment_password,
-    equipment_description: r.equipment_description,
+    company_name: r.company_name || null,
+    specification: r.specification || null,
     lab_id: r.lab_id,
     updated_at: r.updated_at||null,
 };
@@ -364,23 +334,26 @@ router.get('/labs/equipment/by-staff/:staffId', async (req, res) => {
     if (!labId) return res.status(404).json({ error: 'No lab assigned to this staff' });
 
     const [equipRows] = await db.query(
-      `SELECT equipment_id, lab_id, equipment_name, equipment_code, equipment_type,
-              equipment_status, equipment_password, equipment_description, updated_at
-       FROM equipment_details
-       WHERE lab_id = ?
-       ORDER BY equipment_type, equipment_code`,
-      [labId]
-    );
+  `SELECT equipment_id, lab_id, equipment_name, equipment_code, equipment_type,
+          equipment_status, equipment_password, company_name, specification, updated_at
+   FROM equipment_details
+   WHERE lab_id = ?
+   ORDER BY equipment_type, equipment_code`,
+  [labId]
+);
 
     const items = equipRows.map(mapRow);
 
-    const grouped = { monitors: [], projectors: [], switch_boards: [], fans: [], wifi: [] };
+    const grouped = { monitors: [], projectors: [], switch_boards: [], fans: [], wifi: [], others: [] };
     for (const item of items) {
       const key =
         item.equipment_type === 'monitor' ? 'monitors' :
         item.equipment_type === 'projector' ? 'projectors' :
         item.equipment_type === 'switch_board' ? 'switch_boards' :
-        item.equipment_type === 'wifi' ? 'wifi' : 'fans';
+        item.equipment_type === 'wifi' ? 'wifi' :
+        item.equipment_type === 'fan' ? 'fans' :
+        'others';
+     
       grouped[key].push(item);
     }
 

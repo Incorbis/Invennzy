@@ -10,7 +10,7 @@ const filePath = path.join(__dirname, "uploads", "report.pdf");
 // ✅ Fetch ALL deadstock rows, grouped by deadstock_id
 router.get("/fetch/deadstock", async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT d.id, d.deadstock_id, d.po_no, d.date_submitted, d.status, d.quantity, d.remark, d.equipment_name, d.purchase_year, d.ds_number, d.cost, d.staff_id, l.name FROM dead_stock_requirements d JOIN labassistant l ON d.staff_id = l.staff_id");
+    const [rows] = await db.query("SELECT d.id, d.deadstock_id, d.po_no, d.date_submitted, d.quantity, d.remark, d.equipment_name, d.purchase_year, d.ds_number, d.cost, d.staff_id, l.name FROM dead_stock_requirements d JOIN labassistant l ON d.staff_id = l.staff_id");
 
     // Grouping logic
     // const grouped = rows.reduce((acc, row) => {

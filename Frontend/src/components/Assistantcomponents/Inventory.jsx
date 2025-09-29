@@ -22,6 +22,10 @@ import {
   Laptop,
   Save,
   Loader,
+  Menu,
+  X,
+  ChevronDown,
+  Box,
 } from "lucide-react";
 
 const LabEquipmentManager = () => {
@@ -38,210 +42,137 @@ const LabEquipmentManager = () => {
   const [debugInfo, setDebugInfo] = useState({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [showFilters, setShowFilters] = useState(false);
 
   // Initialize all categories as collapsed
   const [collapsedCategories, setCollapsedCategories] = useState(() => {
-    const types = ["monitors", "projectors", "switch_boards", "fans", "wifi"];
+    const types = [
+      "monitors",
+      "projectors",
+      "switch_boards",
+      "fans",
+      "wifi",
+      "others",
+    ];
     return Object.fromEntries(types.map((type) => [type, true]));
   });
 
-  useEffect(() => {
-    // Debug: Check all localStorage keys
-    const localStorageKeys = Object.keys(localStorage);
-    console.log("All localStorage keys:", localStorageKeys);
+  const fetchEquipment = async () => {
+    try {
+      setLoading(true);
 
-    // Check common key variations
-    const possibleKeys = ["staffId", "id"];
-    const foundKeys = {};
-
-    possibleKeys.forEach((key) => {
-      const value = localStorage.getItem(key);
-      if (value) {
-        foundKeys[key] = value;
-        console.log(`Found ${key}:`, value);
-      }
-    });
-
-    setDebugInfo({
-      allKeys: localStorageKeys,
-      possibleUserKeys: foundKeys,
-    });
-
-    // Try to get staffId with different possible key names
-    let staffId = localStorage.getItem("staffId") || localStorage.getItem("id");
-
-    // Also try to parse user object if stored as JSON
-    const userObj = localStorage.getItem("user");
-    if (userObj && !staffId) {
-      try {
-        const parsed = JSON.parse(userObj);
-        staffId =
-          parsed.id || parsed.staffId || parsed.staffId || parsed.staff_id;
-        console.log("Parsed user object:", parsed);
-        console.log("Extracted staffId from user object:", staffId);
-      } catch (e) {
-        console.log("Failed to parse user object:", e);
-      }
-    }
-
-    // Try other possible JSON objects
-    if (!staffId) {
-      const possibleJsonKeys = [
-        "currentUser",
-        "loggedInUser",
-        "authUser",
-        "session",
-      ];
-      for (const key of possibleJsonKeys) {
-        const jsonStr = localStorage.getItem(key);
-        if (jsonStr) {
-          try {
-            const parsed = JSON.parse(jsonStr);
-            staffId =
-              parsed.id || parsed.staffId || parsed.staffId || parsed.staff_id;
-            if (staffId) {
-              console.log(`Found staffId in ${key}:`, staffId);
-              break;
-            }
-          } catch (e) {
-            console.log(`Failed to parse ${key}:`, e);
-          }
+      // --- get staffId (robust from localStorage) ---
+      let staffId =
+        localStorage.getItem("staffId") || localStorage.getItem("id");
+      const userObj = localStorage.getItem("user");
+      if (!staffId && userObj) {
+        try {
+          const parsed = JSON.parse(userObj);
+          staffId = parsed.id || parsed.staffId || parsed.staff_id;
+        } catch (e) {
+          /* ignore */
         }
       }
-    }
+      if (!staffId) throw new Error("No staffId found in localStorage");
 
-    if (!staffId) {
-      console.error("No staffId found in localStorage");
-      console.log("Available localStorage keys:", localStorageKeys);
-      console.log("Searched for keys:", possibleKeys);
-      console.log("Found values:", foundKeys);
+      // --- fetch equipment by staffId (new API) ---
 
-      setError(
-        "No user ID found. Please login again. Debug info: " +
-          JSON.stringify(foundKeys)
+      const equipResponse = await axios.get(
+        `/api/labs/equipment/by-staff/${staffId}`
       );
-      setLoading(false);
-      return;
-    }
+      const equipData = equipResponse.data;
 
-    console.log("Using staffId:", staffId);
+      // --- normalize backend response into countsByType and detailsByType ---
+      const types = [
+        "monitors",
+        "projectors",
+        "switch_boards",
+        "fans",
+        "wifi",
+        "others",
+      ];
+      const countsByType = equipData.counts || {};
+      const detailsByType = equipData.grouped || {};
 
-    const fetchEquipment = async () => {
-      try {
-        setLoading(true);
+      // Ensure every type has numeric count and array
+      types.forEach((t) => {
+        countsByType[t] = Number(countsByType[t] || 0);
+        detailsByType[t] = detailsByType[t] || [];
+      });
 
-        // --- get staffId (robust from localStorage) ---
-        let staffId =
-          localStorage.getItem("staffId") || localStorage.getItem("id");
-        const userObj = localStorage.getItem("user");
-        if (!staffId && userObj) {
-          try {
-            const parsed = JSON.parse(userObj);
-            staffId = parsed.id || parsed.staffId || parsed.staff_id;
-          } catch (e) {
-            /* ignore */
-          }
-        }
-        if (!staffId) throw new Error("No staffId found in localStorage");
-
-        // --- fetch equipment by staffId (new API) ---
-
-        const equipResponse = await axios.get(
-          `/api/labs/equipment/by-staff/${staffId}`
-        );
-        const equipData = equipResponse.data;
-
-        // --- normalize backend response into countsByType and detailsByType ---
-        const types = [
-          "monitors",
-          "projectors",
-          "switch_boards",
-          "fans",
-          "wifi",
-        ];
-        const countsByType = equipData.counts || {};
-        const detailsByType = equipData.grouped || {};
-
-        // Ensure every type has numeric count and array
-        types.forEach((t) => {
-          countsByType[t] = Number(countsByType[t] || 0);
-          detailsByType[t] = detailsByType[t] || [];
-        });
-
-        // --- Map DB status -> frontend status ---
-        const mapStatus = (dbStatus) => {
-          if (dbStatus === "0" || dbStatus === 0) return "active";
-          if (dbStatus === "2" || dbStatus === 2) return "maintenance";
-          if (dbStatus === "1" || dbStatus === 1) return "damaged";
-          if (
-            ["active", "working", "ok"].includes(String(dbStatus).toLowerCase())
-          )
-            return "active";
-          if (
-            ["maintenance", "repair"].includes(String(dbStatus).toLowerCase())
-          )
-            return "maintenance";
-          if (
-            ["damaged", "broken", "inactive"].includes(
-              String(dbStatus).toLowerCase()
-            )
-          )
-            return "damaged";
+      // --- Map DB status -> frontend status ---
+      const mapStatus = (dbStatus) => {
+        if (dbStatus === "0" || dbStatus === 0) return "active";
+        if (dbStatus === "2" || dbStatus === 2) return "maintenance";
+        if (dbStatus === "1" || dbStatus === 1) return "damaged";
+        if (
+          ["active", "working", "ok"].includes(String(dbStatus).toLowerCase())
+        )
           return "active";
-        };
+        if (["maintenance", "repair"].includes(String(dbStatus).toLowerCase()))
+          return "maintenance";
+        if (
+          ["damaged", "broken", "inactive"].includes(
+            String(dbStatus).toLowerCase()
+          )
+        )
+          return "damaged";
+        return "active";
+      };
 
-        // --- Build final equipment list ---
-        const equipmentList = [];
-        types.forEach((key) => {
-          const detailsArr = detailsByType[key] || [];
-          detailsArr.forEach((detail, i) => {
-            const item = {
-              id: detail.equipment_id,
-              type: key,
-              name: detail.equipment_name || `${key} ${i + 1}`,
-              code:
-                detail.equipment_code ||
-                `${key.toUpperCase()}-${String(i + 1).padStart(3, "0")}`,
-              status: mapStatus(detail.equipment_status || detail.status),
-              password: detail.equipment_password || "",
-              description:
-                detail.equipment_description || `${key} unit ${i + 1}`,
-              icon:
-                key === "monitors"
-                  ? Monitor
-                  : key === "projectors"
-                  ? Projector
-                  : key === "switch_boards"
-                  ? Zap
-                  : key === "wifi"
-                  ? Wifi
-                  : Fan,
-              color:
-                key === "monitors"
-                  ? "blue"
-                  : key === "projectors"
-                  ? "purple"
-                  : key === "switch_boards"
-                  ? "yellow"
-                  : key === "wifi"
-                  ? "indigo"
-                  : "green",
-            };
-            equipmentList.push(item);
-          });
+      // --- Build final equipment list ---
+      const equipmentList = [];
+      types.forEach((key) => {
+        const detailsArr = detailsByType[key] || [];
+        detailsArr.forEach((detail, i) => {
+          const item = {
+            id: detail.equipment_id,
+            type: key,
+            name: detail.equipment_name || `${key} ${i + 1}`,
+            code:
+              detail.equipment_code ||
+              `${key.toUpperCase()}-${String(i + 1).padStart(3, "0")}`,
+            status: mapStatus(detail.equipment_status || detail.status),
+            password: detail.equipment_password || "",
+            company_name: detail.company_name || "N/A", // Add this
+            specification: detail.specification || "No specification provided.",
+            icon:
+              key === "monitors"
+                ? Monitor
+                : key === "projectors"
+                ? Projector
+                : key === "switch_boards"
+                ? Zap
+                : key === "wifi"
+                ? Wifi
+                : Fan,
+            color:
+              key === "monitors"
+                ? "blue"
+                : key === "projectors"
+                ? "purple"
+                : key === "switch_boards"
+                ? "yellow"
+                : key === "wifi"
+                ? "indigo"
+                : "green",
+          };
+          equipmentList.push(item);
         });
+      });
 
-        console.log("Final equipment list:", equipmentList);
-        setEquipmentState(equipmentList);
-        setError(null);
-      } catch (err) {
-        console.error("Error loading equipment:", err);
-        setError(err.response?.data?.message || err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+      console.log("Final equipment list:", equipmentList);
+      setEquipmentState(equipmentList);
+      setError(null);
+    } catch (err) {
+      console.error("Error loading equipment:", err);
+      setError(err.response?.data?.message || err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchEquipment();
   }, []);
 
@@ -314,10 +245,8 @@ const LabEquipmentManager = () => {
     }
   };
 
-  // Updated save function to integrate with backend API using axios
-  // Updated save function to integrate with backend API using axios
   const handleSaveEdit = async () => {
-    if (saving) return; // ✅ prevents double save clicks
+    if (saving) return;
     if (!selectedItem || !selectedItem.id) {
       setSaveError("Invalid equipment selected");
       return;
@@ -325,21 +254,16 @@ const LabEquipmentManager = () => {
 
     setSaving(true);
     setSaveError(null);
-
     const numericId = selectedItem.id;
 
     try {
-      setTimeout(() => {
-        setSelectedItem(null);
-      }, 2000);
-      console.log("Updating equipment:", numericId);
-
       const updateData = {
         equipment_name: selectedItem.name,
         equipment_code: selectedItem.code,
         equipment_status: selectedItem.status,
         equipment_password: selectedItem.password,
-        equipment_description: selectedItem.description,
+        company_name: selectedItem.companyName || null,
+        specification: selectedItem.specification || null,
       };
 
       const response = await axios.put(
@@ -349,22 +273,18 @@ const LabEquipmentManager = () => {
       );
 
       const result = response.data;
+
       if (result?.success && result?.equipment) {
-        // ✅ close modal & edit mode instantly
+        await fetchEquipment();
+
         setEditMode(false);
         setShowModal(false);
-        fetchEquipment();
-
-        // ✅ refresh the page after short delay (to get latest data from backend)
-        setTimeout(() => {
-          window.location.reload();
-        }, 500);
+        setSelectedItem(null);
       } else {
         throw new Error(result?.message || "Update failed");
       }
     } catch (error) {
       console.error("Error updating equipment:", error);
-
       let errorMessage = "Failed to update equipment";
       if (error.response) {
         errorMessage =
@@ -376,10 +296,9 @@ const LabEquipmentManager = () => {
       } else {
         errorMessage = error.message;
       }
-
       setSaveError(errorMessage);
     } finally {
-      setSaving(false); // ✅ spinner always stops
+      setSaving(false);
     }
   };
 
@@ -396,7 +315,14 @@ const LabEquipmentManager = () => {
   });
 
   const getUniqueTypes = () => {
-    const types = ["monitors", "projectors", "switch_boards", "fans", "wifi"];
+    const types = [
+      "monitors",
+      "projectors",
+      "switch_boards",
+      "fans",
+      "wifi",
+      "others",
+    ];
     return types;
   };
 
@@ -451,6 +377,7 @@ const LabEquipmentManager = () => {
       switch_boards: "Switch Boards",
       fans: "Fans",
       wifi: "WiFi Routers",
+      others: "Other Equipment",
     };
     return names[type] || type;
   };
@@ -462,6 +389,7 @@ const LabEquipmentManager = () => {
       switch_boards: Zap,
       fans: Fan,
       wifi: Wifi,
+      others: Box,
     };
     return icons[type] || Monitor;
   };
@@ -524,7 +452,7 @@ const LabEquipmentManager = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 ">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="bg-white p-6 rounded-xl border border-gray-200">
@@ -690,7 +618,7 @@ const LabEquipmentManager = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Category Content */}
                 {!isCollapsed && (
                   <div className="p-4">
@@ -769,13 +697,20 @@ const LabEquipmentManager = () => {
                                       </div>
                                     </div>
                                   )}
-                                  {item.description && (
-                                    <div className="pt-2 border-t border-gray-200">
-                                      <p className="text-xs text-gray-500 line-clamp-2">
-                                        {item.description}
-                                      </p>
+                                  <div className="pt-2 border-t border-gray-200 text-xs text-gray-600 space-y-1">
+                                    <div className="flex justify-between">
+                                      <span>Company:</span>
+                                      <span className="font-medium text-gray-800">
+                                        {item.company_name}
+                                      </span>
                                     </div>
-                                  )}
+                                    <div className="flex justify-between">
+                                      <span>Spec:</span>
+                                      <span className="text-gray-500 line-clamp-1">
+                                        {item.specification}
+                                      </span>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -979,27 +914,55 @@ const LabEquipmentManager = () => {
                   )}
                 </div>
 
+                {/* New Company Name Field */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Description
+                    Company Name
                   </label>
                   {editMode ? (
-                    <textarea
-                      value={selectedItem.description || ""}
+                    <input
+                      type="text"
+                      value={selectedItem.company_name || ""}
                       onChange={(e) =>
                         setSelectedItem({
                           ...selectedItem,
-                          description: e.target.value,
+                          company_name: e.target.value,
                         })
                       }
-                      rows={3}
                       className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Add description for this equipment..."
+                      placeholder="e.g., Dell, Samsung"
                       disabled={saving}
                     />
                   ) : (
                     <p className="mt-1 text-gray-900">
-                      {selectedItem.description || "No description available"}
+                      {selectedItem.company_name || "Not specified"}
+                    </p>
+                  )}
+                </div>
+
+                {/* New Specification Field */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Specification
+                  </label>
+                  {editMode ? (
+                    <textarea
+                      value={selectedItem.specification || ""}
+                      onChange={(e) =>
+                        setSelectedItem({
+                          ...selectedItem,
+                          specification: e.target.value,
+                        })
+                      }
+                      rows={4}
+                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Add technical specifications, model numbers, etc."
+                      disabled={saving}
+                    />
+                  ) : (
+                    <p className="mt-1 text-gray-900 whitespace-pre-wrap">
+                      {selectedItem.specification ||
+                        "No specification available"}
                     </p>
                   )}
                 </div>

@@ -89,7 +89,8 @@ const EquipmentDetailsModal = ({
     return (
       item.equipment_name?.toLowerCase().includes(searchLower) ||
       item.equipment_code?.toLowerCase().includes(searchLower) ||
-      item.equipment_description?.toLowerCase().includes(searchLower)
+      item.company_name?.toLowerCase().includes(searchLower) ||
+      item.specification?.toLowerCase().includes(searchLower)
     );
   });
 
@@ -106,7 +107,7 @@ const EquipmentDetailsModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0  bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+    <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
       <div className="bg-white rounded-xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl border border-gray-300 ring-1 ring-gray-200">
         {/* Header */}
         <div className="p-4 sm:p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
@@ -192,7 +193,10 @@ const EquipmentDetailsModal = ({
                       Status
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Description
+                      Company
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Specification
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Created At
@@ -232,8 +236,12 @@ const EquipmentDetailsModal = ({
                         </td>
                         <td className="px-4 py-4">
                           <div className="text-sm text-gray-900 max-w-xs truncate">
-                            {item.equipment_description ||
-                              "No description available"}
+                            {item.company_name || "N/A"}
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="text-sm text-gray-900 max-w-xs truncate">
+                            {item.specification || "N/A"}
                           </div>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">

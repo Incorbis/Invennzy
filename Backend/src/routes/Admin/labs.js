@@ -140,7 +140,7 @@ createEquipments('other', others);
 if (equipmentInsert.length > 0) {
   await db.query(
     `INSERT INTO equipment_details 
-     (lab_id, staff_id, equipment_type, equipment_name, equipment_code, equipment_status, equipment_password, equipment_description) 
+     (lab_id, staff_id, equipment_type, equipment_name, equipment_code, equipment_status, equipment_password, specification)
      VALUES ?`,
     [equipmentInsert]
   );
@@ -203,7 +203,7 @@ router.put('/:id', async (req, res) => {
         }
         await db.query(
           `INSERT INTO equipment_details 
-           (lab_id, staff_id, equipment_type, equipment_name, equipment_code, equipment_status, equipment_password, equipment_description)
+           (lab_id, staff_id, equipment_type, equipment_name, equipment_code, equipment_status, equipment_password, specification)
            VALUES ?`,
           [equipmentInsert]
         );

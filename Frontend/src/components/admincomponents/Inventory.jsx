@@ -852,7 +852,7 @@ const Inventory = () => {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+        <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
           <div className="bg-white rounded-xl max-w-md w-full shadow-2xl border border-gray-300 ring-1 ring-gray-200">
             <div className="p-4 sm:p-6">
               <div className="flex items-center justify-center mb-3 sm:mb-4">
@@ -898,7 +898,7 @@ const Inventory = () => {
 
       {/* Add/Edit Lab Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+        <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-300 ring-1 ring-gray-200">
             <div className="p-4 sm:p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
               <div className="flex items-center justify-between">
