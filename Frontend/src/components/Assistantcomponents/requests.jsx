@@ -602,203 +602,232 @@ function LabAssistantForm() {
   // Header section with logos and institution info
   let currentY = 15;
   
-  // Main header box
-  drawBox(margin, currentY, pageWidth - 2*margin, 25, "", 10, false);
+  // Main header box - taller to accommodate logos
+  const headerHeight = 35;
+  drawBox(margin, currentY, pageWidth - 2*margin, headerHeight, "", 10, false);
   
-  // Left logo placeholder
-  drawBox(margin, currentY, 30, 25, "LOGO", 8, true, 'center');
+  // Left logo box
+  const logoWidth = 35;
+  drawBox(margin, currentY, logoWidth, headerHeight, "LOGO", 8, true, 'center');
   
-  // Center text area
-  const centerX = margin + 30;
-  const centerWidth = pageWidth - 2*margin - 60;
+  // Right logo box
+  drawBox(pageWidth - margin - logoWidth, currentY, logoWidth, headerHeight, "LOGO", 8, true, 'center');
+  
+  // Center text area (between logos)
+  const centerX = margin + logoWidth;
+  const centerWidth = pageWidth - 2*margin - 2*logoWidth;
+  const textStartY = currentY + 5;
   
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
-  doc.text("Pimpri Chinchwad Education Trust's", centerX + centerWidth/2, currentY + 6, { align: 'center' });
-  doc.text("Pimpri Chinchwad College of Engineering & Research", centerX + centerWidth/2, currentY + 12, { align: 'center' });
-  doc.text("Ravet, Pune", centerX + centerWidth/2, currentY + 18, { align: 'center' });
-  doc.setFontSize(9);
-  doc.text("IQAC PCCOER", centerX + centerWidth/2, currentY + 23, { align: 'center' });
+  doc.text("Pimpri Chinchwad Education Trust's", centerX + centerWidth/2, textStartY, { align: 'center' });
   
-  // Right logo placeholder
-  drawBox(pageWidth - margin - 30, currentY, 30, 25, "LOGO", 8, true, 'center');
+  doc.setFontSize(12);
+  doc.text("Pimpri Chinchwad College of Engineering & Research", centerX + centerWidth/2, textStartY + 6, { align: 'center' });
   
-  currentY += 25;
+  doc.setFontSize(10);
+  doc.text("Ravet, Pune", centerX + centerWidth/2, textStartY + 12, { align: 'center' });
   
-  // Second row - Academic year, Maintenance Report, IT/R/03
-  const row2Height = 15;
-  drawBox(margin, currentY, 50, row2Height, "A. Year: 2025-26", 9, true);
-  drawBox(margin + 50, currentY, 40, row2Height, "Term: I/II", 9, false);
-  drawBox(margin + 90, currentY, 80, row2Height, "Maintenance Report", 10, true, 'center');
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.text("An Autonomous Institute | NBA Accredited (4 UG Programs) | NAAC A++ Accredited | ISO 21001:2018 Certified", 
+    centerX + centerWidth/2, textStartY + 17, { align: 'center' });
+  
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text("IQAC PCCOER", centerX + centerWidth/2, textStartY + 26, { align: 'center' });
+  
+  currentY += headerHeight;
+  
+  // Second row - Academic year and IT/R/03
+  const row2Height = 10;
+  const yearWidth = 50;
+  const termWidth = 30;
+  const titleWidth = pageWidth - 2*margin - yearWidth - termWidth - 40;
+  
+  drawBox(margin, currentY, yearWidth, row2Height, "A. Year: 2025-26", 9, true);
+  drawBox(margin + yearWidth, currentY, termWidth, row2Height, "Term: I/II", 9, false);
+  drawBox(margin + yearWidth + termWidth, currentY, titleWidth, row2Height, "Maintenance Report", 10, true, 'center');
   drawBox(pageWidth - margin - 40, currentY, 40, row2Height, "IT/R/03", 9, true, 'center');
   
   currentY += row2Height;
   
   // Date field
-  const dateHeight = 12;
+  const dateHeight = 10;
   drawBox(pageWidth - margin - 60, currentY, 60, dateHeight, `Date: ${form.date || '  /  /'}`, 9, false);
   
   currentY += dateHeight;
   
   // Type of problem
-  const typeHeight = 12;
+  const typeHeight = 10;
   drawBox(margin, currentY, pageWidth - 2*margin, typeHeight, 
     `Type of problem: ${form.typeOfProblem || 'System/Furniture/Civil/Electrical/Workshop'}`, 9, false);
   
   currentY += typeHeight;
   
-  // Main form section
-  const mainSectionHeight = 80;
+  // Main form section - Originator
+  const originatorHeight = 70;
+  const leftColWidth = 50;
   
-  // Left column - Originator
-  const leftColWidth = 60;
-  drawBox(margin, currentY, leftColWidth, mainSectionHeight, "", 9, false);
+  // Left column label
+  drawBox(margin, currentY, leftColWidth, originatorHeight, "", 9, false);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.text("Originator", margin + 2, currentY + 10);
+  doc.text("Originator", margin + leftColWidth/2, currentY + originatorHeight/2, { align: 'center' });
   
-  // Department and Location row
-  const deptLocY = currentY;
-  const deptWidth = 80;
-  drawBox(margin + leftColWidth, deptLocY, deptWidth, 12, `Department: ${form.department || ''}`, 9, false);
-  drawBox(margin + leftColWidth + deptWidth, deptLocY, pageWidth - 2*margin - leftColWidth - deptWidth, 12, 
-    `Location: ${form.location || ''}`, 9, false);
+  // Department and Location
+  const rightStartX = margin + leftColWidth;
+  const rightWidth = pageWidth - 2*margin - leftColWidth;
+  const deptWidth = rightWidth * 0.5;
+  const locationWidth = rightWidth * 0.5;
+  
+  drawBox(rightStartX, currentY, deptWidth, 10, `Department:`, 9, false);
+  doc.setFont("helvetica", "normal");
+  doc.text(form.department || '', rightStartX + 32, currentY + 7);
+  
+  drawBox(rightStartX + deptWidth, currentY, locationWidth, 10, `Location:`, 9, false);
+  doc.text(form.location || '', rightStartX + deptWidth + 25, currentY + 7);
   
   // Complaint details
-  const complaintY = currentY + 12;
-  const complaintHeight = 35;
-  drawBox(margin + leftColWidth, complaintY, pageWidth - 2*margin - leftColWidth, complaintHeight, 
-    `Complaint details: ${form.complaintDetails || ''}`, 9, false);
-  
-  // Recurring complaint row
-  const recurringY = currentY + 47;
-  const recurringHeight = 12;
-  const recurringWidth = 100;
-  drawBox(margin + leftColWidth, recurringY, recurringWidth, recurringHeight, 
-    `Recurring complaint: ${form.recurringComplaint || 'Yes/No'}`, 9, false);
-  drawBox(margin + leftColWidth + recurringWidth, recurringY, 
-    pageWidth - 2*margin - leftColWidth - recurringWidth, recurringHeight, 
-    `If Yes, how many times: ${form.recurringTimes || ''}`, 9, false);
-  
-  // Bottom signature section of main box
-  const sigY = currentY + 59;
-  const sigHeight = 21;
-  const sigWidth = (pageWidth - 2*margin - leftColWidth) / 2;
-  
-  drawBox(margin + leftColWidth, sigY, sigWidth, sigHeight, "", 9, false);
+  const complaintY = currentY + 10;
+  const complaintHeight = 25;
+  drawBox(rightStartX, complaintY, rightWidth, complaintHeight, "", 9, false);
   doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.text("Complaint details:", rightStartX + 2, complaintY + 5);
   doc.setFontSize(8);
-  doc.text("In charge/Lab Assistant", margin + leftColWidth + 2, sigY + 12);
-  doc.text("Name and Signature with Date", margin + leftColWidth + 2, sigY + 18);
+  const complaintText = form.complaintDetails || '';
+  doc.text(complaintText, rightStartX + 2, complaintY + 12, { maxWidth: rightWidth - 4 });
   
-  drawBox(margin + leftColWidth + sigWidth, sigY, sigWidth, sigHeight, "", 9, false);
-  doc.text("Head of Department", margin + leftColWidth + sigWidth + 2, sigY + 12);
-  doc.text("Signature with Date", margin + leftColWidth + sigWidth + 2, sigY + 18);
+  // Recurring complaint
+  const recurringY = complaintY + complaintHeight;
+  const recurringHeight = 10;
+  const recurringWidth = rightWidth * 0.5;
   
-  currentY += mainSectionHeight;
+  drawBox(rightStartX, recurringY, recurringWidth, recurringHeight, 
+    `Recurring complaint: ${form.recurringComplaint || 'Yes/No'}`, 8, false);
+  drawBox(rightStartX + recurringWidth, recurringY, rightWidth - recurringWidth, recurringHeight, 
+    `If Yes, how many times: ${form.recurringTimes || ''}`, 8, false);
+  
+  // Signature boxes
+  const sigY = recurringY + recurringHeight;
+  const sigHeight = 25;
+  const sigWidth = rightWidth / 2;
+  
+  drawBox(rightStartX, sigY, sigWidth, sigHeight, "", 8, false);
+  doc.setFontSize(8);
+  doc.text("In charge/Lab Assistant", rightStartX + sigWidth/2, sigY + sigHeight/2 - 3, { align: 'center' });
+  doc.text("Name and Signature with Date", rightStartX + sigWidth/2, sigY + sigHeight/2 + 3, { align: 'center' });
+  
+  drawBox(rightStartX + sigWidth, sigY, sigWidth, sigHeight, "", 8, false);
+  doc.text("Head of Department", rightStartX + sigWidth + sigWidth/2, sigY + sigHeight/2 - 3, { align: 'center' });
+  doc.text("Signature with Date", rightStartX + sigWidth + sigWidth/2, sigY + sigHeight/2 + 3, { align: 'center' });
+  
+  currentY += originatorHeight;
   
   // Verification section
-  const verificationHeight = 60;
+  const verificationHeight = 55;
   drawBox(margin, currentY, leftColWidth, verificationHeight, "", 9, false);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.text("Verification", margin + 2, currentY + 10);
+  doc.text("Verification", margin + leftColWidth/2, currentY + verificationHeight/2, { align: 'center' });
   
-  // Name of person section
-  const namePersonY = currentY;
-  drawBox(margin + leftColWidth, namePersonY, pageWidth - 2*margin - leftColWidth, 12, 
-    "Name of the person to whom work is allotted:", 9, false);
+  // Name of person allotted
+  drawBox(rightStartX, currentY, rightWidth, 10, "Name of the person to whom work is allotted:", 8, false);
   
-  // Maintenance section details
-  const maintY = currentY + 12;
-  const maintLeftWidth = 90;
-  drawBox(margin + leftColWidth, maintY, maintLeftWidth, 48, "", 9, false);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.text("Maintenance Section In charge", margin + leftColWidth + 2, maintY + 8);
-  doc.text("Complaint received Date with Signature", margin + leftColWidth + 2, maintY + 14);
-  doc.text("Verification and remarks:", margin + leftColWidth + 2, maintY + 25);
+  // Maintenance section boxes
+  const maintY = currentY + 10;
+  const maintHeight = verificationHeight - 10;
+  const maintLeftWidth = rightWidth * 0.45;
   
-  drawBox(margin + leftColWidth + maintLeftWidth, maintY, 
-    pageWidth - 2*margin - leftColWidth - maintLeftWidth, 48, 
-    "Material replaced/repaired/used for attending complaint:", 9, false);
+  drawBox(rightStartX, maintY, maintLeftWidth, maintHeight, "", 8, false);
+  doc.setFontSize(7);
+  doc.text("Maintenance Section In charge", rightStartX + 2, maintY + 6);
+  doc.text("Complaint received Date with Signature", rightStartX + 2, maintY + 12);
+  doc.text("Verification and remarks:", rightStartX + 2, maintY + 22);
+  
+  drawBox(rightStartX + maintLeftWidth, maintY, rightWidth - maintLeftWidth, maintHeight, "", 8, false);
+  doc.text("Material replaced/repaired/used for attending complaint:", rightStartX + maintLeftWidth + 2, maintY + 6);
   
   currentY += verificationHeight;
   
   // Corrective Action section
-  const correctiveHeight = 80;
+  const correctiveHeight = 70;
   drawBox(margin, currentY, leftColWidth, correctiveHeight, "", 9, false);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.text("Corrective", margin + 2, currentY + 10);
-  doc.text("Action", margin + 2, currentY + 18);
+  doc.text("Corrective", margin + leftColWidth/2, currentY + correctiveHeight/2 - 5, { align: 'center' });
+  doc.text("Action", margin + leftColWidth/2, currentY + correctiveHeight/2 + 2, { align: 'center' });
   
-  // Corrective action details
-  const actionY = currentY;
-  const rightSectionWidth = pageWidth - 2*margin - leftColWidth;
+  // Three rows for corrective actions
+  const actionRowHeight = correctiveHeight / 3;
+  const actionLeftWidth = rightWidth * 0.5;
   
-  // Complaint resolved row
-  drawBox(margin + leftColWidth, actionY, rightSectionWidth/2, 25, "", 9, false);
+  // Row 1: Complaint resolved
+  drawBox(rightStartX, currentY, actionLeftWidth, actionRowHeight, "", 8, false);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
-  doc.text("Complaint resolved and closed inhouse", margin + leftColWidth + 2, actionY + 8);
+  doc.text("Complaint resolved and closed inhouse", rightStartX + 2, currentY + actionRowHeight/2);
   
-  drawBox(margin + leftColWidth + rightSectionWidth/2, actionY, rightSectionWidth/2, 25, "", 9, false);
-  doc.text("Remark:", margin + leftColWidth + rightSectionWidth/2 + 2, actionY + 8);
+  drawBox(rightStartX + actionLeftWidth, currentY, rightWidth - actionLeftWidth, actionRowHeight, "", 8, false);
+  doc.text("Remark:", rightStartX + actionLeftWidth + 2, currentY + actionRowHeight/2);
   
-  // Purchase required row
-  const purchaseY = actionY + 25;
-  drawBox(margin + leftColWidth, purchaseY, rightSectionWidth/2, 25, "", 9, false);
-  doc.text("Purchase of consumable required recommended", margin + leftColWidth + 2, purchaseY + 8);
+  // Row 2: Purchase required
+  const row2Y = currentY + actionRowHeight;
+  drawBox(rightStartX, row2Y, actionLeftWidth, actionRowHeight, "", 8, false);
+  doc.text("Purchase of consumable required recommended", rightStartX + 2, row2Y + actionRowHeight/2);
   
-  drawBox(margin + leftColWidth + rightSectionWidth/2, purchaseY, rightSectionWidth/2, 25, "", 9, false);
-  doc.text("Details (Description/Qty./cost):", margin + leftColWidth + rightSectionWidth/2 + 2, purchaseY + 8);
+  drawBox(rightStartX + actionLeftWidth, row2Y, rightWidth - actionLeftWidth, actionRowHeight, "", 8, false);
+  doc.text("Details (Description/Qty./cost):", rightStartX + actionLeftWidth + 2, row2Y + actionRowHeight/2);
   
-  // External agency row
-  const agencyY = purchaseY + 25;
-  drawBox(margin + leftColWidth, agencyY, rightSectionWidth/2, 30, "", 9, false);
-  doc.text("Recommended Maintenance from external agency", margin + leftColWidth + 2, agencyY + 8);
+  // Row 3: External agency
+  const row3Y = row2Y + actionRowHeight;
+  drawBox(rightStartX, row3Y, actionLeftWidth, actionRowHeight, "", 8, false);
+  doc.text("Recommended Maintenance from external agency", rightStartX + 2, row3Y + actionRowHeight/2 - 3);
   
-  drawBox(margin + leftColWidth + rightSectionWidth/2, agencyY, rightSectionWidth/2, 30, "", 9, false);
-  doc.text("Agency Name:", margin + leftColWidth + rightSectionWidth/2 + 2, agencyY + 8);
-  doc.text("Expected Approx.: Expenditure:", margin + leftColWidth + rightSectionWidth/2 + 2, agencyY + 18);
+  drawBox(rightStartX + actionLeftWidth, row3Y, rightWidth - actionLeftWidth, actionRowHeight, "", 8, false);
+  doc.text("Agency Name:", rightStartX + actionLeftWidth + 2, row3Y + 8);
+  doc.text("Expected Approx.: Expenditure:", rightStartX + actionLeftWidth + 2, row3Y + 16);
   
   currentY += correctiveHeight;
   
-  // Final Maintenance Report closure section
-  const closureHeight = 50;
+  // Maintenance Report closure section
+  const closureHeight = 45;
   drawBox(margin, currentY, leftColWidth, closureHeight, "", 9, false);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.text("Maintenance", margin + 2, currentY + 8);
-  doc.text("Report", margin + 2, currentY + 16);
-  doc.text("closure", margin + 2, currentY + 24);
+  doc.setFontSize(8);
+  doc.text("Maintenance", margin + leftColWidth/2, currentY + closureHeight/2 - 7, { align: 'center' });
+  doc.text("Report", margin + leftColWidth/2, currentY + closureHeight/2, { align: 'center' });
+  doc.text("closure", margin + leftColWidth/2, currentY + closureHeight/2 + 7, { align: 'center' });
   
-  // Closure details
-  const closureRightWidth = pageWidth - 2*margin - leftColWidth;
+  const closureRowHeight = closureHeight / 2;
   
-  // Lab assistant completion
-  drawBox(margin + leftColWidth, currentY, closureRightWidth, 25, "", 9, false);
+  // Row 1: Lab assistant remark
+  drawBox(rightStartX, currentY, rightWidth, closureRowHeight, "", 8, false);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
-  doc.text("Remark on work completion by person In charge of lab/class:", margin + leftColWidth + 2, currentY + 6);
-  doc.text("In charge/Lab Assistant", margin + leftColWidth + closureRightWidth - 80, currentY + 15);
-  doc.text("Name and Signature with Date", margin + leftColWidth + closureRightWidth - 80, currentY + 21);
+  doc.text("Remark on work completion by person In charge of lab/class:", rightStartX + 2, currentY + 8);
+  doc.text("In charge/Lab Assistant", rightStartX + rightWidth - 55, currentY + 14);
+  doc.text("Name and Signature with Date", rightStartX + rightWidth - 55, currentY + 19);
   
-  // Maintenance section completion
-  drawBox(margin + leftColWidth, currentY + 25, closureRightWidth, 25, "", 9, false);
-  doc.text("Remark on work completion by maintenance section In charge:", margin + leftColWidth + 2, currentY + 31);
-  doc.text("Maintenance Section Incharge", margin + leftColWidth + closureRightWidth - 80, currentY + 40);
-  doc.text("Complaint closed Date with Signature", margin + leftColWidth + closureRightWidth - 80, currentY + 46);
+  // Row 2: Maintenance section remark
+  const closure2Y = currentY + closureRowHeight;
+  drawBox(rightStartX, closure2Y, rightWidth, closureRowHeight, "", 8, false);
+  doc.text("Remark on work completion by maintenance section In charge:", rightStartX + 2, closure2Y + 8);
+  doc.text("Maintenance Section Incharge", rightStartX + rightWidth - 60, closure2Y + 14);
+  doc.text("Complaint closed Date with Signature", rightStartX + rightWidth - 60, closure2Y + 19);
+  
+  currentY += closureHeight;
   
   // Footer
-  currentY += closureHeight + 10;
+  currentY += 5;
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
+  doc.setFontSize(7);
   doc.text(`Rev.: 00    Date: 03.07.2023`, margin, currentY);
   
   doc.save("maintenance_report_form.pdf");
 };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
       <Modal
