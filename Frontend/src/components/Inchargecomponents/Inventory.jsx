@@ -136,6 +136,7 @@ const LabEquipmentManager = () => {
             password: detail.equipment_password || "",
             company_name: detail.company_name || "N/A", // Add this
             specification: detail.specification || "No specification provided.",
+            current_location: detail.current_location || "Unknown",
             icon:
               key === "monitors"
                 ? Monitor
@@ -262,8 +263,9 @@ const LabEquipmentManager = () => {
         equipment_code: selectedItem.code,
         equipment_status: selectedItem.status,
         equipment_password: selectedItem.password,
-        company_name: selectedItem.companyName || null,
+        company_name: selectedItem.company_name || null,
         specification: selectedItem.specification || null,
+        current_location: selectedItem.current_location || null,
       };
 
       const response = await axios.put(
@@ -670,6 +672,12 @@ const LabEquipmentManager = () => {
                                       {item.code}
                                     </span>
                                   </div>
+                                  <div className="flex justify-between">
+                                    <span>Current Location:</span>
+                                    <span className="font-mono">
+                                      {item.current_location}
+                                    </span>
+                                  </div>
                                   {(item.type === "monitors" ||
                                     item.type === "wifi") && (
                                     <div className="flex justify-between items-center">
@@ -963,6 +971,30 @@ const LabEquipmentManager = () => {
                     <p className="mt-1 text-gray-900 whitespace-pre-wrap">
                       {selectedItem.specification ||
                         "No specification available"}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Current Location
+                  </label>
+                  {editMode ? (
+                    <input
+                      type="text"
+                      value={selectedItem.current_location || ""}
+                      onChange={(e) =>
+                        setSelectedItem({
+                          ...selectedItem,
+                          current_location: e.target.value,
+                        })
+                      }
+                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., Lab 404, Store Room"
+                      disabled={saving}
+                    />
+                  ) : (
+                    <p className="mt-1 text-gray-900">
+                      {selectedItem.current_location || "Not specified"}
                     </p>
                   )}
                 </div>

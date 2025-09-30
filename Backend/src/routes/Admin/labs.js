@@ -113,9 +113,11 @@ router.post('/', async (req, res) => {
     });
 
     const labId = newLab.id; // assuming your Lab.create returns the inserted lab with id
-const equipmentInsert = [];
+    const LabNo = newLab.labNo;
 
-const createEquipments = (type, count) => {
+  const equipmentInsert = [];
+
+  const createEquipments = (type, count) => {
   for (let i = 1; i <= count; i++) {
     equipmentInsert.push([
       labId,
@@ -125,7 +127,9 @@ const createEquipments = (type, count) => {
       `${type}-${labId}-${i}`, // unique code
       '0', // default status working
       null, // password
-      null  // description
+      null,
+      null,
+      labNo
     ]);
   }
 };
@@ -140,7 +144,7 @@ createEquipments('other', others);
 if (equipmentInsert.length > 0) {
   await db.query(
     `INSERT INTO equipment_details 
-     (lab_id, staff_id, equipment_type, equipment_name, equipment_code, equipment_status, equipment_password, specification)
+     (lab_id, staff_id, equipment_type, equipment_name, equipment_code, equipment_status, equipment_password, company_name, specification, current_location)
      VALUES ?`,
     [equipmentInsert]
   );
@@ -198,12 +202,14 @@ router.put('/:id', async (req, res) => {
             `${type}-${labId}-${i}`,
             '0',
             null,
-            null
+            null,
+            null,
+            labNo
           ]);
         }
         await db.query(
           `INSERT INTO equipment_details 
-           (lab_id, staff_id, equipment_type, equipment_name, equipment_code, equipment_status, equipment_password, specification)
+           (lab_id, staff_id, equipment_type, equipment_name, equipment_code, equipment_status, equipment_password, company_name, specification, current_location)
            VALUES ?`,
           [equipmentInsert]
         );

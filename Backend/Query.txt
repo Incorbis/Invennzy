@@ -268,6 +268,7 @@ ALTER TABLE equipment_details
 DROP COLUMN equipment_description,
 ADD COLUMN company_name VARCHAR(255) NULL,
 ADD COLUMN specification TEXT NULL;
+ADD COLUMN current_location VARCHAR(255) NULL;
 
 
 

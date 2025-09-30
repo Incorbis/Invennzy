@@ -90,7 +90,8 @@ const EquipmentDetailsModal = ({
       item.equipment_name?.toLowerCase().includes(searchLower) ||
       item.equipment_code?.toLowerCase().includes(searchLower) ||
       item.company_name?.toLowerCase().includes(searchLower) ||
-      item.specification?.toLowerCase().includes(searchLower)
+      item.specification?.toLowerCase().includes(searchLower) ||
+      item.current_location?.toLowerCase().includes(searchLower)
     );
   });
 
@@ -138,7 +139,7 @@ const EquipmentDetailsModal = ({
             />
             <input
               type="text"
-              placeholder="Search by equipment name, code, or description..."
+              placeholder="Search by name, code, company, specification, or location..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
@@ -193,10 +194,13 @@ const EquipmentDetailsModal = ({
                       Status
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Company
+                      Company Name
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Specification
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Current Location
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Created At
@@ -241,7 +245,12 @@ const EquipmentDetailsModal = ({
                         </td>
                         <td className="px-4 py-4">
                           <div className="text-sm text-gray-900 max-w-xs truncate">
-                            {item.specification || "N/A"}
+                            {item.specification || "No specification available"}
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="text-sm text-gray-900 max-w-xs truncate">
+                            {item.current_location || "N/A"}
                           </div>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">

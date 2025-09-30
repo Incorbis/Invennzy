@@ -15,7 +15,8 @@ router.get('/labs/equipment/:labId', (req, res) => {
         equipment_status as status,
         equipment_password as password,
         company_name,
-        specification
+        specification,
+        current_location
     FROM equipment_details
     WHERE lab_id = ?
     ORDER BY equipment_type, equipment_code
@@ -48,7 +49,8 @@ router.get('/labs/equipment/:labId', (req, res) => {
                     equipment_status: equip.status,
                     equipment_password: equip.password,
                     company_name: equip.company_name,
-                    specification: equip.specification
+                    specification: equip.specification,
+                    current_location: equip.current_location
                 });
             }
         });
@@ -124,7 +126,8 @@ const updateEquipmentHandler = async (req, res) => {
         equipment_status,
         equipment_password,
         company_name,
-        specification
+        specification,
+        current_location
     } = req.body;
 
     const numericId = parseInt(equipmentId.toString().replace(/[^\d]/g, ''), 10);
@@ -147,7 +150,7 @@ const updateEquipmentHandler = async (req, res) => {
         const updateQuery = `
             UPDATE equipment_details 
             SET equipment_name = ?, equipment_code = ?, equipment_status = ?, 
-                equipment_password = ?, company_name = ?, specification = ?
+                equipment_password = ?, company_name = ?, specification = ?, current_location = ?
             WHERE equipment_id = ?`;
 
         const values = [
@@ -157,6 +160,7 @@ const updateEquipmentHandler = async (req, res) => {
             equipment_password || null,
             company_name || null,
             specification || null,
+            current_location || null,
             numericId
         ];
 
@@ -166,14 +170,13 @@ const updateEquipmentHandler = async (req, res) => {
         if (updateResult.affectedRows === 0) {
             return res.status(404).json({ error: 'Equipment not found or no changes made' });
         }
-        console.log('Equipment updated successfully, affected rows:', updateResult.affectedRows);
 
 
         // --- Step 2: Fetch the updated data to send back ---
         const selectQuery = `
             SELECT equipment_id as id, equipment_name, equipment_code, equipment_type as type,
                    equipment_status as status, equipment_password as password, company_name,
-                   specification, lab_id
+                   specification, current_location, lab_id
             FROM equipment_details
             WHERE equipment_id = ?`;
 
@@ -207,6 +210,7 @@ const updateEquipmentHandler = async (req, res) => {
                 password: updatedEquipment.password,
                 company_name: updatedEquipment.company_name,
                 specification: updatedEquipment.specification,
+                current_location: updatedEquipment.current_location,
                 lab_id: updatedEquipment.lab_id
             }
         };
@@ -239,6 +243,7 @@ router.get('/equipment/:equipmentId', (req, res) => {
             equipment_password as password,
             company_name,
             specification,
+            current_location,
             lab_id
         FROM equipment_details
         WHERE equipment_id = ?
@@ -276,6 +281,7 @@ router.get('/equipment/:equipmentId', (req, res) => {
                 password: equipment.password,
                 company_name: equipment.company_name,
                 specification: equipment.specification,
+                current_location: equipment.current_location,
                 lab_id: equipment.lab_id
             }
         });
@@ -321,6 +327,7 @@ function mapRow(r) {
     equipment_password: r.equipment_password,
     company_name: r.company_name || null,
     specification: r.specification || null,
+    current_location: r.current_location || null,
     lab_id: r.lab_id,
     updated_at: r.updated_at||null,
 };
@@ -335,7 +342,7 @@ router.get('/labs/equipment/by-staff/:staffId', async (req, res) => {
 
     const [equipRows] = await db.query(
   `SELECT equipment_id, lab_id, equipment_name, equipment_code, equipment_type,
-          equipment_status, equipment_password, company_name, specification, updated_at
+          equipment_status, equipment_password, company_name, specification, current_location, updated_at
    FROM equipment_details
    WHERE lab_id = ?
    ORDER BY equipment_type, equipment_code`,
