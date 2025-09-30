@@ -95,6 +95,7 @@ const Overview = () => {
           "switch_boards",
           "fans",
           "wifi",
+          "others",
         ];
         const countsByType = equipData.data.counts || {};
         const detailsByType = equipData.data.grouped || {};
@@ -154,7 +155,9 @@ const Overview = () => {
                   ? Zap
                   : key === "wifi"
                   ? Wifi
-                  : Fan,
+                  : key === "fan"
+                  ? Fan
+                  : Package,
               color:
                 key === "monitors"
                   ? "blue"
@@ -265,6 +268,7 @@ const Overview = () => {
     switch_boards: equipmentState.filter(
       (item) => item.category === "switch_boards"
     ).length,
+    others: equipmentState.filter((item) => item.category === "others").length,
   };
 
   const StatCard = ({ title, value, icon: Icon, color, bgColor }) => (
@@ -353,7 +357,7 @@ const Overview = () => {
             Real-time equipment and lab statistics
           </p>
         </div>
-        
+
         {/* Mobile: Stack timestamp and button vertically, Desktop: horizontal */}
         <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-3">
           {lastRefresh && (
@@ -442,6 +446,12 @@ const Overview = () => {
               count={categoryStats["switch_boards"]}
               icon={Zap}
               color="bg-orange-500"
+            />
+            <CategoryCard
+              title="Others"
+              count={categoryStats.others}
+              icon={Package}
+              color="bg-pink-400"
             />
           </div>
         </div>
