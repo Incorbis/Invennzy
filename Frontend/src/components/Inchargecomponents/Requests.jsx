@@ -268,18 +268,22 @@ function LabInchargeForm() {
       icon: Settings,
       role: "Maintenance Team",
     },
-    {
-      id: 5,
-      title: "Admin Approval",
-      subtitle:
-        form?.adminApprovalStatus === "approved"
-          ? "Approved"
-          : form?.adminApprovalStatus === "rejected"
-          ? "Rejected"
-          : "Pending Review",
-      icon: AlertCircle,
-      role: "Admin",
-    },
+    ...(form?.resolvedInhouse === "yes"
+      ? []
+      : [
+          {
+            id: 5,
+            title: "Admin Approval",
+            subtitle:
+              form?.adminApprovalStatus === "approved"
+                ? "Approved"
+                : form?.adminApprovalStatus === "rejected"
+                ? "Rejected"
+                : "Pending Review",
+            icon: AlertCircle,
+            role: "Admin",
+          },
+        ]),
     {
       id: 6,
       title: "Closure",
@@ -331,14 +335,25 @@ function LabInchargeForm() {
   };
 
   const nextStep = () => {
-    if (currentStep < 6 && currentStep <= completedSteps) {
-      setCurrentStep((prev) => prev + 1);
+    const stepIds = steps.map((s) => s.id); // dynamic step order
+    const currentIndex = stepIds.indexOf(currentStep);
+
+    if (currentIndex < stepIds.length - 1) {
+      const next = stepIds[currentIndex + 1];
+      setCurrentStep(next);
+      if (next > completedSteps) {
+        setCompletedSteps(next);
+      }
     }
   };
 
   const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep((prev) => prev - 1);
+    const stepIds = steps.map((s) => s.id);
+    const currentIndex = stepIds.indexOf(currentStep);
+
+    if (currentIndex > 0) {
+      const prev = stepIds[currentIndex - 1];
+      setCurrentStep(prev);
     }
   };
 

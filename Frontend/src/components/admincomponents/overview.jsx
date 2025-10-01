@@ -164,14 +164,6 @@ const Overview = () => {
     fetchAllData();
   }, []);
 
-  // Auto-refresh every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchAllData(true);
-    }, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
   // Manual refresh function
   const handleManualRefresh = () => {
     fetchAllData(true);

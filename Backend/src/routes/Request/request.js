@@ -220,47 +220,59 @@ router.put("/assistant/:id/corrective", async (req, res) => {
       externalAgencyNeeded,
       agencyName,
       approxExpenditure,
-      currentStep,
-      completedSteps,
-      message
     } = req.body;
 
-    await db.query(`
+    // If resolved in-house → skip Admin Approval
+    let nextStep = resolvedInhouse === "yes" ? 6 : 5;
+    let completedSteps = resolvedInhouse === "yes" ? 6 : 4;
+    let message =
+      resolvedInhouse === "yes"
+        ? "Resolved in-house. Skipped Admin Approval → moved to Closure."
+        : "Corrective action completed. Awaiting Admin Approval.";
+
+    await db.query(
+      `
       UPDATE requests
       SET materials_used = ?, resolved_inhouse = ?, resolved_remark = ?,
           consumables_needed = ?, consumable_details = ?, external_agency_needed = ?,
           agency_name = ?, approx_expenditure = ?,
           current_step = ?, completed_steps = ?
       WHERE id = ?
-    `, [
-      materialsUsed,
-      resolvedInhouse,
-      resolvedRemark,
-      consumablesNeeded,
-      consumableDetails,
-      externalAgencyNeeded,
-      agencyName,
-      approxExpenditure,
-      currentStep,
-      completedSteps,
-      requestId
-    ]);
+    `,
+      [
+        materialsUsed,
+        resolvedInhouse,
+        resolvedRemark,
+        consumablesNeeded,
+        consumableDetails,
+        externalAgencyNeeded,
+        agencyName,
+        approxExpenditure,
+        nextStep,
+        completedSteps,
+        requestId,
+      ]
+    );
 
-    // Get staff_id for notification
+    // Notification
     const [request] = await db.query("SELECT staff_id FROM requests WHERE id = ?", [requestId]);
     const staff_id = request[0].staff_id;
 
-    await db.query(`
+    await db.query(
+      `
       INSERT INTO notifications (user_role, type, title, message, request_id, staff_id)
       VALUES ('labincharge', 'maintenance', 'Corrective Action Completed', ?, ?, ?)
-    `, [message, requestId, staff_id]);
+    `,
+      [message, requestId, staff_id]
+    );
 
-    res.json({ success: true });
+    res.json({ success: true, skippedAdmin: resolvedInhouse === "yes" });
   } catch (err) {
     console.error("Assistant Step 4 Error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
+
 
 // Save Step 5 Closure
 router.put("/assistant/:id/closure", async (req, res) => {

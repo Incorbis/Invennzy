@@ -230,15 +230,6 @@ const Overview = () => {
     fetchEquipmentData();
   }, []);
 
-  // Auto-refresh every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchEquipmentData(true); // Show refresh indicator
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
-
   // Manual refresh function
   const handleManualRefresh = () => {
     fetchEquipmentData(true);
