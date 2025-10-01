@@ -624,7 +624,7 @@ router.get("/download/deadstock-full-report", async (req, res) => {
   }
 });
 
-app.get("/api/labs", async (req, res) => {
+router.get("/api/labs", async (req, res) => {
   try {
     const query = `
       SELECT 

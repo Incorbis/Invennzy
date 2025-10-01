@@ -270,5 +270,9 @@ ADD COLUMN company_name VARCHAR(255) NULL,
 ADD COLUMN specification TEXT NULL;
 ADD COLUMN current_location VARCHAR(255) NULL;
 
-
-
+ALTER TABLE dead_stock_requirements
+ADD COLUMN lab_id BIGINT UNSIGNED NULL AFTER staff_id;
+ADD CONSTRAINT fk_deadstock_lab
+FOREIGN KEY (lab_id) REFERENCES labs(id)
+ON DELETE SET NULL
+ON UPDATE CASCADE;
