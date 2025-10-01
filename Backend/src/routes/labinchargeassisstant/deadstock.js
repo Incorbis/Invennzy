@@ -10,17 +10,13 @@ const filePath = path.join(__dirname, "uploads", "report.pdf");
 // ✅ Fetch ALL deadstock rows, grouped by deadstock_id
 router.get("/fetch/deadstock", async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT d.id, d.deadstock_id, d.po_no, d.date_submitted, d.quantity, d.remark, d.equipment_name, d.purchase_year, d.ds_number, d.cost, d.gst_rate, d.subtotal_excl_gst, d.gst_amount, d.total_incl_gst,  d.staff_id, l.name FROM dead_stock_requirements d JOIN labassistant l ON d.staff_id = l.staff_id");
-
-    // Grouping logic
-    // const grouped = rows.reduce((acc, row) => {
-    //   const id = row.deadstock_id;
-    //   if (!acc[id]) {
-    //     acc[id] = [];
-    //   }
-    //   acc[id].push(row);
-    //   return acc;
-    // }, {});
+    const [rows] = await db.query(
+      `SELECT d.id, d.deadstock_id, d.po_no, d.date_submitted, d.quantity, d.remark,
+              d.equipment_name, d.purchase_year, d.ds_number, d.cost, d.gst_rate, 
+              d.subtotal_excl_gst, d.gst_amount, d.total_incl_gst, d.staff_id, l.name 
+       FROM dead_stock_requirements d 
+       JOIN labassistant l ON d.staff_id = l.staff_id`
+    );
 
     res.json(rows);
   } catch (error) {
@@ -178,6 +174,18 @@ router.get("/download/deadstock-report/:id", async (req, res) => {
       height: logoHeight 
     });
     
+    // Draw vertical line after left logo
+    const leftLineX = tableStartX + logoWidth + 25;
+    doc.moveTo(leftLineX, currentY)
+       .lineTo(leftLineX, currentY + headerSectionHeight)
+       .stroke();
+    
+    // Draw vertical line before right logo
+    const rightLineX = tableStartX + totalTableWidth - logoWidth - 25;
+    doc.moveTo(rightLineX, currentY)
+       .lineTo(rightLineX, currentY + headerSectionHeight)
+       .stroke();
+    
     // Header text - centered between logos
     const textStartX = tableStartX + logoWidth + 30;
     const textWidth = totalTableWidth - (2 * logoWidth) - 60;
@@ -226,6 +234,9 @@ router.get("/download/deadstock-report/:id", async (req, res) => {
 
     currentY += deadstockSectionHeight;
 
+    // Add spacing between Deadstock ID and equipment list
+    currentY += 15;
+
     // =====================================================
     // TABLE HEADER WITH VERTICAL LINES
     // =====================================================
@@ -242,7 +253,7 @@ router.get("/download/deadstock-report/:id", async (req, res) => {
       "Remark"
     ];
     
-    const headerHeight = 28;
+    const headerHeight = 25;
     
     // Draw header background
     doc.rect(tableStartX, currentY, totalTableWidth, headerHeight).stroke();
@@ -304,7 +315,7 @@ router.get("/download/deadstock-report/:id", async (req, res) => {
         row.remark || ""
       ];
 
-      const rowHeight = 25;
+      const rowHeight = 20;
       
       // Draw row border
       doc.rect(tableStartX, currentY, totalTableWidth, rowHeight).stroke();
@@ -613,6 +624,37 @@ router.get("/download/deadstock-full-report", async (req, res) => {
   }
 });
 
+app.get("/api/labs", async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        l.id AS lab_id,
+        l.lab_no,
+        l.lab_name,
+        l.building,
+        l.floor,
+        l.capacity,
+        l.status AS lab_status,
+        l.created_at,
+        l.last_updated,
+        l.admin_id,
+        COUNT(d.deadstock_id) AS total_reports,
+        SUM(d.quantity) AS total_items,
+        SUM(d.total_incl_gst) AS total_value,
+        MAX(d.date_submitted) AS last_report_date
+      FROM labs l
+      LEFT JOIN deadstock d ON l.id = d.lab_id
+      GROUP BY l.id
+      ORDER BY l.lab_no ASC
+    `;
+
+    const [rows] = await pool.query(query);
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching labs:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 
 

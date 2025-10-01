@@ -12,83 +12,73 @@ const EquipmentDashboard = () => {
   const [rawData, setRawData] = useState([]);
 
   const fetchEquipmentData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await fetch("/api/fetch/deadstock");
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      const data = await response.json();
-      setRawData(data);
+  try {
+    setLoading(true);
+    setError(null);
 
-      const groupedData = {};
-      data.forEach((item) => {
-        if (!groupedData[item.deadstock_id]) {
-          groupedData[item.deadstock_id] = [];
-        }
-        groupedData[item.deadstock_id].push(item);
-      });
+    const response = await fetch("/api/fetch/deadstock");
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 
-      const transformedData = [];
-      Object.entries(groupedData).forEach(([deadstockId, items]) => {
-        const firstItem = items[0];
-        const totalValue = items.reduce(
-          (sum, item) =>
-            sum +
-            (parseFloat(item.total_incl_gst) || parseFloat(item.cost) || 0),
-          0
-        );
+    const data = await response.json();
+    setRawData(data);
 
-        transformedData.push({
-          deadstock_id: parseInt(deadstockId),
-          totalItems: items.length,
-          totalValue,
-          po_no: firstItem.po_no,
-          quantity: items.reduce(
-            (sum, item) => sum + (parseInt(item.quantity) || 0),
-            0
-          ),
-          remark: firstItem.remark || "N/A",
-          equipmentName: firstItem.equipment_name || "N/A",
-          registeredBy: firstItem.name || "Unknown",
-          date: firstItem.date_submitted
-            ? new Date(firstItem.date_submitted).toLocaleDateString("en-IN", {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })
-            : "N/A",
-          category: firstItem.category || "Equipment",
-          purchase_year: firstItem.purchase_year,
-          ds_number: firstItem.ds_number,
-          items: items.map((item) => ({
-            ...item,
-            date: item.date_submitted
-              ? new Date(item.date_submitted).toLocaleDateString("en-IN", {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                })
-              : "N/A",
-          })),
-          subtotalExclGst: firstItem.subtotal_excl_gst || firstItem.cost,
-          gstAmount: firstItem.gst_amount,
-          totalInclGst: firstItem.total_incl_gst || firstItem.cost,
-        });
-      });
-      setEquipmentData(transformedData);
-    } catch (err) {
-      console.error("Error fetching equipment data:", err);
-      setError(
-        err.name === "TypeError"
-          ? "Network Error: Unable to connect to server. Please check your connection."
-          : `Error: ${err.message}`
+    // Group and transform data safely
+    const groupedData = {};
+    data.forEach((item) => {
+      if (!groupedData[item.deadstock_id]) groupedData[item.deadstock_id] = [];
+      groupedData[item.deadstock_id].push(item);
+    });
+
+    const transformedData = Object.entries(groupedData).map(([deadstockId, items]) => {
+      const firstItem = items[0];
+      const totalValue = items.reduce(
+        (sum, item) => sum + Number(item.total_incl_gst ?? item.cost ?? 0),
+        0
       );
-    } finally {
-      setLoading(false);
-    }
-  };
+
+      return {
+        deadstock_id: deadstockId, // Keep as string
+        totalItems: items.length,
+        totalValue,
+        po_no: firstItem.po_no ?? "N/A",
+        quantity: items.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0),
+        remark: firstItem.remark ?? "N/A",
+        equipmentName: firstItem.equipment_name ?? "N/A",
+        registeredBy: firstItem.name ?? "Unknown",
+        date: firstItem.date_submitted
+          ? new Date(firstItem.date_submitted).toLocaleDateString("en-IN", { year: "numeric", month: "short", day: "numeric" })
+          : "N/A",
+        category: firstItem.category ?? "Equipment",
+        purchase_year: firstItem.purchase_year ?? "N/A",
+        ds_number: firstItem.ds_number ?? "N/A",
+        items: items.map((item) => ({
+          ...item,
+          date: item.date_submitted
+            ? new Date(item.date_submitted).toLocaleDateString("en-IN", { year: "numeric", month: "short", day: "numeric" })
+            : "N/A",
+        })),
+        subtotalExclGst: firstItem.subtotal_excl_gst ?? firstItem.cost ?? 0,
+        gstAmount: firstItem.gst_amount ?? 0,
+        totalInclGst: firstItem.total_incl_gst ?? firstItem.cost ?? 0,
+        staff_id: firstItem.staff_id,
+      };
+    });
+
+    setEquipmentData(transformedData);
+  } catch (err) {
+    console.error("Error fetching equipment data:", err);
+    setError(
+      err.name === "TypeError"
+        ? "Network Error: Unable to connect to server. Please check your connection."
+        : `Error: ${err.message}`
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
 
   const handleDownload = async (
     deadstockId,
