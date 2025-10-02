@@ -178,6 +178,18 @@ router.get("/download/deadstock-report/:id", async (req, res) => {
       height: logoHeight 
     });
     
+    // Draw vertical line after left logo
+    const leftLineX = tableStartX + logoWidth + 25;
+    doc.moveTo(leftLineX, currentY)
+       .lineTo(leftLineX, currentY + headerSectionHeight)
+       .stroke();
+    
+    // Draw vertical line before right logo
+    const rightLineX = tableStartX + totalTableWidth - logoWidth - 25;
+    doc.moveTo(rightLineX, currentY)
+       .lineTo(rightLineX, currentY + headerSectionHeight)
+       .stroke();
+    
     // Header text - centered between logos
     const textStartX = tableStartX + logoWidth + 30;
     const textWidth = totalTableWidth - (2 * logoWidth) - 60;
@@ -225,6 +237,9 @@ router.get("/download/deadstock-report/:id", async (req, res) => {
        });
 
     currentY += deadstockSectionHeight;
+
+    // Add spacing between Deadstock ID and equipment list
+    currentY += 15;
 
     // =====================================================
     // TABLE HEADER WITH VERTICAL LINES
@@ -395,8 +410,9 @@ router.get("/download/deadstock-report/:id", async (req, res) => {
 // backend/routes/deadstock.js
 router.get("/download/deadstock-full-report", async (req, res) => {
   try {
-    const staffId = req.query.staffId || 11;
+    const staffId = req.query.staffId;
 
+    // ✅ Fetch data first
     const [rows] = await db.query(
       "SELECT * FROM dead_stock_requirements WHERE staff_id = ? ORDER BY id",
       [staffId]
@@ -406,83 +422,169 @@ router.get("/download/deadstock-full-report", async (req, res) => {
       return res.status(404).json({ message: "No deadstock records found for this staff" });
     }
 
-    const doc = new PDFDocument({
-      margin: 40,
-      size: "A4"
+    // ✅ Start PDF generation
+    const doc = new PDFDocument({ 
+      margin: 40, 
+      size: "A4" 
     });
-
+    
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
-      "Content-Disposition",
+      "Content-Disposition", 
       `attachment; filename=deadstock_full_report_${staffId}_${new Date().toISOString().slice(0, 10)}.pdf`
     );
-
     doc.pipe(res);
 
-    // Header section (same as before)
+    // =====================================================
+    // TABLE WITH HEADER SECTION
+    // =====================================================
+    const pageWidth = doc.page.width;
+    const tableStartX = 15;
+    const tableWidth = pageWidth - 30; // Full width with margins
+    let currentY = 50;
+
+    // Define table structure - adjusted for better alignment
+    const colWidths = [25, 55, 45, 90, 80, 25, 25, 50, 35, 55, 65];
+    const totalTableWidth = colWidths.reduce((a, b) => a + b, 0);
+
+     // =====================================================
+    // HEADER SECTION INSIDE TABLE (TOP BORDER)
+    // =====================================================
+    const headerSectionHeight = 100;
+    
+    // Draw outer border for header section
+    doc.rect(tableStartX, currentY, totalTableWidth, headerSectionHeight).stroke();
+
+    // Logo paths and dimensions
     const leftLogoPath = path.join(__dirname, "../../uploads/left_logo.jpg");
     const rightLogoPath = path.join(__dirname, "../../uploads/right_logo.png");
-    const pageWidth = doc.page.width;
-    const leftLogoX = 60;
-    const rightLogoX = pageWidth - 130;
-    const logoTopY = 30;
-    const logoWidth = 70;
-    const logoHeight = 70;
+    const logoWidth = 55;
+    const logoHeight = 55;
+    const logoY = currentY + 20;
 
-    doc.image(leftLogoPath, leftLogoX, logoTopY, { width: logoWidth, height: logoHeight });
-    doc.image(rightLogoPath, rightLogoX, logoTopY, { width: logoWidth, height: logoHeight });
-
-    const textStartX = leftLogoX + logoWidth + 10;
-    const textEndX = rightLogoX - 10;
-    const textWidth = textEndX - textStartX;
-    const textCenterY = logoTopY + (logoHeight / 2) - 30;
-
-    doc.y = textCenterY;
-    doc.font("Helvetica-Bold").fontSize(14)
-       .text("Pimpri Chinchwad Education Trust's", textStartX, doc.y, { width: textWidth, align: "center" });
-    doc.fontSize(13)
-       .text("Pimpri Chinchwad College of Engineering & Research Ravet, Pune", textStartX, doc.y + 20, { width: textWidth, align: "center" });
-    doc.fontSize(10)
-       .text("An Autonomous Institute | NBA Accredited (4 UG Programs) | NAAC A++ Accredited | ISO 21001:2018 Certified", textStartX, doc.y + 40, { width: textWidth, align: "center" });
-    doc.font("Helvetica-Bold").fontSize(11)
-       .text("IQAC PCCOER", textStartX, doc.y + 60, { width: textWidth, align: "center" });
-
-    doc.y = logoTopY + logoHeight + 40;
-
-    // Report title
-    doc.font("Helvetica-Bold").fontSize(16)
-       .text("DEADSTOCK FULL REPORT", 0, doc.y, { width: pageWidth, align: "center" });
+    // Left Logo
+    doc.image(leftLogoPath, tableStartX + 15, logoY, { 
+      width: logoWidth, 
+      height: logoHeight 
+    });
+    
+    // Right Logo
+    doc.image(rightLogoPath, tableStartX + totalTableWidth - logoWidth - 15, logoY, { 
+      width: logoWidth, 
+      height: logoHeight 
+    });
+    
+    // Draw vertical line after left logo
+    const leftLineX = tableStartX + logoWidth + 25;
+    doc.moveTo(leftLineX, currentY)
+       .lineTo(leftLineX, currentY + headerSectionHeight)
+       .stroke();
+    
+    // Draw vertical line before right logo
+    const rightLineX = tableStartX + totalTableWidth - logoWidth - 25;
+    doc.moveTo(rightLineX, currentY)
+       .lineTo(rightLineX, currentY + headerSectionHeight)
+       .stroke();
+    
+    // Header text - centered between logos
+    const textStartX = tableStartX + logoWidth + 28;
+    const textWidth = totalTableWidth - (2 * logoWidth) - 50;
+    const textY = logoY + 5;
+    
+    doc.font("Helvetica-Bold")
+       .fontSize(13)
+       .text("Pimpri Chinchwad Education Trust's", textStartX, textY, {
+         width: textWidth,
+         align: "center"
+       });
+    
     doc.fontSize(12)
-       .text(`Staff ID: ${staffId}`, 0, doc.y + 20, { width: pageWidth, align: "center" });
-    doc.fontSize(12)
-       .text(`Generated on: ${new Date().toLocaleDateString('en-IN')}`, 0, doc.y + 40, { width: pageWidth, align: "center" });
+       .text("Pimpri Chinchwad College of Engineering & Research Ravet, Pune", textStartX, textY + 18, {
+         width: textWidth,
+         align: "center"
+       });
+    
+    doc.fontSize(8)
+       .text("An Autonomous Institute | NBA Accredited (4 UG Programs) | NAAC A++ Accredited | ISO 21001:2018 Certified", textStartX, textY + 35, {
+         width: textWidth,
+         align: "center"
+       });
+    
+    doc.font("Helvetica-Bold")
+       .fontSize(10)
+       .text("IQAC PCCOER", textStartX, textY + 54, {
+         width: textWidth,
+         align: "center"
+       });
 
-    doc.moveDown(2);
+    currentY += headerSectionHeight;
 
-    // Table headers with vertical lines
+    // =====================================================
+    // STAFF ID & DATE SECTION
+    // =====================================================
+    const staffSectionHeight = 30;
+    doc.rect(tableStartX, currentY, totalTableWidth, staffSectionHeight).stroke();
+    
+    doc.font("Helvetica-Bold")
+       .fontSize(12)
+       .text("DEADSTOCK REPORT", tableStartX, currentY + 8, {
+         width: totalTableWidth,
+         align: "center"
+       });
+    
+  
+    currentY += staffSectionHeight;
+
+    // Add spacing between header and equipment list
+    currentY += 15;
+
+    // =====================================================
+    // TABLE HEADER WITH VERTICAL LINES
+    // =====================================================
     const headers = [
-      { label: "Sr.No", width: 30 },
-      { label: "PO No", width: 70 },
-      { label: "Purchase Year", width: 50 },
-      { label: "Equipment Name", width: 100 },
-      { label: "DS No", width: 70 },
-      { label: "Qty", width: 30 },
-      { label: "Unit", width: 30 },
-      { label: "Rate (Rs)", width: 60 },
-      { label: "GST (%)", width: 40 },
-      { label: "Cost (Rs)", width: 60 },
-      { label: "Remark", width: 80 }
+      "Sr.", 
+      "PO No", 
+      "Purchase\nYear", 
+      "Equipment Name", 
+      "DS No", 
+      "Qty", 
+      "Unit",
+      "Rate (Rs)", 
+      "GST (%)", 
+      "Cost (Rs)", 
+      "Remark"
     ];
+    
+    const headerHeight = 28;
+    
+    // Draw header background
+    doc.rect(tableStartX, currentY, totalTableWidth, headerHeight).stroke();
 
-    const startX = 15;
-    let currentY = doc.y;
+    // Draw header text and vertical lines
+    headers.forEach((header, i) => {
+      const x = tableStartX + colWidths.slice(0, i).reduce((a, b) => a + b, 0);
+      
+      // Draw vertical line before each column (except first)
+      if (i > 0) {
+        doc.moveTo(x, currentY)
+           .lineTo(x, currentY + headerHeight)
+           .stroke();
+      }
+      
+      // Header text
+      doc.font("Helvetica-Bold")
+         .fontSize(9)
+         .text(header, x + 2, currentY + 8, {
+           width: colWidths[i] - 4,
+           align: "center"
+         });
+    });
 
-    // Draw table header with borders
-    drawTableRow(doc, startX, currentY, headers, true);
+    currentY += headerHeight;
 
-    currentY += 25;
-
-    // Table rows with calculations and proper spacing
+    // =====================================================
+    // TABLE ROWS WITH VERTICAL LINES
+    // =====================================================
     let grandSubtotal = 0;
     let grandGSTAmount = 0;
     let grandTotal = 0;
@@ -492,119 +594,162 @@ router.get("/download/deadstock-full-report", async (req, res) => {
       const unitRate = parseFloat(row.subtotal_excl_gst) / parseInt(row.quantity) || 0;
       const quantity = parseInt(row.quantity) || 0;
       const gstRate = parseFloat(row.gst_rate) || 0;
-      const itemSubtotal = unitRate * quantity;
-      const itemGST = (itemSubtotal * gstRate) / 100;
-      const itemTotal = itemSubtotal + itemGST;
-
+      
+      const subtotal = unitRate * quantity;
+      const gstAmount = (subtotal * gstRate) / 100;
+      const total = subtotal + gstAmount;
+      
       // Add to grand totals
-      grandSubtotal += itemSubtotal;
-      grandGSTAmount += itemGST;
-      grandTotal += itemTotal;
+      grandSubtotal += subtotal;
+      grandGSTAmount += gstAmount;
+      grandTotal += total;
 
-      // Prepare row data (empty string for N/A values)
       const rowData = [
-        { value: (index + 1).toString(), width: 30, align: "center" },
-        { value: row.po_no || "", width: 70, align: "center" },
-        { value: row.purchase_year || "", width: 50, align: "center" },
-        { value: row.equipment_name || "", width: 100, align: "left" },
-        { value: row.ds_number || "", width: 70, align: "center" },
-        { value: quantity.toString(), width: 30, align: "center" },
-        { value: "Nos", width: 30, align: "center" },
-        { value: unitRate.toFixed(2), width: 60, align: "right" },
-        { value: gstRate.toFixed(2), width: 40, align: "center" },
-        { value: itemTotal.toFixed(2), width: 60, align: "right" },
-        { value: row.remark || "", width: 80, align: "left" }
+        (index + 1).toString(),
+        row.po_no || "",
+        row.purchase_year || "", 
+        row.equipment_name || "",
+        row.ds_number || "",
+        quantity.toString(),
+        "Nos",
+        unitRate.toFixed(2),
+        gstRate.toFixed(2),
+        total.toFixed(2),
+        row.remark || ""
       ];
 
-      // Draw row with borders and proper spacing
-      drawTableRow(doc, startX, currentY, rowData, false);
+      // Calculate dynamic row height based on content length
+      const equipmentNameLength = (row.equipment_name || "").length;
+      const dsNumberLength = (row.ds_number || "").length;
+      const remarkLength = (row.remark || "").length;
+      
+      // Determine row height (minimum 20, add more for long content)
+      let rowHeight = 20;
+      if (equipmentNameLength > 25 || dsNumberLength > 20 || remarkLength > 15) {
+        rowHeight = 28;
+      }
+      if (equipmentNameLength > 40 || dsNumberLength > 35 || remarkLength > 25) {
+        rowHeight = 36;
+      }
+      
+      // Draw row border
+      doc.rect(tableStartX, currentY, totalTableWidth, rowHeight).stroke();
 
-      // Increase row height for remarks if needed
-      const remark = row.remark || "";
-      const lineCount = Math.ceil(remark.length / 20); // Approximate line count
-      currentY += Math.max(20, 20 + (lineCount - 1) * 10); // Add extra space for multi-line remarks
+      // Draw data and vertical lines
+      rowData.forEach((data, i) => {
+        const x = tableStartX + colWidths.slice(0, i).reduce((a, b) => a + b, 0);
+        
+        // Draw vertical line before each column (except first)
+        if (i > 0) {
+          doc.moveTo(x, currentY)
+             .lineTo(x, currentY + rowHeight)
+             .stroke();
+        }
+        
+        // Cell data - align differently based on column
+        let align = "center";
+        let textY = currentY + 6;
+        
+        // Column-specific alignment
+        if (i === 3) { // Equipment Name
+          align = "left";
+          textY = currentY + 4;
+        } else if (i === 4) { // DS Number
+          align = "left";
+          textY = currentY + 4;
+        } else if (i === 7 || i === 9) { // Rate and Cost
+          align = "right";
+        } else if (i === 10) { // Remark
+          align = "left";
+          textY = currentY + 4;
+        }
+        
+        doc.font("Helvetica")
+           .fontSize(7)
+           .text(data, x + 2, textY, {
+             width: colWidths[i] - 4,
+             align: align,
+             lineGap: 1
+           });
+      });
 
+      currentY += rowHeight;
+      
       // Check if we need a new page
       if (currentY > doc.page.height - 150) {
         doc.addPage();
         currentY = 50;
-
+        
         // Redraw headers on new page
-        drawTableRow(doc, startX, currentY, headers, true);
-        currentY += 25;
+        doc.rect(tableStartX, currentY, totalTableWidth, headerHeight).stroke();
+        headers.forEach((header, i) => {
+          const x = tableStartX + colWidths.slice(0, i).reduce((a, b) => a + b, 0);
+          if (i > 0) {
+            doc.moveTo(x, currentY)
+               .lineTo(x, currentY + headerHeight)
+               .stroke();
+          }
+          doc.font("Helvetica-Bold")
+             .fontSize(9)
+             .text(header, x + 2, currentY + 8, {
+               width: colWidths[i] - 4,
+               align: "center"
+             });
+        });
+        currentY += headerHeight;
       }
     });
 
-    // Grand totals section
     doc.moveDown(2);
-    currentY = doc.y;
+    currentY = doc.y + 20;
 
+    // =====================================================
+    // GRAND TOTALS SECTION
+    // =====================================================
     const totalsStartX = pageWidth - 280;
-
-    doc.font("Helvetica-Bold").fontSize(12)
+    
+    doc.font("Helvetica-Bold")
+       .fontSize(12)
        .text("GRAND TOTALS", 0, currentY, { width: pageWidth, align: "center" });
-
-    doc.moveDown(1);
-    currentY = doc.y;
-
-    doc.font("Helvetica-Bold").fontSize(10);
-
-    doc.text(`Subtotal (Excl. GST):`, totalsStartX, currentY);
-    doc.text(`Rs ${grandSubtotal.toFixed(2)}`, totalsStartX + 150, currentY, { align: "right" });
+    
+    currentY += 25;
+    
+    doc.fontSize(10);
+    
+    // Subtotal
+    doc.text("Subtotal (Excl. GST):", totalsStartX, currentY);
+    doc.text(`Rs ${grandSubtotal.toFixed(2)}`, totalsStartX + 150, currentY);
     currentY += 20;
-
-    doc.text(`GST Amount:`, totalsStartX, currentY);
-    doc.text(`Rs ${grandGSTAmount.toFixed(2)}`, totalsStartX + 150, currentY, { align: "right" });
+    
+    // GST Amount  
+    doc.text("GST Amount:", totalsStartX, currentY);
+    doc.text(`Rs ${grandGSTAmount.toFixed(2)}`, totalsStartX + 150, currentY);
     currentY += 20;
-
+    
+    // Grand Total
     doc.fontSize(12);
-    doc.text(`GRAND TOTAL:`, totalsStartX, currentY);
-    doc.text(`Rs ${grandTotal.toFixed(2)}`, totalsStartX + 150, currentY, { align: "right" });
-
+    doc.text("GRAND TOTAL:", totalsStartX, currentY);
+    doc.text(`Rs ${grandTotal.toFixed(2)}`, totalsStartX + 150, currentY);
+    
     doc.moveDown(4);
 
-    // Signature section
-    const signatureY = doc.y + 40;
-    doc.font("Helvetica-Bold").fontSize(11);
+    // =====================================================
+    // SIGNATURE SECTION
+    // =====================================================
+    const signatureY = doc.y + 60;
+    
+    doc.font("Helvetica-Bold")
+       .fontSize(11);
+    
+    // Lab Assistant signature (left side)
     doc.text("Lab Assistant", 80, signatureY);
+    
+    // Head of Department signature (right side)  
     doc.text("Head of Department", pageWidth - 200, signatureY);
 
+    // =====================================================
     doc.end();
-
-    // Helper function to draw table rows with borders
-    function drawTableRow(doc, startX, y, columns, isHeader) {
-      const lineHeight = isHeader ? 25 : 20;
-      const totalWidth = columns.reduce((sum, col) => sum + col.width, 0);
-
-      // Draw horizontal lines
-      doc.rect(startX, y - 5, totalWidth, lineHeight).stroke();
-
-      // Draw vertical lines
-      let currentX = startX;
-      columns.forEach(col => {
-        doc.moveTo(currentX, y - 5)
-           .lineTo(currentX, y - 5 + lineHeight)
-           .stroke();
-        currentX += col.width;
-      });
-      // Draw right border
-      doc.moveTo(currentX, y - 5)
-         .lineTo(currentX, y - 5 + lineHeight)
-         .stroke();
-
-      // Draw text
-      let textY = y + (isHeader ? 5 : 3);
-      columns.forEach((col, i) => {
-        const x = startX + columns.slice(0, i).reduce((sum, c) => sum + c.width, 0);
-        doc.font(isHeader ? "Helvetica-Bold" : "Helvetica")
-           .fontSize(isHeader ? 9 : 8)
-           .text(col.value || col.label, x + 2, textY, {
-             width: col.width - 4,
-             align: col.align || "center"
-           });
-      });
-    }
-
+    
   } catch (err) {
     console.error("PDF generation error:", err);
     if (!res.headersSent) {
