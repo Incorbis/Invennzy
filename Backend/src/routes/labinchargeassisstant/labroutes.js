@@ -22,7 +22,6 @@ router.get('/labs/equipment/:labId', (req, res) => {
     ORDER BY equipment_type, equipment_code
 `;
     
-
     db.query(query, [labId], (err, results) => {
         if (err) {
             console.error('Error fetching equipment:', err);
@@ -373,5 +372,7 @@ router.get('/labs/equipment/by-staff/:staffId', async (req, res) => {
 });
 
 router.put('/equipment/:equipmentId', updateEquipmentHandler);
+
+
 
 module.exports = router;
